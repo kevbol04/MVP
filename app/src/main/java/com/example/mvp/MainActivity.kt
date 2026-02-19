@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.mvp.ui.screens.dashboard.DashboardScreen
 import com.example.mvp.ui.screens.login.AuthScreen
+import com.example.mvp.ui.screens.matches.MatchesScreen
 import com.example.mvp.ui.screens.training.TrainingFormScreen
 import com.example.mvp.ui.screens.training.TrainingsScreen
 import com.example.mvp.ui.theme.MVPTheme
@@ -23,14 +24,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             MVPTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    DashboardScreen(
-                        modifier = Modifier.padding(innerPadding),
-                        username = "Cortés",
-                        onGoTraining = { /* navegar a entrenamientos */ },
-                        onGoMatches = { /* navegar a partidos */ },
-                        onGoPlayers = { /* navegar a jugadores */ },
-                        onGoStats = { /* navegar a estadísticas */ }
-                    )
+//                    DashboardScreen(
+//                        modifier = Modifier.padding(innerPadding),
+//                        username = "Cortés",
+//                        onGoTraining = { /* navegar a entrenamientos */ },
+//                        onGoMatches = { /* navegar a partidos */ },
+//                        onGoPlayers = { /* navegar a jugadores */ },
+//                        onGoStats = { /* navegar a estadísticas */ }
+//                    )
 
 //                    TrainingsScreen(
 //                        modifier = Modifier.padding(innerPadding),
@@ -44,6 +45,13 @@ class MainActivity : ComponentActivity() {
 //                        onBack = {},
 //                        onSave = {}
 //                    )
+
+                    MatchesScreen(
+                        modifier = Modifier.padding(innerPadding),
+                        onBack = { },
+                        onCreateMatch = { },
+                        onEditMatch = { }
+                    )
                 }
             }
         }
