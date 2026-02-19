@@ -10,6 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.mvp.ui.screens.dashboard.DashboardScreen
 import com.example.mvp.ui.screens.login.AuthScreen
 import com.example.mvp.ui.theme.MVPTheme
 
@@ -20,10 +21,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             MVPTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    AuthScreen(
+                    DashboardScreen(
                         modifier = Modifier.padding(innerPadding),
-                        onLogin = { email, pass -> },
-                        onRegister = { name, email, pass -> }
+                        username = "Cortés",
+                        onGoTraining = { /* navegar a entrenamientos */ },
+                        onGoMatches = { /* navegar a partidos */ },
+                        onGoPlayers = { /* navegar a jugadores */ },
+                        onGoStats = { /* navegar a estadísticas */ }
                     )
                 }
             }
@@ -35,6 +39,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun LoginPreview() {
     MVPTheme {
-        AuthScreen()
+        DashboardScreen()
     }
 }
