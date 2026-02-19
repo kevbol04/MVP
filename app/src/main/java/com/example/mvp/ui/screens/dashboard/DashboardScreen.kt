@@ -55,7 +55,6 @@ fun DashboardScreen(
             .padding(horizontal = 20.dp)
     ) {
 
-        // Glow decorativo
         Box(
             modifier = Modifier
                 .size(220.dp)
