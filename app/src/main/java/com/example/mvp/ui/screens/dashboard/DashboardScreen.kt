@@ -216,7 +216,7 @@ private fun QuickActionsGrid(
 
             ActionCard(
                 title = "Estadísticas",
-                subtitle = "Progreso & charts",
+                subtitle = "Progreso & datos",
                 icon = Icons.Default.BarChart,
                 accent = accent,
                 accent2 = accent2,
