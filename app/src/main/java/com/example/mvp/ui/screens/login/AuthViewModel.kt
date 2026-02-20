@@ -2,6 +2,7 @@ package com.example.mvp.ui.screens.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mvp.domain.model.AuthUser
 import com.example.mvp.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +14,7 @@ import javax.inject.Inject
 data class AuthUiState(
     val loading: Boolean = false,
     val isAuthenticated: Boolean = false,
+    val user: AuthUser? = null,
     val error: String? = null
 )
 
@@ -33,6 +35,7 @@ class AuthViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 loading = false,
                 isAuthenticated = result.isSuccess,
+                user = result.getOrNull(),
                 error = result.exceptionOrNull()?.message
             )
         }
@@ -47,6 +50,7 @@ class AuthViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 loading = false,
                 isAuthenticated = result.isSuccess,
+                user = result.getOrNull(),
                 error = result.exceptionOrNull()?.message
             )
         }
@@ -57,6 +61,6 @@ class AuthViewModel @Inject constructor(
     }
 
     fun logoutInMemory() {
-        _uiState.value = _uiState.value.copy(isAuthenticated = false)
+        _uiState.value = AuthUiState()
     }
 }

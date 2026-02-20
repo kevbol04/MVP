@@ -18,9 +18,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
-import androidx.compose.ui.window.Dialog
 
 @Composable
 fun AccountScreen(
@@ -38,8 +38,8 @@ fun AccountScreen(
     val accent2 = MaterialTheme.colorScheme.secondary
     val onBg = MaterialTheme.colorScheme.onBackground
 
-    var displayName by remember { mutableStateOf(name) }
-    var mail by remember { mutableStateOf(email) }
+    var displayName by remember(name) { mutableStateOf(name) }
+    var mail by remember(email) { mutableStateOf(email) }
 
     var showChangePass by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
@@ -239,7 +239,7 @@ private fun ChangePasswordDialog(
 
     val helperText = when {
         current.isBlank() || newPass.isBlank() || repeat.isBlank() -> "Completa todos los campos."
-        newPass.length < 6 -> "La nueva contraseña debe tener al menos 6 caracteres."
+        newPass.length < 4 -> "La nueva contraseña debe tener al menos 4 caracteres."
         newPass != repeat -> "La nueva contraseña no coincide."
         else -> ""
     }

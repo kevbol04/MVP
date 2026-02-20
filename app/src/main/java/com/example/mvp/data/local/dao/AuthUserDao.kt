@@ -14,4 +14,10 @@ interface AuthUserDao {
 
     @Query("SELECT * FROM auth_users WHERE email = :email LIMIT 1")
     suspend fun findByEmail(email: String): AuthUserEntity?
+
+    @Query("SELECT * FROM auth_users WHERE id = :id LIMIT 1")
+    suspend fun findById(id: Long): AuthUserEntity?
+
+    @Query("UPDATE auth_users SET name = :newName, email = :newEmail WHERE email = :oldEmail")
+    suspend fun updateProfileByEmail(oldEmail: String, newName: String, newEmail: String): Int
 }

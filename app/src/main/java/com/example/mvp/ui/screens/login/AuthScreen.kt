@@ -49,14 +49,21 @@ private enum class AuthMode { Login, Register }
 @Composable
 fun AuthRoute(
     modifier: Modifier = Modifier,
-    onSuccess: () -> Unit,
+    onSuccess: (Long, String, String) -> Unit,
     vm: AuthViewModel = hiltViewModel()
 ) {
     val state by vm.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.isAuthenticated) {
-        if (state.isAuthenticated) onSuccess()
+        if (state.isAuthenticated) {
+            val u = state.user
+            onSuccess(
+                u?.id ?: 0L,
+                u?.name ?: "Usuario",
+                u?.email ?: ""
+            )
+        }
     }
 
     LaunchedEffect(state.error) {

@@ -1,13 +1,13 @@
 package com.example.mvp.ui.navigation
 
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mvp.ui.screens.dashboard.DashboardScreen
 import com.example.mvp.ui.screens.login.AuthRoute
-import com.example.mvp.ui.screens.login.AuthScreen
 import com.example.mvp.ui.screens.matches.Match
 import com.example.mvp.ui.screens.matches.MatchFormScreen
 import com.example.mvp.ui.screens.matches.MatchesScreen
@@ -17,6 +17,7 @@ import com.example.mvp.ui.screens.players.PlayerFormScreen
 import com.example.mvp.ui.screens.players.PlayerPosition
 import com.example.mvp.ui.screens.players.PlayerStatus
 import com.example.mvp.ui.screens.players.PlayersScreen
+import com.example.mvp.ui.screens.settings.AccountRoute
 import com.example.mvp.ui.screens.settings.AccountScreen
 import com.example.mvp.ui.screens.settings.SettingsScreen
 import com.example.mvp.ui.screens.stats.StatsScreen
@@ -30,6 +31,10 @@ fun AppNavGraph(
 ) {
     val navController = rememberNavController()
 
+    var currentUsername by rememberSaveable { mutableStateOf("Usuario") }
+    var currentEmail by rememberSaveable { mutableStateOf("") }
+    var currentUserId by rememberSaveable { mutableStateOf(0L) }
+
     var trainings by remember { mutableStateOf(emptyList<Training>()) }
     var matches by remember { mutableStateOf(emptyList<Match>()) }
     var players by remember { mutableStateOf(emptyList<Player>()) }
@@ -40,10 +45,12 @@ fun AppNavGraph(
     ) {
 
         // ---------------- LOGIN ----------------
-
         composable(Route.Auth.route) {
             AuthRoute(
-                onSuccess = {
+                onSuccess = { id, name, email ->
+                    currentUserId = id
+                    currentUsername = name
+                    currentEmail = email
                     navController.navigate(Route.Dashboard.route) {
                         popUpTo(Route.Auth.route) { inclusive = true }
                     }
@@ -52,10 +59,9 @@ fun AppNavGraph(
         }
 
         // ---------------- DASHBOARD ----------------
-
         composable(Route.Dashboard.route) {
             DashboardScreen(
-                username = "Kev",
+                username = currentUsername,
                 onGoTraining = { navController.navigateToTab(Route.Trainings.route) },
                 onGoMatches = { navController.navigateToTab(Route.Matches.route) },
                 onGoPlayers = { navController.navigateToTab(Route.Players.route) },
@@ -65,15 +71,17 @@ fun AppNavGraph(
         }
 
         // ---------------- SETTINGS ----------------
-
         composable(Route.Settings.route) {
             SettingsScreen(
-                username = "Kev",
+                username = currentUsername,
                 onBack = { navController.popBackStack() },
                 onOpenAccount = { navController.navigate(Route.Account.route) },
                 onOpenPrivacy = { },
                 onOpenAbout = { },
                 onLogout = {
+                    currentUserId = 0L
+                    currentUsername = "Usuario"
+                    currentEmail = ""
                     navController.navigate(Route.Auth.route) {
                         popUpTo(Route.Dashboard.route) { inclusive = true }
                     }
@@ -82,11 +90,17 @@ fun AppNavGraph(
         }
 
         composable(Route.Account.route) {
-            AccountScreen(
-                name = "Kev",
-                email = "kev@email.com",
+            AccountRoute(
+                name = currentUsername,
+                email = currentEmail,
                 onBack = { navController.popBackStack() },
+                onProfileUpdated = { newName, newEmail ->
+                    currentUsername = newName
+                    currentEmail = newEmail
+                },
                 onDeleteAccount = {
+                    currentUsername = "Usuario"
+                    currentEmail = ""
                     navController.navigate(Route.Auth.route) {
                         popUpTo(0) { inclusive = true }
                     }
@@ -95,7 +109,6 @@ fun AppNavGraph(
         }
 
         // ---------------- TRAININGS ----------------
-
         composable(Route.Trainings.route) {
             TrainingsScreen(
                 trainings = trainings,
@@ -138,7 +151,6 @@ fun AppNavGraph(
         }
 
         // ---------------- MATCHES ----------------
-
         composable(Route.Matches.route) {
             MatchesScreen(
                 matches = matches,
@@ -181,7 +193,6 @@ fun AppNavGraph(
         }
 
         // ---------------- PLAYERS ----------------
-
         composable(Route.Players.route) {
             PlayersScreen(
                 players = players,
@@ -242,7 +253,6 @@ fun AppNavGraph(
         }
 
         // ---------------- STATS ----------------
-
         composable(Route.Stats.route) {
             StatsScreen(
                 players = players,
@@ -266,6 +276,7 @@ private fun NavHostController.navigateToTab(route: String) {
     }
 }
 
+@Suppress("unused")
 private fun defaultPlayersForNavInit(): List<Player> = listOf(
     Player(1, "Álex Romero", PlayerPosition.POR, 23, 1, 78, PlayerStatus.TITULAR),
     Player(2, "Sergio Vidal", PlayerPosition.DEF, 27, 2, 80, PlayerStatus.TITULAR),
