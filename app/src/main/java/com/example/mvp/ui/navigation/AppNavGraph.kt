@@ -1,31 +1,27 @@
 package com.example.mvp.ui.navigation
 
 import androidx.compose.runtime.*
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.mvp.ui.screens.settings.AccountScreen
-
-import com.example.mvp.ui.screens.login.AuthScreen
 import com.example.mvp.ui.screens.dashboard.DashboardScreen
-
-import com.example.mvp.ui.screens.training.TrainingsScreen
-import com.example.mvp.ui.screens.training.TrainingFormScreen
-import com.example.mvp.ui.screens.training.Training
-
-import com.example.mvp.ui.screens.matches.MatchesScreen
-import com.example.mvp.ui.screens.matches.MatchFormScreen
+import com.example.mvp.ui.screens.login.AuthScreen
 import com.example.mvp.ui.screens.matches.Match
-
-import com.example.mvp.ui.screens.players.PlayersScreen
-import com.example.mvp.ui.screens.players.PlayerFormScreen
-import com.example.mvp.ui.screens.players.PlayerDetailScreen
+import com.example.mvp.ui.screens.matches.MatchFormScreen
+import com.example.mvp.ui.screens.matches.MatchesScreen
 import com.example.mvp.ui.screens.players.Player
+import com.example.mvp.ui.screens.players.PlayerDetailScreen
+import com.example.mvp.ui.screens.players.PlayerFormScreen
 import com.example.mvp.ui.screens.players.PlayerPosition
 import com.example.mvp.ui.screens.players.PlayerStatus
-
-import com.example.mvp.ui.screens.stats.StatsScreen
+import com.example.mvp.ui.screens.players.PlayersScreen
+import com.example.mvp.ui.screens.settings.AccountScreen
 import com.example.mvp.ui.screens.settings.SettingsScreen
+import com.example.mvp.ui.screens.stats.StatsScreen
+import com.example.mvp.ui.screens.training.Training
+import com.example.mvp.ui.screens.training.TrainingFormScreen
+import com.example.mvp.ui.screens.training.TrainingsScreen
 
 @Composable
 fun AppNavGraph(
@@ -64,10 +60,10 @@ fun AppNavGraph(
         composable(Route.Dashboard.route) {
             DashboardScreen(
                 username = "Kev",
-                onGoTraining = { navController.navigate(Route.Trainings.route) },
-                onGoMatches = { navController.navigate(Route.Matches.route) },
-                onGoPlayers = { navController.navigate(Route.Players.route) },
-                onGoStats = { navController.navigate(Route.Stats.route) },
+                onGoTraining = { navController.navigateToTab(Route.Trainings.route) },
+                onGoMatches = { navController.navigateToTab(Route.Matches.route) },
+                onGoPlayers = { navController.navigateToTab(Route.Players.route) },
+                onGoStats = { navController.navigateToTab(Route.Stats.route) },
                 onGoSettings = { navController.navigate(Route.Settings.route) }
             )
         }
@@ -78,9 +74,9 @@ fun AppNavGraph(
             SettingsScreen(
                 username = "Kev",
                 onBack = { navController.popBackStack() },
-                onOpenAccount = { navController.navigate("account") },
-                onOpenPrivacy = {  },
-                onOpenAbout = {  },
+                onOpenAccount = { navController.navigate(Route.Account.route) },
+                onOpenPrivacy = { },
+                onOpenAbout = { },
                 onLogout = {
                     navController.navigate(Route.Auth.route) {
                         popUpTo(Route.Dashboard.route) { inclusive = true }
@@ -94,7 +90,6 @@ fun AppNavGraph(
                 name = "Kev",
                 email = "kev@email.com",
                 onBack = { navController.popBackStack() },
-
                 onDeleteAccount = {
                     navController.navigate(Route.Auth.route) {
                         popUpTo(0) { inclusive = true }
@@ -110,7 +105,11 @@ fun AppNavGraph(
                 trainings = trainings,
                 onBack = { navController.popBackStack() },
                 onCreateTraining = { navController.navigate(Route.TrainingForm.route) },
-                onEditTraining = { t -> navController.navigate(Route.TrainingFormWithId.createRoute(t.id)) }
+                onEditTraining = { t -> navController.navigate(Route.TrainingFormWithId.createRoute(t.id)) },
+
+                onGoMatches = { navController.navigateToTab(Route.Matches.route) },
+                onGoPlayers = { navController.navigateToTab(Route.Players.route) },
+                onGoStats = { navController.navigateToTab(Route.Stats.route) }
             )
         }
 
@@ -149,7 +148,11 @@ fun AppNavGraph(
                 matches = matches,
                 onBack = { navController.popBackStack() },
                 onCreateMatch = { navController.navigate(Route.MatchForm.route) },
-                onEditMatch = { m -> navController.navigate(Route.MatchFormWithId.createRoute(m.id)) }
+                onEditMatch = { m -> navController.navigate(Route.MatchFormWithId.createRoute(m.id)) },
+
+                onGoTraining = { navController.navigateToTab(Route.Trainings.route) },
+                onGoPlayers = { navController.navigateToTab(Route.Players.route) },
+                onGoStats = { navController.navigateToTab(Route.Stats.route) }
             )
         }
 
@@ -189,7 +192,11 @@ fun AppNavGraph(
                 onBack = { navController.popBackStack() },
                 onCreatePlayer = { navController.navigate(Route.PlayerForm.route) },
                 onEditPlayer = { p -> navController.navigate(Route.PlayerFormWithId.createRoute(p.id)) },
-                onOpenPlayer = { p -> navController.navigate(Route.PlayerDetail.createRoute(p.id)) }
+                onOpenPlayer = { p -> navController.navigate(Route.PlayerDetail.createRoute(p.id)) },
+
+                onGoTraining = { navController.navigateToTab(Route.Trainings.route) },
+                onGoMatches = { navController.navigateToTab(Route.Matches.route) },
+                onGoStats = { navController.navigateToTab(Route.Stats.route) }
             )
         }
 
@@ -245,9 +252,21 @@ fun AppNavGraph(
                 players = players,
                 matches = matches,
                 trainings = trainings,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+
+                onGoTraining = { navController.navigateToTab(Route.Trainings.route) },
+                onGoMatches = { navController.navigateToTab(Route.Matches.route) },
+                onGoPlayers = { navController.navigateToTab(Route.Players.route) }
             )
         }
+    }
+}
+
+private fun NavHostController.navigateToTab(route: String) {
+    navigate(route) {
+        launchSingleTop = true
+        restoreState = true
+        popUpTo(Route.Dashboard.route) { saveState = true }
     }
 }
 

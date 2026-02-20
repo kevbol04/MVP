@@ -1,6 +1,7 @@
 package com.example.mvp.ui.screens.training
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,8 +10,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,13 +44,22 @@ data class Training(
     val type: TrainingType
 )
 
+private enum class BottomTab {
+    Training, Matches, Players, Stats
+}
+
 @Composable
 fun TrainingsScreen(
     modifier: Modifier = Modifier,
     trainings: List<Training> = sampleTrainings(),
     onBack: () -> Unit = {},
     onCreateTraining: () -> Unit = {},
-    onEditTraining: (Training) -> Unit = {}
+    onEditTraining: (Training) -> Unit = {},
+
+    // ✅ navegación del menú inferior
+    onGoMatches: () -> Unit = {},
+    onGoPlayers: () -> Unit = {},
+    onGoStats: () -> Unit = {}
 ) {
     val bgTop = MaterialTheme.colorScheme.background
     val bgMid = MaterialTheme.colorScheme.surface
@@ -63,11 +77,13 @@ fun TrainingsScreen(
         }
     }
 
+    var selectedTab by remember { mutableStateOf(BottomTab.Training) }
+    val bottomBarHeight = 78.dp
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(bgTop, bgMid, bgTop)))
-            .padding(horizontal = 20.dp)
     ) {
         Box(
             modifier = Modifier
@@ -85,7 +101,8 @@ fun TrainingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 18.dp, bottom = 14.dp),
+                .padding(horizontal = 20.dp)
+                .padding(top = 18.dp, bottom = bottomBarHeight + 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
@@ -170,6 +187,159 @@ fun TrainingsScreen(
                     }
                 }
             }
+        }
+
+        BottomMenuBar(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            accent = accent,
+            accent2 = accent2,
+            onText = onBg,
+            selected = selectedTab,
+            onSelect = { tab ->
+                when (tab) {
+                    BottomTab.Training -> {
+                        selectedTab = BottomTab.Training
+                    }
+                    BottomTab.Matches -> {
+                        selectedTab = BottomTab.Matches
+                        onGoMatches()
+                    }
+                    BottomTab.Players -> {
+                        selectedTab = BottomTab.Players
+                        onGoPlayers()
+                    }
+                    BottomTab.Stats -> {
+                        selectedTab = BottomTab.Stats
+                        onGoStats()
+                    }
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun BottomMenuBar(
+    modifier: Modifier = Modifier,
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    selected: BottomTab,
+    onSelect: (BottomTab) -> Unit
+) {
+    Surface(
+        modifier = modifier.height(64.dp),
+        shape = RoundedCornerShape(22.dp),
+        color = GlassBase.copy(alpha = 0.10f),
+        tonalElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            accent.copy(alpha = 0.10f),
+                            accent2.copy(alpha = 0.08f)
+                        )
+                    )
+                )
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BottomMenuItem(
+                label = "Entr",
+                icon = Icons.Default.FitnessCenter,
+                isSelected = selected == BottomTab.Training,
+                accent = accent,
+                accent2 = accent2,
+                onText = onText,
+                onClick = { onSelect(BottomTab.Training) }
+            )
+            BottomMenuItem(
+                label = "Part",
+                icon = Icons.Default.SportsSoccer,
+                isSelected = selected == BottomTab.Matches,
+                accent = accent,
+                accent2 = accent2,
+                onText = onText,
+                onClick = { onSelect(BottomTab.Matches) }
+            )
+            BottomMenuItem(
+                label = "Jug",
+                icon = Icons.Default.Groups,
+                isSelected = selected == BottomTab.Players,
+                accent = accent,
+                accent2 = accent2,
+                onText = onText,
+                onClick = { onSelect(BottomTab.Players) }
+            )
+            BottomMenuItem(
+                label = "Est",
+                icon = Icons.Default.BarChart,
+                isSelected = selected == BottomTab.Stats,
+                accent = accent,
+                accent2 = accent2,
+                onText = onText,
+                onClick = { onSelect(BottomTab.Stats) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun RowScope.BottomMenuItem(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isSelected: Boolean,
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    onClick: () -> Unit
+) {
+    val bgBrush = if (isSelected) {
+        Brush.horizontalGradient(
+            listOf(
+                accent.copy(alpha = 0.30f),
+                accent2.copy(alpha = 0.24f)
+            )
+        )
+    } else {
+        Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+    }
+
+    val tint = if (isSelected) ButtonTextDark else onText.copy(alpha = 0.78f)
+
+    Surface(
+        modifier = Modifier
+            .height(46.dp)
+            .weight(1f)
+            .padding(horizontal = 4.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        color = GlassBase.copy(alpha = if (isSelected) 0.12f else 0.02f),
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(bgBrush)
+                .padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(icon, contentDescription = label, tint = tint)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = label,
+                color = tint,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                maxLines = 1
+            )
         }
     }
 }

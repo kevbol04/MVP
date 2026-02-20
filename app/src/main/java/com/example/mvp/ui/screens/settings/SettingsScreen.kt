@@ -277,21 +277,6 @@ private fun SettingsHeader(
                 style = MaterialTheme.typography.bodyMedium
             )
         }
-
-        Surface(
-            modifier = Modifier.size(44.dp),
-            shape = CircleShape,
-            color = GlassBase.copy(alpha = 0.08f),
-            tonalElevation = 0.dp
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = null,
-                    tint = onText.copy(alpha = 0.70f)
-                )
-            }
-        }
     }
 }
 
