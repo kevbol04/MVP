@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.mvp.ui.screens.settings.AccountScreen
 
 import com.example.mvp.ui.screens.login.AuthScreen
 import com.example.mvp.ui.screens.dashboard.DashboardScreen
@@ -24,6 +25,7 @@ import com.example.mvp.ui.screens.players.PlayerPosition
 import com.example.mvp.ui.screens.players.PlayerStatus
 
 import com.example.mvp.ui.screens.stats.StatsScreen
+import com.example.mvp.ui.screens.settings.SettingsScreen
 
 @Composable
 fun AppNavGraph(
@@ -65,7 +67,39 @@ fun AppNavGraph(
                 onGoTraining = { navController.navigate(Route.Trainings.route) },
                 onGoMatches = { navController.navigate(Route.Matches.route) },
                 onGoPlayers = { navController.navigate(Route.Players.route) },
-                onGoStats = { navController.navigate(Route.Stats.route) }
+                onGoStats = { navController.navigate(Route.Stats.route) },
+                onGoSettings = { navController.navigate(Route.Settings.route) }
+            )
+        }
+
+        // ---------------- SETTINGS ----------------
+
+        composable(Route.Settings.route) {
+            SettingsScreen(
+                username = "Kev",
+                onBack = { navController.popBackStack() },
+                onOpenAccount = { navController.navigate("account") },
+                onOpenPrivacy = {  },
+                onOpenAbout = {  },
+                onLogout = {
+                    navController.navigate(Route.Auth.route) {
+                        popUpTo(Route.Dashboard.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Route.Account.route) {
+            AccountScreen(
+                name = "Kev",
+                email = "kev@email.com",
+                onBack = { navController.popBackStack() },
+
+                onDeleteAccount = {
+                    navController.navigate(Route.Auth.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
 

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -36,6 +37,7 @@ fun DashboardScreen(
     onGoMatches: () -> Unit = {},
     onGoPlayers: () -> Unit = {},
     onGoStats: () -> Unit = {},
+    onGoSettings: () -> Unit = {},
     onOpenRecent: (RecentItem) -> Unit = {}
 ) {
     val bgTop = MaterialTheme.colorScheme.background
@@ -79,7 +81,9 @@ fun DashboardScreen(
                 DashboardHeader(
                     username = username,
                     accent = accent,
-                    onText = onBg
+                    accent2 = accent2,
+                    onText = onBg,
+                    onGoSettings = onGoSettings
                 )
             }
 
@@ -115,21 +119,60 @@ fun DashboardScreen(
 private fun DashboardHeader(
     username: String,
     accent: Color,
-    onText: Color
+    accent2: Color,
+    onText: Color,
+    onGoSettings: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Column {
-            Text(
-                text = "ProFootball",
-                style = MaterialTheme.typography.titleLarge,
-                color = onText,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = "Bienvenido, $username",
-                style = MaterialTheme.typography.bodyMedium,
-                color = onText.copy(alpha = 0.80f)
-            )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = "ProFootball",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = onText,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Bienvenido, $username",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = onText.copy(alpha = 0.80f)
+                )
+            }
+
+            Surface(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clickable { onGoSettings() },
+                shape = CircleShape,
+                color = GlassBase.copy(alpha = 0.10f),
+                tonalElevation = 0.dp
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.radialGradient(
+                                listOf(
+                                    accent.copy(alpha = 0.35f),
+                                    accent2.copy(alpha = 0.18f),
+                                    Color.Transparent
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Configuración",
+                        tint = ButtonTextDark
+                    )
+                }
+            }
         }
 
         Surface(
