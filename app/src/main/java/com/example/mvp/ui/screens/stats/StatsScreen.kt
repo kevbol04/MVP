@@ -6,6 +6,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -36,6 +38,7 @@ fun StatsScreen(
 
     val scroll = rememberScrollState()
 
+    // ---------------- PLAYERS ----------------
     val totalPlayers = players.size
     val titulares = players.count { it.status == PlayerStatus.TITULAR }
     val suplentes = players.count { it.status == PlayerStatus.SUPLENTE }
@@ -44,9 +47,8 @@ fun StatsScreen(
     val avgRating = if (players.isNotEmpty()) players.map { it.rating }.average() else 0.0
     val bestPlayer = players.maxByOrNull { it.rating }
 
+    // ---------------- MATCHES ----------------
     val totalMatches = matches.size
-    val recentMatches = matches.count { it.isRecent }
-
     val wins = matches.count { it.result == MatchResult.VICTORIA }
     val draws = matches.count { it.result == MatchResult.EMPATE }
     val losses = matches.count { it.result == MatchResult.DERROTA }
@@ -59,15 +61,13 @@ fun StatsScreen(
     val amistosos = matches.count { it.competition == Competition.AMISTOSO }
 
     val lastMatch = matches.firstOrNull()
-    val lastRecentMatch = matches.firstOrNull { it.isRecent }
 
+    // ---------------- TRAININGS ----------------
     val totalTrainings = trainings.size
-    val recentTrainings = trainings.count { it.isRecent }
     val totalMinutes = trainings.sumOf { it.durationMin }
     val avgMinutes = if (trainings.isNotEmpty()) totalMinutes.toDouble() / trainings.size else 0.0
 
     val lastTraining = trainings.firstOrNull()
-    val lastRecentTraining = trainings.firstOrNull { it.isRecent }
 
     Box(
         modifier = Modifier
@@ -109,7 +109,7 @@ fun StatsScreen(
                     modifier = Modifier.weight(1f),
                     title = "Partidos",
                     value = totalMatches.toString(),
-                    subtitle = "Recientes $recentMatches",
+                    subtitle = "Total registrados",
                     accent = accent,
                     accent2 = accent2
                 )
@@ -120,7 +120,7 @@ fun StatsScreen(
                     modifier = Modifier.weight(1f),
                     title = "Entrenos",
                     value = totalTrainings.toString(),
-                    subtitle = "Recientes $recentTrainings",
+                    subtitle = "Total registrados",
                     accent = accent,
                     accent2 = accent2
                 )
@@ -159,30 +159,6 @@ fun StatsScreen(
                     }
                 }
 
-                RecentBlock(title = "Último partido (reciente)", accent = accent, accent2 = accent2) {
-                    if (lastRecentMatch == null) {
-                        EmptyLine("No hay partidos recientes.")
-                    } else {
-                        Text(
-                            text = "${lastRecentMatch.competition.label} · vs ${lastRecentMatch.rival}",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = lastRecentMatch.dateText,
-                            color = Color.White.copy(alpha = 0.65f),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        ScorePill(
-                            text = "${lastRecentMatch.goalsFor} - ${lastRecentMatch.goalsAgainst} · ${lastRecentMatch.result.label}",
-                            accent = accent
-                        )
-                    }
-                }
-
                 RecentBlock(title = "Último entreno", accent = accent, accent2 = accent2) {
                     if (lastTraining == null) {
                         EmptyLine("Aún no hay entrenos.")
@@ -202,30 +178,6 @@ fun StatsScreen(
                         Spacer(Modifier.height(8.dp))
                         ScorePill(
                             text = "${lastTraining.durationMin} min",
-                            accent = accent
-                        )
-                    }
-                }
-
-                RecentBlock(title = "Último entreno (reciente)", accent = accent, accent2 = accent2) {
-                    if (lastRecentTraining == null) {
-                        EmptyLine("No hay entrenos recientes.")
-                    } else {
-                        Text(
-                            text = "${lastRecentTraining.type.label} · ${lastRecentTraining.name}",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = lastRecentTraining.dateText,
-                            color = Color.White.copy(alpha = 0.65f),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        ScorePill(
-                            text = "${lastRecentTraining.durationMin} min",
                             accent = accent
                         )
                     }
@@ -339,9 +291,15 @@ private fun Header(onBack: () -> Unit, accent: Color) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
-            Text("←", color = Color.White, style = MaterialTheme.typography.titleLarge)
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Volver",
+                tint = Color.White
+            )
         }
+
         Spacer(Modifier.width(6.dp))
+
         Column(Modifier.weight(1f)) {
             Text(
                 text = "Estadísticas",

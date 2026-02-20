@@ -22,6 +22,7 @@ import com.example.mvp.ui.screens.players.PlayerDetailScreen
 import com.example.mvp.ui.screens.players.Player
 import com.example.mvp.ui.screens.players.PlayerPosition
 import com.example.mvp.ui.screens.players.PlayerStatus
+
 import com.example.mvp.ui.screens.stats.StatsScreen
 
 @Composable
@@ -85,21 +86,23 @@ fun AppNavGraph(
                 onBack = { navController.popBackStack() },
                 onSave = { newTraining ->
                     val nextId = (trainings.maxOfOrNull { it.id } ?: 0) + 1
-                    trainings = listOf(newTraining.copy(id = nextId, isRecent = true)) + trainings
+                    trainings = listOf(newTraining.copy(id = nextId)) + trainings
                     navController.popBackStack()
                 }
             )
         }
 
         composable(Route.TrainingFormWithId.route) { backStackEntry ->
-            val id = backStackEntry.arguments?.getString(Route.TrainingFormWithId.ARG_ID)?.toIntOrNull()
+            val id = backStackEntry.arguments
+                ?.getString(Route.TrainingFormWithId.ARG_ID)
+                ?.toIntOrNull()
             val current = trainings.firstOrNull { it.id == id }
 
             TrainingFormScreen(
                 initial = current,
                 onBack = { navController.popBackStack() },
                 onSave = { edited ->
-                    trainings = trainings.map { if (it.id == edited.id) edited.copy(isRecent = true) else it }
+                    trainings = trainings.map { if (it.id == edited.id) edited else it }
                     navController.popBackStack()
                 }
             )
@@ -122,21 +125,23 @@ fun AppNavGraph(
                 onBack = { navController.popBackStack() },
                 onSave = { newMatch ->
                     val nextId = (matches.maxOfOrNull { it.id } ?: 0) + 1
-                    matches = listOf(newMatch.copy(id = nextId, isRecent = true)) + matches
+                    matches = listOf(newMatch.copy(id = nextId)) + matches
                     navController.popBackStack()
                 }
             )
         }
 
         composable(Route.MatchFormWithId.route) { backStackEntry ->
-            val id = backStackEntry.arguments?.getString(Route.MatchFormWithId.ARG_ID)?.toIntOrNull()
+            val id = backStackEntry.arguments
+                ?.getString(Route.MatchFormWithId.ARG_ID)
+                ?.toIntOrNull()
             val current = matches.firstOrNull { it.id == id }
 
             MatchFormScreen(
                 initial = current,
                 onBack = { navController.popBackStack() },
                 onSave = { edited ->
-                    matches = matches.map { if (it.id == edited.id) edited.copy(isRecent = true) else it }
+                    matches = matches.map { if (it.id == edited.id) edited else it }
                     navController.popBackStack()
                 }
             )
@@ -167,7 +172,9 @@ fun AppNavGraph(
         }
 
         composable(Route.PlayerFormWithId.route) { backStackEntry ->
-            val id = backStackEntry.arguments?.getString(Route.PlayerFormWithId.ARG_ID)?.toIntOrNull()
+            val id = backStackEntry.arguments
+                ?.getString(Route.PlayerFormWithId.ARG_ID)
+                ?.toIntOrNull()
             val current = players.firstOrNull { it.id == id }
 
             PlayerFormScreen(
@@ -181,7 +188,9 @@ fun AppNavGraph(
         }
 
         composable(Route.PlayerDetail.route) { backStackEntry ->
-            val id = backStackEntry.arguments?.getString(Route.PlayerDetail.ARG_ID)?.toIntOrNull()
+            val id = backStackEntry.arguments
+                ?.getString(Route.PlayerDetail.ARG_ID)
+                ?.toIntOrNull()
             val current = players.firstOrNull { it.id == id }
 
             if (current == null) {
@@ -208,11 +217,6 @@ fun AppNavGraph(
     }
 }
 
-/**
- * ✅ Defaults para inicializar el estado en el NavGraph.
- * Si ya tienes defaultPlayers() en PlayersScreen.kt y es visible desde aquí,
- * puedes borrar esto y usar directamente esa función.
- */
 private fun defaultPlayersForNavInit(): List<Player> = listOf(
     Player(1, "Álex Romero", PlayerPosition.POR, 23, 1, 78, PlayerStatus.TITULAR),
     Player(2, "Sergio Vidal", PlayerPosition.DEF, 27, 2, 80, PlayerStatus.TITULAR),

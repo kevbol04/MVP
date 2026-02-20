@@ -6,7 +6,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.*
@@ -108,7 +108,7 @@ fun MatchFormScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { requestBack() }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
                 }
                 Spacer(Modifier.width(4.dp))
                 Text(
@@ -271,8 +271,7 @@ fun MatchFormScreen(
                                     competition = competition,
                                     goalsFor = goalsFor,
                                     goalsAgainst = goalsAgainst,
-                                    result = computedResult,
-                                    isRecent = true
+                                    result = computedResult
                                 )
                             )
                         },
@@ -419,8 +418,7 @@ private fun ScoreBox(
                     focusedTextColor = Color.White,
                     cursorColor = accent
                 ),
-                modifier = Modifier
-                    .fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }

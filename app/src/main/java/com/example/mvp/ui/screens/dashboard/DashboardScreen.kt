@@ -184,7 +184,7 @@ private fun QuickActionsGrid(
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             ActionCard(
                 title = "Entrenamientos",
-                subtitle = "Planifica y crea",
+                subtitle = "Planifica & crea",
                 icon = Icons.Default.FitnessCenter,
                 accent = accent,
                 accent2 = accent2,
@@ -194,7 +194,7 @@ private fun QuickActionsGrid(
 
             ActionCard(
                 title = "Partidos",
-                subtitle = "Resultados y xG",
+                subtitle = "Encuentros & resultados",
                 icon = Icons.Default.SportsSoccer,
                 accent = accent,
                 accent2 = accent2,

@@ -1,7 +1,6 @@
 package com.example.mvp.ui.screens.matches
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -41,8 +40,7 @@ data class Match(
     val competition: Competition,
     val goalsFor: Int,
     val goalsAgainst: Int,
-    val result: MatchResult,
-    val isRecent: Boolean = false
+    val result: MatchResult
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,10 +58,9 @@ fun MatchesScreen(
     val accent2 = Color(0xFF7C4DFF)
 
     var query by remember { mutableStateOf("") }
-    var onlyRecent by remember { mutableStateOf(false) }
     var selectedCompetition by remember { mutableStateOf<Competition?>(null) }
 
-    val filtered = remember(matches, query, onlyRecent, selectedCompetition) {
+    val filtered = remember(matches, query, selectedCompetition) {
         matches.filter { m ->
             val matchesQuery =
                 query.isBlank() ||
@@ -71,10 +68,8 @@ fun MatchesScreen(
                         m.competition.label.contains(query, ignoreCase = true) ||
                         m.result.label.contains(query, ignoreCase = true)
 
-            val matchesRecent = !onlyRecent || m.isRecent
             val matchesCompetition = selectedCompetition == null || m.competition == selectedCompetition
-
-            matchesQuery && matchesRecent && matchesCompetition
+            matchesQuery && matchesCompetition
         }
     }
 
@@ -176,8 +171,6 @@ fun MatchesScreen(
 
                 FilterChipsRow(
                     accent = accent,
-                    onlyRecent = onlyRecent,
-                    onToggleRecent = { onlyRecent = !onlyRecent },
                     selectedCompetition = selectedCompetition,
                     onSelectCompetition = { selectedCompetition = it }
                 )
@@ -203,8 +196,6 @@ fun MatchesScreen(
 @Composable
 private fun FilterChipsRow(
     accent: Color,
-    onlyRecent: Boolean,
-    onToggleRecent: () -> Unit,
     selectedCompetition: Competition?,
     onSelectCompetition: (Competition?) -> Unit
 ) {
@@ -212,19 +203,6 @@ private fun FilterChipsRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        FilterChip(
-            selected = onlyRecent,
-            onClick = onToggleRecent,
-            label = { Text("Recientes") },
-            colors = FilterChipDefaults.filterChipColors(
-                selectedContainerColor = accent.copy(alpha = 0.18f),
-                selectedLabelColor = accent,
-                containerColor = Color.White.copy(alpha = 0.06f),
-                labelColor = Color.White.copy(alpha = 0.78f)
-            ),
-            border = null
-        )
-
         CompetitionChip(
             text = "Liga",
             selected = selectedCompetition == Competition.LIGA,
@@ -370,8 +348,8 @@ private fun MatchScoreCard(
 }
 
 private fun sampleMatches(): List<Match> = listOf(
-    Match(1, "Real Betis", "12/11/2025", Competition.LIGA, 2, 1, MatchResult.VICTORIA, isRecent = true),
-    Match(2, "Villarreal", "09/11/2025", Competition.LIGA, 1, 1, MatchResult.EMPATE, isRecent = true),
-    Match(3, "Valencia", "02/11/2025", Competition.COPA, 0, 2, MatchResult.DERROTA, isRecent = false),
-    Match(4, "Levante", "28/10/2025", Competition.AMISTOSO, 3, 0, MatchResult.VICTORIA, isRecent = false)
+    Match(1, "Real Betis", "12/11/2025", Competition.LIGA, 2, 1, MatchResult.VICTORIA),
+    Match(2, "Villarreal", "09/11/2025", Competition.LIGA, 1, 1, MatchResult.EMPATE),
+    Match(3, "Valencia", "02/11/2025", Competition.COPA, 0, 2, MatchResult.DERROTA),
+    Match(4, "Levante", "28/10/2025", Competition.AMISTOSO, 3, 0, MatchResult.VICTORIA)
 )

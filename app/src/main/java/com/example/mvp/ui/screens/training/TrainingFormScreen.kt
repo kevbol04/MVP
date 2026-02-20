@@ -6,7 +6,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun TrainingFormScreen(
     modifier: Modifier = Modifier,
-    initial: Training? = null, // null = crear | no-null = editar
+    initial: Training? = null,
     onBack: () -> Unit = {},
     onSave: (Training) -> Unit = {}
 ) {
@@ -55,7 +55,6 @@ fun TrainingFormScreen(
             .background(Brush.verticalGradient(listOf(bgTop, bgMid, bgTop)))
             .padding(horizontal = 20.dp)
     ) {
-        // Glow
         Box(
             modifier = Modifier
                 .size(220.dp)
@@ -81,7 +80,11 @@ fun TrainingFormScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { requestBack() }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Volver",
+                        tint = Color.White
+                    )
                 }
                 Spacer(Modifier.width(4.dp))
                 Text(
@@ -137,6 +140,9 @@ fun TrainingFormScreen(
                         accent = accent
                     )
 
+                    val enabled =
+                        name.isNotBlank() && dateText.isNotBlank() && (durationText.toIntOrNull() ?: 0) > 0
+
                     Button(
                         onClick = {
                             val dur = durationText.toIntOrNull() ?: 0
@@ -146,13 +152,11 @@ fun TrainingFormScreen(
                                     name = name.trim(),
                                     dateText = dateText.trim(),
                                     durationMin = dur,
-                                    type = type,
-                                    isRecent = true
+                                    type = type
                                 )
                             )
                         },
-                        enabled = name.isNotBlank() && dateText.isNotBlank() && (durationText.toIntOrNull()
-                            ?: 0) > 0,
+                        enabled = enabled,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),

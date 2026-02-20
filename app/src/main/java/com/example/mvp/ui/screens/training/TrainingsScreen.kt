@@ -35,11 +35,8 @@ data class Training(
     val name: String,
     val dateText: String,
     val durationMin: Int,
-    val type: TrainingType,
-    val isRecent: Boolean = false
+    val type: TrainingType
 )
-
-private enum class TrainingTab { Todos, Recientes }
 
 @Composable
 fun TrainingsScreen(
@@ -55,20 +52,12 @@ fun TrainingsScreen(
     val accent2 = Color(0xFF7C4DFF)
 
     var query by remember { mutableStateOf("") }
-    var tab by remember { mutableStateOf(TrainingTab.Todos) }
 
-    val filtered = remember(trainings, query, tab) {
+    val filtered = remember(trainings, query) {
         trainings.filter { t ->
-            val matchesTab = when (tab) {
-                TrainingTab.Todos -> true
-                TrainingTab.Recientes -> t.isRecent
-            }
-            val matchesQuery =
-                query.isBlank() ||
-                        t.name.contains(query, ignoreCase = true) ||
-                        t.type.label.contains(query, ignoreCase = true)
-
-            matchesTab && matchesQuery
+            query.isBlank() ||
+                    t.name.contains(query, ignoreCase = true) ||
+                    t.type.label.contains(query, ignoreCase = true)
         }
     }
 
@@ -134,30 +123,6 @@ fun TrainingsScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = Color.White.copy(alpha = 0.06f)
-            ) {
-                Row(
-                    modifier = Modifier.padding(6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    SegTab(
-                        text = "Todos",
-                        selected = tab == TrainingTab.Todos,
-                        accent = accent,
-                        onClick = { tab = TrainingTab.Todos }
-                    )
-
-                    SegTab(
-                        text = "Recientes",
-                        selected = tab == TrainingTab.Recientes,
-                        accent = accent,
-                        onClick = { tab = TrainingTab.Recientes }
-                    )
-                }
-            }
-
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -204,36 +169,6 @@ fun TrainingsScreen(
 }
 
 @Composable
-private fun RowScope.SegTab(
-    text: String,
-    selected: Boolean,
-    accent: Color,
-    onClick: () -> Unit
-) {
-    val bg = if (selected) accent.copy(alpha = 0.18f) else Color.Transparent
-    val fg = if (selected) accent else Color.White.copy(alpha = 0.75f)
-
-    Surface(
-        modifier = Modifier
-            .weight(1f)
-            .height(36.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
-        color = bg,
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = text,
-                color = fg,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-    }
-}
-
-@Composable
 private fun TrainingRow(
     training: Training,
     accent: Color,
@@ -272,7 +207,7 @@ private fun TrainingRow(
 }
 
 private fun sampleTrainings(): List<Training> = listOf(
-    Training(1, "Entrenamiento de Pierna", "12/11/2025", 90, TrainingType.FUERZA, isRecent = true),
-    Training(2, "Técnica de pase", "10/11/2025", 60, TrainingType.TECNICA, isRecent = true),
-    Training(3, "Resistencia aeróbica", "05/11/2025", 45, TrainingType.RESISTENCIA, isRecent = false),
+    Training(1, "Entrenamiento de Pierna", "12/11/2025", 90, TrainingType.FUERZA),
+    Training(2, "Técnica de pase", "10/11/2025", 60, TrainingType.TECNICA),
+    Training(3, "Resistencia aeróbica", "05/11/2025", 45, TrainingType.RESISTENCIA),
 )
