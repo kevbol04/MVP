@@ -37,12 +37,60 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.mvp.R
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.Danger
 import com.example.mvp.ui.theme.GlassBase
 
 private enum class AuthMode { Login, Register }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AuthRoute(
+    modifier: Modifier = Modifier,
+    onSuccess: () -> Unit,
+    vm: AuthViewModel = hiltViewModel()
+) {
+    val state by vm.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(state.isAuthenticated) {
+        if (state.isAuthenticated) onSuccess()
+    }
+
+    LaunchedEffect(state.error) {
+        val msg = state.error ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message = msg)
+        vm.clearError()
+    }
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = Color.Transparent
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) {
+
+            AuthScreen(
+                modifier = Modifier.fillMaxSize(),
+                onLogin = { email, password -> vm.login(email, password) },
+                onRegister = { name, email, password -> vm.register(name, email, password) }
+            )
+
+            if (state.loading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.25f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -252,10 +300,13 @@ private fun LoginForm(
             onText = onText
         )
 
+        val canLogin = email.isNotBlank() && password.isNotBlank()
+
         GradientButton(
             text = "Iniciar sesión",
             accent = accent,
             accent2 = accent2,
+            enabled = canLogin,
             onClick = { onLogin(email.trim(), password) }
         )
 
@@ -285,7 +336,7 @@ private fun RegisterForm(
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(
             text = "Crear cuenta",
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.bodyLarge,
             color = onText,
             fontWeight = FontWeight.SemiBold
         )

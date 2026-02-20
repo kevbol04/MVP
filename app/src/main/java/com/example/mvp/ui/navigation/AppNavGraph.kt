@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mvp.ui.screens.dashboard.DashboardScreen
+import com.example.mvp.ui.screens.login.AuthRoute
 import com.example.mvp.ui.screens.login.AuthScreen
 import com.example.mvp.ui.screens.matches.Match
 import com.example.mvp.ui.screens.matches.MatchFormScreen
@@ -41,13 +42,8 @@ fun AppNavGraph(
         // ---------------- LOGIN ----------------
 
         composable(Route.Auth.route) {
-            AuthScreen(
-                onLogin = { _, _ ->
-                    navController.navigate(Route.Dashboard.route) {
-                        popUpTo(Route.Auth.route) { inclusive = true }
-                    }
-                },
-                onRegister = { _, _, _ ->
+            AuthRoute(
+                onSuccess = {
                     navController.navigate(Route.Dashboard.route) {
                         popUpTo(Route.Auth.route) { inclusive = true }
                     }
