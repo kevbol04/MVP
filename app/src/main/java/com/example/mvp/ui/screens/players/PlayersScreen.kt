@@ -147,19 +147,6 @@ fun PlayersScreen(
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
-
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = accent.copy(alpha = 0.16f)
-                    ) {
-                        Text(
-                            text = "TEAM",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            color = accent,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
                 }
 
                 Surface(

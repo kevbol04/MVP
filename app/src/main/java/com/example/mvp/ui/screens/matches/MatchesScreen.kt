@@ -37,7 +37,7 @@ enum class Competition(val label: String) {
 data class Match(
     val id: Int,
     val rival: String,
-    val dateText: String,            // "12/11/2025"
+    val dateText: String,
     val competition: Competition,
     val goalsFor: Int,
     val goalsAgainst: Int,

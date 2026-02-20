@@ -22,6 +22,7 @@ import com.example.mvp.ui.screens.players.PlayerDetailScreen
 import com.example.mvp.ui.screens.players.Player
 import com.example.mvp.ui.screens.players.PlayerPosition
 import com.example.mvp.ui.screens.players.PlayerStatus
+import com.example.mvp.ui.screens.stats.StatsScreen
 
 @Composable
 fun AppNavGraph(
@@ -38,6 +39,8 @@ fun AppNavGraph(
         startDestination = startDestination
     ) {
 
+        // ---------------- LOGIN ----------------
+
         composable(Route.Auth.route) {
             AuthScreen(
                 onLogin = { _, _ ->
@@ -53,13 +56,15 @@ fun AppNavGraph(
             )
         }
 
+        // ---------------- DASHBOARD ----------------
+
         composable(Route.Dashboard.route) {
             DashboardScreen(
                 username = "Kev",
                 onGoTraining = { navController.navigate(Route.Trainings.route) },
                 onGoMatches = { navController.navigate(Route.Matches.route) },
                 onGoPlayers = { navController.navigate(Route.Players.route) },
-                onGoStats = { /* luego */ }
+                onGoStats = { navController.navigate(Route.Stats.route) }
             )
         }
 
@@ -188,6 +193,17 @@ fun AppNavGraph(
                     onEdit = { p -> navController.navigate(Route.PlayerFormWithId.createRoute(p.id)) }
                 )
             }
+        }
+
+        // ---------------- STATS ----------------
+
+        composable(Route.Stats.route) {
+            StatsScreen(
+                players = players,
+                matches = matches,
+                trainings = trainings,
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }
