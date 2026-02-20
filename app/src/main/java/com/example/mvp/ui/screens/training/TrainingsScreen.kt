@@ -1,15 +1,14 @@
 package com.example.mvp.ui.screens.training
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -21,6 +20,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.theme.ButtonTextDark
+import com.example.mvp.ui.theme.GlassBase
 
 enum class TrainingType(val label: String) {
     FUERZA("Fuerza"),
@@ -46,10 +47,11 @@ fun TrainingsScreen(
     onCreateTraining: () -> Unit = {},
     onEditTraining: (Training) -> Unit = {}
 ) {
-    val bgTop = Color(0xFF0B1220)
-    val bgMid = Color(0xFF0E2A3B)
-    val accent = Color(0xFF00E5FF)
-    val accent2 = Color(0xFF7C4DFF)
+    val bgTop = MaterialTheme.colorScheme.background
+    val bgMid = MaterialTheme.colorScheme.surface
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.secondary
+    val onBg = MaterialTheme.colorScheme.onBackground
 
     var query by remember { mutableStateOf("") }
 
@@ -86,18 +88,21 @@ fun TrainingsScreen(
                 .padding(top = 18.dp, bottom = 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Volver",
+                        tint = onBg
+                    )
                 }
                 Spacer(Modifier.width(4.dp))
                 Text(
                     text = "Entrenamientos",
-                    color = Color.White,
+                    color = onBg,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -110,15 +115,15 @@ fun TrainingsScreen(
                 leadingIcon = { Icon(Icons.Default.Search, null) },
                 placeholder = { Text("Buscar") },
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.18f),
+                    unfocusedBorderColor = onBg.copy(alpha = 0.18f),
                     focusedBorderColor = accent,
-                    unfocusedTextColor = Color.White,
-                    focusedTextColor = Color.White,
-                    unfocusedLeadingIconColor = Color.White.copy(alpha = 0.6f),
+                    unfocusedTextColor = onBg,
+                    focusedTextColor = onBg,
+                    unfocusedLeadingIconColor = onBg.copy(alpha = 0.6f),
                     focusedLeadingIconColor = accent,
                     cursorColor = accent,
-                    unfocusedPlaceholderColor = Color.White.copy(alpha = 0.45f),
-                    focusedPlaceholderColor = Color.White.copy(alpha = 0.45f)
+                    unfocusedPlaceholderColor = onBg.copy(alpha = 0.45f),
+                    focusedPlaceholderColor = onBg.copy(alpha = 0.45f)
                 ),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -131,6 +136,7 @@ fun TrainingsScreen(
                     TrainingRow(
                         training = t,
                         accent = accent,
+                        onText = onBg,
                         onEdit = { onEditTraining(t) }
                     )
                 }
@@ -153,11 +159,11 @@ fun TrainingsScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFF061018))
+                        Icon(Icons.Default.Add, contentDescription = null, tint = ButtonTextDark)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Crear Entrenamiento",
-                            color = Color(0xFF061018),
+                            text = "Crear Entrenamiento",
+                            color = ButtonTextDark,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -172,12 +178,13 @@ fun TrainingsScreen(
 private fun TrainingRow(
     training: Training,
     accent: Color,
+    onText: Color,
     onEdit: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
-        color = Color.White.copy(alpha = 0.08f)
+        color = GlassBase.copy(alpha = 0.08f)
     ) {
         Row(
             modifier = Modifier
@@ -188,13 +195,13 @@ private fun TrainingRow(
             Column(Modifier.weight(1f)) {
                 Text(
                     text = training.name,
-                    color = Color.White,
+                    color = onText,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = "${training.dateText} · ${training.durationMin} min · ${training.type.label}",
-                    color = Color.White.copy(alpha = 0.70f),
+                    color = onText.copy(alpha = 0.70f),
                     style = MaterialTheme.typography.bodySmall
                 )
             }

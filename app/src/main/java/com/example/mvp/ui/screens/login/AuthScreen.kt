@@ -26,6 +26,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.mvp.R
+import com.example.mvp.ui.theme.ButtonTextDark
+import com.example.mvp.ui.theme.Danger
+import com.example.mvp.ui.theme.GlassBase
 
 private enum class AuthMode { Login, Register }
 
@@ -38,10 +41,11 @@ fun AuthScreen(
 ) {
     var mode by remember { mutableStateOf(AuthMode.Login) }
 
-    val bgTop = Color(0xFF0B1220)
-    val bgMid = Color(0xFF0E2A3B)
-    val accent = Color(0xFF00E5FF)
-    val accent2 = Color(0xFF7C4DFF)
+    val bgTop = MaterialTheme.colorScheme.background
+    val bgMid = MaterialTheme.colorScheme.surface
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.secondary
+    val onBg = MaterialTheme.colorScheme.onBackground
 
     Box(
         modifier = modifier
@@ -49,7 +53,6 @@ fun AuthScreen(
             .background(Brush.verticalGradient(listOf(bgTop, bgMid, bgTop)))
             .padding(horizontal = 20.dp)
     ) {
-
         Box(
             modifier = Modifier
                 .size(220.dp)
@@ -69,7 +72,6 @@ fun AuthScreen(
                 .padding(top = 40.dp, bottom = 22.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -81,7 +83,7 @@ fun AuthScreen(
                     Surface(
                         modifier = Modifier.size(64.dp),
                         shape = RoundedCornerShape(20.dp),
-                        color = Color.White.copy(alpha = 0.06f)
+                        color = GlassBase.copy(alpha = 0.06f)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Image(
@@ -97,13 +99,13 @@ fun AuthScreen(
                         Text(
                             text = "ProFootball",
                             style = MaterialTheme.typography.titleLarge,
-                            color = Color.White,
+                            color = onBg,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
                             text = "Tu progreso, tus estadísticas, tu mejor versión.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.72f)
+                            color = onBg.copy(alpha = 0.72f)
                         )
                     }
                 }
@@ -112,7 +114,7 @@ fun AuthScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(26.dp),
-                color = Color.White.copy(alpha = 0.08f),
+                color = GlassBase.copy(alpha = 0.08f),
                 tonalElevation = 2.dp
             ) {
                 Box(Modifier.padding(18.dp)) {
@@ -121,6 +123,7 @@ fun AuthScreen(
                             AuthMode.Login -> LoginForm(
                                 accent = accent,
                                 accent2 = accent2,
+                                onText = onBg,
                                 onLogin = onLogin,
                                 onGoRegister = { mode = AuthMode.Register }
                             )
@@ -128,6 +131,7 @@ fun AuthScreen(
                             AuthMode.Register -> RegisterForm(
                                 accent = accent,
                                 accent2 = accent2,
+                                onText = onBg,
                                 onRegister = onRegister,
                                 onGoLogin = { mode = AuthMode.Login }
                             )
@@ -138,7 +142,7 @@ fun AuthScreen(
 
             Text(
                 text = "Entrenamientos · Partidos · Jugadores · Estadísticas",
-                color = Color.White.copy(alpha = 0.55f),
+                color = onBg.copy(alpha = 0.55f),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
@@ -151,6 +155,7 @@ fun AuthScreen(
 private fun LoginForm(
     accent: Color,
     accent2: Color,
+    onText: Color,
     onLogin: (String, String) -> Unit,
     onGoRegister: () -> Unit
 ) {
@@ -162,7 +167,7 @@ private fun LoginForm(
         Text(
             text = "Login",
             style = MaterialTheme.typography.headlineSmall,
-            color = Color.White,
+            color = onText,
             fontWeight = FontWeight.SemiBold
         )
 
@@ -172,7 +177,8 @@ private fun LoginForm(
             label = "Correo electrónico",
             leadingIcon = { Icon(Icons.Default.Email, null) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            accent = accent
+            accent = accent,
+            onText = onText
         )
 
         AuthTextField(
@@ -182,12 +188,16 @@ private fun LoginForm(
             leadingIcon = { Icon(Icons.Default.Lock, null) },
             trailing = {
                 TextButton(onClick = { showPassword = !showPassword }) {
-                    Text(if (showPassword) "Ocultar" else "Ver", color = Color.White.copy(alpha = 0.85f))
+                    Text(
+                        if (showPassword) "Ocultar" else "Ver",
+                        color = onText.copy(alpha = 0.85f)
+                    )
                 }
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-            accent = accent
+            accent = accent,
+            onText = onText
         )
 
         GradientButton(
@@ -198,7 +208,7 @@ private fun LoginForm(
         )
 
         TextButton(onClick = onGoRegister, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text("¿No tienes cuenta? Crear cuenta", color = Color.White.copy(alpha = 0.78f))
+            Text("¿No tienes cuenta? Crear cuenta", color = onText.copy(alpha = 0.78f))
         }
     }
 }
@@ -208,6 +218,7 @@ private fun LoginForm(
 private fun RegisterForm(
     accent: Color,
     accent2: Color,
+    onText: Color,
     onRegister: (String, String, String) -> Unit,
     onGoLogin: () -> Unit
 ) {
@@ -223,7 +234,7 @@ private fun RegisterForm(
         Text(
             text = "Crear cuenta",
             style = MaterialTheme.typography.headlineSmall,
-            color = Color.White,
+            color = onText,
             fontWeight = FontWeight.SemiBold
         )
 
@@ -233,7 +244,8 @@ private fun RegisterForm(
             label = "Nombre y apellidos",
             leadingIcon = { Icon(Icons.Default.Person, null) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-            accent = accent
+            accent = accent,
+            onText = onText
         )
 
         AuthTextField(
@@ -242,7 +254,8 @@ private fun RegisterForm(
             label = "Correo electrónico",
             leadingIcon = { Icon(Icons.Default.Email, null) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            accent = accent
+            accent = accent,
+            onText = onText
         )
 
         AuthTextField(
@@ -252,12 +265,16 @@ private fun RegisterForm(
             leadingIcon = { Icon(Icons.Default.Lock, null) },
             trailing = {
                 TextButton(onClick = { showPassword = !showPassword }) {
-                    Text(if (showPassword) "Ocultar" else "Ver", color = Color.White.copy(alpha = 0.85f))
+                    Text(
+                        if (showPassword) "Ocultar" else "Ver",
+                        color = onText.copy(alpha = 0.85f)
+                    )
                 }
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-            accent = accent
+            accent = accent,
+            onText = onText
         )
 
         AuthTextField(
@@ -268,8 +285,9 @@ private fun RegisterForm(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             accent = accent,
+            onText = onText,
             supportingText = if (confirm.isNotBlank() && !passwordsMatch) {
-                { Text("Las contraseñas no coinciden", color = Color(0xFFFF6B6B)) }
+                { Text("Las contraseñas no coinciden", color = Danger) }
             } else null
         )
 
@@ -282,7 +300,7 @@ private fun RegisterForm(
         )
 
         TextButton(onClick = onGoLogin, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text("¿Ya tienes cuenta? Inicia sesión", color = Color.White.copy(alpha = 0.78f))
+            Text("¿Ya tienes cuenta? Inicia sesión", color = onText.copy(alpha = 0.78f))
         }
     }
 }
@@ -298,7 +316,8 @@ private fun AuthTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     supportingText: @Composable (() -> Unit)? = null,
-    accent: Color
+    accent: Color,
+    onText: Color
 ) {
     OutlinedTextField(
         value = value,
@@ -311,15 +330,15 @@ private fun AuthTextField(
         visualTransformation = visualTransformation,
         supportingText = supportingText,
         colors = OutlinedTextFieldDefaults.colors(
-            unfocusedBorderColor = Color.White.copy(alpha = 0.18f),
+            unfocusedBorderColor = onText.copy(alpha = 0.18f),
             focusedBorderColor = accent,
-            unfocusedLabelColor = Color.White.copy(alpha = 0.65f),
+            unfocusedLabelColor = onText.copy(alpha = 0.65f),
             focusedLabelColor = accent,
-            unfocusedTextColor = Color.White,
-            focusedTextColor = Color.White,
-            unfocusedLeadingIconColor = Color.White.copy(alpha = 0.6f),
+            unfocusedTextColor = onText,
+            focusedTextColor = onText,
+            unfocusedLeadingIconColor = onText.copy(alpha = 0.6f),
             focusedLeadingIconColor = accent,
-            unfocusedTrailingIconColor = Color.White.copy(alpha = 0.7f),
+            unfocusedTrailingIconColor = onText.copy(alpha = 0.7f),
             focusedTrailingIconColor = accent,
             cursorColor = accent
         ),
@@ -361,7 +380,7 @@ private fun GradientButton(
                 text = text,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF061018)
+                color = ButtonTextDark
             )
         }
     }

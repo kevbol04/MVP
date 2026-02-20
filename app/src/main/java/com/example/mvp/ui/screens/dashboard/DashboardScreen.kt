@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.theme.ButtonTextDark
+import com.example.mvp.ui.theme.GlassBase
 
 data class RecentItem(
     val title: String,
@@ -36,11 +38,11 @@ fun DashboardScreen(
     onGoStats: () -> Unit = {},
     onOpenRecent: (RecentItem) -> Unit = {}
 ) {
-
-    val bgTop = Color(0xFF0B1220)
-    val bgMid = Color(0xFF0E2A3B)
-    val accent = Color(0xFF00E5FF)
-    val accent2 = Color(0xFF7C4DFF)
+    val bgTop = MaterialTheme.colorScheme.background
+    val bgMid = MaterialTheme.colorScheme.surface
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.secondary
+    val onBg = MaterialTheme.colorScheme.onBackground
 
     val recents = listOf(
         RecentItem("Entrenamiento de Pierna", "12/11/2025 · 90 min · Fuerza"),
@@ -54,7 +56,6 @@ fun DashboardScreen(
             .background(Brush.verticalGradient(listOf(bgTop, bgMid, bgTop)))
             .padding(horizontal = 20.dp)
     ) {
-
         Box(
             modifier = Modifier
                 .size(220.dp)
@@ -74,15 +75,19 @@ fun DashboardScreen(
                 .padding(top = 28.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
             item {
-                DashboardHeader(username = username, accent = accent)
+                DashboardHeader(
+                    username = username,
+                    accent = accent,
+                    onText = onBg
+                )
             }
 
             item {
                 QuickActionsGrid(
                     accent = accent,
                     accent2 = accent2,
+                    onText = onBg,
                     onGoTraining = onGoTraining,
                     onGoMatches = onGoMatches,
                     onGoPlayers = onGoPlayers,
@@ -91,13 +96,14 @@ fun DashboardScreen(
             }
 
             item {
-                SectionTitle(title = "Recientes")
+                SectionTitle(title = "Recientes", onText = onBg)
             }
 
             items(recents) { recent ->
                 RecentCard(
                     item = recent,
                     accent = accent,
+                    onText = onBg,
                     onClick = { onOpenRecent(recent) }
                 )
             }
@@ -108,27 +114,27 @@ fun DashboardScreen(
 @Composable
 private fun DashboardHeader(
     username: String,
-    accent: Color
+    accent: Color,
+    onText: Color
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
         Column {
             Text(
                 text = "ProFootball",
                 style = MaterialTheme.typography.titleLarge,
-                color = Color.White,
+                color = onText,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
                 text = "Bienvenido, $username",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.80f)
+                color = onText.copy(alpha = 0.80f)
             )
         }
 
         Surface(
             shape = RoundedCornerShape(18.dp),
-            color = Color.White.copy(alpha = 0.06f)
+            color = GlassBase.copy(alpha = 0.06f)
         ) {
             Row(
                 modifier = Modifier
@@ -140,12 +146,12 @@ private fun DashboardHeader(
                 Column {
                     Text(
                         text = "Objetivo de hoy",
-                        color = Color.White.copy(alpha = 0.70f),
+                        color = onText.copy(alpha = 0.70f),
                         style = MaterialTheme.typography.labelMedium
                     )
                     Text(
                         text = "Completar 1 sesión",
-                        color = Color.White,
+                        color = onText,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -172,14 +178,14 @@ private fun DashboardHeader(
 private fun QuickActionsGrid(
     accent: Color,
     accent2: Color,
+    onText: Color,
     onGoTraining: () -> Unit,
     onGoMatches: () -> Unit,
     onGoPlayers: () -> Unit,
     onGoStats: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
-        SectionTitle(title = "Accesos rápidos")
+        SectionTitle(title = "Accesos rápidos", onText = onText)
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             ActionCard(
@@ -188,6 +194,7 @@ private fun QuickActionsGrid(
                 icon = Icons.Default.FitnessCenter,
                 accent = accent,
                 accent2 = accent2,
+                onText = onText,
                 modifier = Modifier.weight(1f),
                 onClick = onGoTraining
             )
@@ -198,6 +205,7 @@ private fun QuickActionsGrid(
                 icon = Icons.Default.SportsSoccer,
                 accent = accent,
                 accent2 = accent2,
+                onText = onText,
                 modifier = Modifier.weight(1f),
                 onClick = onGoMatches
             )
@@ -210,6 +218,7 @@ private fun QuickActionsGrid(
                 icon = Icons.Default.Groups,
                 accent = accent,
                 accent2 = accent2,
+                onText = onText,
                 modifier = Modifier.weight(1f),
                 onClick = onGoPlayers
             )
@@ -220,6 +229,7 @@ private fun QuickActionsGrid(
                 icon = Icons.Default.BarChart,
                 accent = accent,
                 accent2 = accent2,
+                onText = onText,
                 modifier = Modifier.weight(1f),
                 onClick = onGoStats
             )
@@ -234,6 +244,7 @@ private fun ActionCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     accent: Color,
     accent2: Color,
+    onText: Color,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
@@ -242,7 +253,7 @@ private fun ActionCard(
             .height(92.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(22.dp),
-        color = Color.White.copy(alpha = 0.08f)
+        color = GlassBase.copy(alpha = 0.08f)
     ) {
         Row(
             modifier = Modifier
@@ -251,7 +262,6 @@ private fun ActionCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -263,19 +273,19 @@ private fun ActionCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = Color(0xFF061018))
+                Icon(icon, contentDescription = null, tint = ButtonTextDark)
             }
 
             Column {
                 Text(
                     text = title,
-                    color = Color.White,
+                    color = onText,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = subtitle,
-                    color = Color.White.copy(alpha = 0.70f),
+                    color = onText.copy(alpha = 0.70f),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -284,10 +294,10 @@ private fun ActionCard(
 }
 
 @Composable
-private fun SectionTitle(title: String) {
+private fun SectionTitle(title: String, onText: Color) {
     Text(
         text = title,
-        color = Color.White,
+        color = onText,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold
     )
@@ -297,6 +307,7 @@ private fun SectionTitle(title: String) {
 private fun RecentCard(
     item: RecentItem,
     accent: Color,
+    onText: Color,
     onClick: () -> Unit
 ) {
     Surface(
@@ -304,7 +315,7 @@ private fun RecentCard(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(22.dp),
-        color = Color.White.copy(alpha = 0.08f)
+        color = GlassBase.copy(alpha = 0.08f)
     ) {
         Row(
             modifier = Modifier
@@ -313,17 +324,16 @@ private fun RecentCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-
             Column(Modifier.weight(1f)) {
                 Text(
                     text = item.title,
-                    color = Color.White,
+                    color = onText,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = item.subtitle,
-                    color = Color.White.copy(alpha = 0.70f),
+                    color = onText.copy(alpha = 0.70f),
                     style = MaterialTheme.typography.bodySmall
                 )
             }

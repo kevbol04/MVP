@@ -10,15 +10,20 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.*
-import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.theme.ButtonTextDark
+import com.example.mvp.ui.theme.Draw
+import com.example.mvp.ui.theme.GlassBase
+import com.example.mvp.ui.theme.Loss
+import com.example.mvp.ui.theme.Win
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,10 +33,11 @@ fun MatchFormScreen(
     onBack: () -> Unit = {},
     onSave: (Match) -> Unit = {}
 ) {
-    val bgTop = Color(0xFF0B1220)
-    val bgMid = Color(0xFF0E2A3B)
-    val accent = Color(0xFF00E5FF)
-    val accent2 = Color(0xFF7C4DFF)
+    val bgTop = MaterialTheme.colorScheme.background
+    val bgMid = MaterialTheme.colorScheme.surface
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.secondary
+    val onBg = MaterialTheme.colorScheme.onBackground
 
     var rival by remember { mutableStateOf(initial?.rival ?: "") }
     var dateText by remember { mutableStateOf(initial?.dateText ?: "") }
@@ -71,11 +77,13 @@ fun MatchFormScreen(
         if (dirty) showExitDialog = true else onBack()
     }
 
-    val (badgeBg, badgeFg) = when (computedResult) {
-        MatchResult.VICTORIA -> Color(0xFF00E676).copy(alpha = 0.16f) to Color(0xFF00E676)
-        MatchResult.EMPATE -> Color(0xFFFFD54F).copy(alpha = 0.16f) to Color(0xFFFFD54F)
-        MatchResult.DERROTA -> Color(0xFFFF5252).copy(alpha = 0.16f) to Color(0xFFFF5252)
+    val (badgeBase, badgeText) = when (computedResult) {
+        MatchResult.VICTORIA -> Win to Win
+        MatchResult.EMPATE -> Draw to Draw
+        MatchResult.DERROTA -> Loss to Loss
     }
+    val badgeBg = badgeBase.copy(alpha = 0.16f)
+    val badgeFg = badgeText
 
     Box(
         modifier = modifier
@@ -102,18 +110,21 @@ fun MatchFormScreen(
                 .padding(top = 18.dp, bottom = 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { requestBack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Volver",
+                        tint = onBg
+                    )
                 }
                 Spacer(Modifier.width(4.dp))
                 Text(
                     text = "Partidos",
-                    color = Color.White,
+                    color = onBg,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -122,7 +133,7 @@ fun MatchFormScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(22.dp),
-                color = Color.White.copy(alpha = 0.08f)
+                color = GlassBase.copy(alpha = 0.08f)
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
@@ -130,7 +141,7 @@ fun MatchFormScreen(
                 ) {
                     Text(
                         text = if (initial == null) "Añadir partido" else "Editar partido",
-                        color = Color.White,
+                        color = onBg,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -142,13 +153,13 @@ fun MatchFormScreen(
                         label = { Text("Rival") },
                         leadingIcon = { Icon(Icons.Default.SportsSoccer, null) },
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.18f),
+                            unfocusedBorderColor = onBg.copy(alpha = 0.18f),
                             focusedBorderColor = accent,
-                            unfocusedLabelColor = Color.White.copy(alpha = 0.65f),
+                            unfocusedLabelColor = onBg.copy(alpha = 0.65f),
                             focusedLabelColor = accent,
-                            unfocusedTextColor = Color.White,
-                            focusedTextColor = Color.White,
-                            unfocusedLeadingIconColor = Color.White.copy(alpha = 0.6f),
+                            unfocusedTextColor = onBg,
+                            focusedTextColor = onBg,
+                            unfocusedLeadingIconColor = onBg.copy(alpha = 0.6f),
                             focusedLeadingIconColor = accent,
                             cursorColor = accent
                         ),
@@ -162,13 +173,13 @@ fun MatchFormScreen(
                         label = { Text("Fecha (dd/mm/aaaa)") },
                         leadingIcon = { Icon(Icons.Default.CalendarToday, null) },
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.18f),
+                            unfocusedBorderColor = onBg.copy(alpha = 0.18f),
                             focusedBorderColor = accent,
-                            unfocusedLabelColor = Color.White.copy(alpha = 0.65f),
+                            unfocusedLabelColor = onBg.copy(alpha = 0.65f),
                             focusedLabelColor = accent,
-                            unfocusedTextColor = Color.White,
-                            focusedTextColor = Color.White,
-                            unfocusedLeadingIconColor = Color.White.copy(alpha = 0.6f),
+                            unfocusedTextColor = onBg,
+                            focusedTextColor = onBg,
+                            unfocusedLeadingIconColor = onBg.copy(alpha = 0.6f),
                             focusedLeadingIconColor = accent,
                             cursorColor = accent
                         ),
@@ -178,7 +189,8 @@ fun MatchFormScreen(
                     CompetitionDropdown(
                         selected = competition,
                         onSelected = { competition = it },
-                        accent = accent
+                        accent = accent,
+                        onText = onBg
                     )
                 }
             }
@@ -186,7 +198,7 @@ fun MatchFormScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(22.dp),
-                color = Color.White.copy(alpha = 0.08f)
+                color = GlassBase.copy(alpha = 0.08f)
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
@@ -199,7 +211,7 @@ fun MatchFormScreen(
                     ) {
                         Text(
                             text = "Marcador",
-                            color = Color.White,
+                            color = onBg,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -228,6 +240,7 @@ fun MatchFormScreen(
                             value = goalsForText,
                             onValueChange = { goalsForText = it.onlyScoreDigits() },
                             accent = accent,
+                            onText = onBg,
                             modifier = Modifier.weight(1f)
                         )
 
@@ -245,7 +258,7 @@ fun MatchFormScreen(
                         ) {
                             Text(
                                 text = "-",
-                                color = Color(0xFF061018),
+                                color = ButtonTextDark,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Black
                             )
@@ -256,6 +269,7 @@ fun MatchFormScreen(
                             value = goalsAgainstText,
                             onValueChange = { goalsAgainstText = it.onlyScoreDigits() },
                             accent = accent,
+                            onText = onBg,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -297,7 +311,7 @@ fun MatchFormScreen(
                         ) {
                             Text(
                                 text = "Guardar partido",
-                                color = Color(0xFF061018),
+                                color = ButtonTextDark,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -333,7 +347,8 @@ fun MatchFormScreen(
 private fun CompetitionDropdown(
     selected: Competition,
     onSelected: (Competition) -> Unit,
-    accent: Color
+    accent: Color,
+    onText: Color
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -352,12 +367,12 @@ private fun CompetitionDropdown(
                 .fillMaxWidth()
                 .menuAnchor(),
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = Color.White.copy(alpha = 0.18f),
+                unfocusedBorderColor = onText.copy(alpha = 0.18f),
                 focusedBorderColor = accent,
-                unfocusedLabelColor = Color.White.copy(alpha = 0.65f),
+                unfocusedLabelColor = onText.copy(alpha = 0.65f),
                 focusedLabelColor = accent,
-                unfocusedTextColor = Color.White,
-                focusedTextColor = Color.White,
+                unfocusedTextColor = onText,
+                focusedTextColor = onText,
                 cursorColor = accent
             )
         )
@@ -386,12 +401,13 @@ private fun ScoreBox(
     value: String,
     onValueChange: (String) -> Unit,
     accent: Color,
+    onText: Color,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(22.dp),
-        color = Color.White.copy(alpha = 0.06f)
+        color = GlassBase.copy(alpha = 0.06f)
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -400,7 +416,7 @@ private fun ScoreBox(
         ) {
             Text(
                 text = title,
-                color = Color.White.copy(alpha = 0.70f),
+                color = onText.copy(alpha = 0.70f),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -414,8 +430,8 @@ private fun ScoreBox(
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color.Transparent,
                     focusedBorderColor = Color.Transparent,
-                    unfocusedTextColor = Color.White,
-                    focusedTextColor = Color.White,
+                    unfocusedTextColor = onText,
+                    focusedTextColor = onText,
                     cursorColor = accent
                 ),
                 modifier = Modifier.fillMaxWidth()

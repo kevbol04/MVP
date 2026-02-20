@@ -7,8 +7,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -20,6 +20,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.theme.ButtonTextDark
+import com.example.mvp.ui.theme.GlassBase
+import com.example.mvp.ui.theme.Draw
+import com.example.mvp.ui.theme.Loss
+import com.example.mvp.ui.theme.Win
 
 enum class MatchResult(val label: String) {
     VICTORIA("Victoria"),
@@ -52,10 +57,11 @@ fun MatchesScreen(
     onCreateMatch: () -> Unit = {},
     onEditMatch: (Match) -> Unit = {}
 ) {
-    val bgTop = Color(0xFF0B1220)
-    val bgMid = Color(0xFF0E2A3B)
-    val accent = Color(0xFF00E5FF)
-    val accent2 = Color(0xFF7C4DFF)
+    val bgTop = MaterialTheme.colorScheme.background
+    val bgMid = MaterialTheme.colorScheme.surface
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.secondary
+    val onBg = MaterialTheme.colorScheme.onBackground
 
     var query by remember { mutableStateOf("") }
     var selectedCompetition by remember { mutableStateOf<Competition?>(null) }
@@ -87,13 +93,12 @@ fun MatchesScreen(
                         .background(Brush.horizontalGradient(listOf(accent, accent2))),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Añadir", tint = Color(0xFF061018))
+                    Icon(Icons.Default.Add, contentDescription = "Añadir", tint = ButtonTextDark)
                 }
             }
         },
         containerColor = Color.Transparent
     ) { innerPadding ->
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -120,25 +125,28 @@ fun MatchesScreen(
                     .padding(top = 18.dp, bottom = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = onBg
+                        )
                     }
                     Spacer(Modifier.width(4.dp))
                     Column {
                         Text(
                             text = "Partidos",
-                            color = Color.White,
+                            color = onBg,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
                             text = "Resultados y registro de encuentros",
-                            color = Color.White.copy(alpha = 0.70f),
+                            color = onBg.copy(alpha = 0.70f),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -146,7 +154,7 @@ fun MatchesScreen(
 
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = Color.White.copy(alpha = 0.07f)
+                    color = GlassBase.copy(alpha = 0.07f)
                 ) {
                     OutlinedTextField(
                         value = query,
@@ -157,13 +165,13 @@ fun MatchesScreen(
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = Color.Transparent,
                             focusedBorderColor = Color.Transparent,
-                            unfocusedTextColor = Color.White,
-                            focusedTextColor = Color.White,
-                            unfocusedLeadingIconColor = Color.White.copy(alpha = 0.6f),
+                            unfocusedTextColor = onBg,
+                            focusedTextColor = onBg,
+                            unfocusedLeadingIconColor = onBg.copy(alpha = 0.6f),
                             focusedLeadingIconColor = accent,
                             cursorColor = accent,
-                            unfocusedPlaceholderColor = Color.White.copy(alpha = 0.45f),
-                            focusedPlaceholderColor = Color.White.copy(alpha = 0.45f)
+                            unfocusedPlaceholderColor = onBg.copy(alpha = 0.45f),
+                            focusedPlaceholderColor = onBg.copy(alpha = 0.45f)
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -171,6 +179,7 @@ fun MatchesScreen(
 
                 FilterChipsRow(
                     accent = accent,
+                    onText = onBg,
                     selectedCompetition = selectedCompetition,
                     onSelectCompetition = { selectedCompetition = it }
                 )
@@ -184,6 +193,7 @@ fun MatchesScreen(
                             match = match,
                             accent = accent,
                             accent2 = accent2,
+                            onText = onBg,
                             onEdit = { onEditMatch(match) }
                         )
                     }
@@ -196,6 +206,7 @@ fun MatchesScreen(
 @Composable
 private fun FilterChipsRow(
     accent: Color,
+    onText: Color,
     selectedCompetition: Competition?,
     onSelectCompetition: (Competition?) -> Unit
 ) {
@@ -207,6 +218,7 @@ private fun FilterChipsRow(
             text = "Liga",
             selected = selectedCompetition == Competition.LIGA,
             accent = accent,
+            onText = onText,
             onClick = { onSelectCompetition(if (selectedCompetition == Competition.LIGA) null else Competition.LIGA) }
         )
 
@@ -214,6 +226,7 @@ private fun FilterChipsRow(
             text = "Copa",
             selected = selectedCompetition == Competition.COPA,
             accent = accent,
+            onText = onText,
             onClick = { onSelectCompetition(if (selectedCompetition == Competition.COPA) null else Competition.COPA) }
         )
 
@@ -221,6 +234,7 @@ private fun FilterChipsRow(
             text = "Amist.",
             selected = selectedCompetition == Competition.AMISTOSO,
             accent = accent,
+            onText = onText,
             onClick = { onSelectCompetition(if (selectedCompetition == Competition.AMISTOSO) null else Competition.AMISTOSO) }
         )
     }
@@ -231,6 +245,7 @@ private fun CompetitionChip(
     text: String,
     selected: Boolean,
     accent: Color,
+    onText: Color,
     onClick: () -> Unit
 ) {
     FilterChip(
@@ -240,8 +255,8 @@ private fun CompetitionChip(
         colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = accent.copy(alpha = 0.18f),
             selectedLabelColor = accent,
-            containerColor = Color.White.copy(alpha = 0.06f),
-            labelColor = Color.White.copy(alpha = 0.78f)
+            containerColor = GlassBase.copy(alpha = 0.06f),
+            labelColor = onText.copy(alpha = 0.78f)
         ),
         border = null
     )
@@ -252,18 +267,21 @@ private fun MatchScoreCard(
     match: Match,
     accent: Color,
     accent2: Color,
+    onText: Color,
     onEdit: () -> Unit
 ) {
-    val (badgeBg, badgeFg) = when (match.result) {
-        MatchResult.VICTORIA -> Color(0xFF00E676).copy(alpha = 0.16f) to Color(0xFF00E676)
-        MatchResult.EMPATE -> Color(0xFFFFD54F).copy(alpha = 0.16f) to Color(0xFFFFD54F)
-        MatchResult.DERROTA -> Color(0xFFFF5252).copy(alpha = 0.16f) to Color(0xFFFF5252)
+    val (badgeBase, badgeText) = when (match.result) {
+        MatchResult.VICTORIA -> Win to Win
+        MatchResult.EMPATE -> Draw to Draw
+        MatchResult.DERROTA -> Loss to Loss
     }
+    val badgeBg = badgeBase.copy(alpha = 0.16f)
+    val badgeFg = badgeText
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        color = Color.White.copy(alpha = 0.08f),
+        color = GlassBase.copy(alpha = 0.08f),
         tonalElevation = 1.dp
     ) {
         Column(
@@ -277,13 +295,13 @@ private fun MatchScoreCard(
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = "vs ${match.rival}",
-                        color = Color.White,
+                        color = onText,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
                         text = "${match.dateText} · ${match.competition.label}",
-                        color = Color.White.copy(alpha = 0.70f),
+                        color = onText.copy(alpha = 0.70f),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -294,7 +312,7 @@ private fun MatchScoreCard(
 
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = Color.White.copy(alpha = 0.06f)
+                color = GlassBase.copy(alpha = 0.06f)
             ) {
                 Row(
                     modifier = Modifier
@@ -329,7 +347,7 @@ private fun MatchScoreCard(
                     ) {
                         Text(
                             text = "${match.goalsFor}  -  ${match.goalsAgainst}",
-                            color = Color(0xFF061018),
+                            color = ButtonTextDark,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Black
                         )
@@ -337,7 +355,7 @@ private fun MatchScoreCard(
 
                     Text(
                         text = "90’",
-                        color = Color.White.copy(alpha = 0.55f),
+                        color = onText.copy(alpha = 0.55f),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold
                     )

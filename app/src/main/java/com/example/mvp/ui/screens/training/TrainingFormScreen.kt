@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.theme.GlassBase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,9 +27,10 @@ fun TrainingFormScreen(
     onBack: () -> Unit = {},
     onSave: (Training) -> Unit = {}
 ) {
-    val bgTop = Color(0xFF0B1220)
-    val bgMid = Color(0xFF0E2A3B)
-    val accent = Color(0xFF00E5FF)
+    val bgTop = MaterialTheme.colorScheme.background
+    val bgMid = MaterialTheme.colorScheme.surface
+    val accent = MaterialTheme.colorScheme.primary
+    val onBg = MaterialTheme.colorScheme.onBackground
 
     var name by remember { mutableStateOf(initial?.name ?: "") }
     var dateText by remember { mutableStateOf(initial?.dateText ?: "") }
@@ -74,7 +76,6 @@ fun TrainingFormScreen(
                 .padding(top = 18.dp, bottom = 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -83,13 +84,13 @@ fun TrainingFormScreen(
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Volver",
-                        tint = Color.White
+                        tint = onBg
                     )
                 }
                 Spacer(Modifier.width(4.dp))
                 Text(
                     text = "Entrenamientos",
-                    color = Color.White,
+                    color = onBg,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -98,7 +99,7 @@ fun TrainingFormScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(22.dp),
-                color = Color.White.copy(alpha = 0.08f)
+                color = GlassBase.copy(alpha = 0.08f)
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
@@ -106,7 +107,7 @@ fun TrainingFormScreen(
                 ) {
                     Text(
                         text = if (initial == null) "Crear entrenamiento" else "Editar entrenamiento",
-                        color = Color.White,
+                        color = onBg,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -115,7 +116,8 @@ fun TrainingFormScreen(
                         value = name,
                         onValueChange = { name = it },
                         label = "Nombre del entrenamiento",
-                        accent = accent
+                        accent = accent,
+                        onText = onBg
                     )
 
                     SportField(
@@ -123,7 +125,8 @@ fun TrainingFormScreen(
                         onValueChange = { dateText = it },
                         label = "Fecha (dd/mm/aaaa)",
                         accent = accent,
-                        trailing = { Icon(Icons.Default.Today, null, tint = Color.White.copy(alpha = 0.65f)) }
+                        onText = onBg,
+                        trailing = { Icon(Icons.Default.Today, null, tint = onBg.copy(alpha = 0.65f)) }
                     )
 
                     SportField(
@@ -131,13 +134,15 @@ fun TrainingFormScreen(
                         onValueChange = { durationText = it.filter(Char::isDigit).take(3) },
                         label = "Duración (en min)",
                         accent = accent,
+                        onText = onBg,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
 
                     TrainingTypeDropdown(
                         selected = type,
                         onSelected = { type = it },
-                        accent = accent
+                        accent = accent,
+                        onText = onBg
                     )
 
                     val enabled =
@@ -164,7 +169,7 @@ fun TrainingFormScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = accent.copy(alpha = 0.22f))
                     ) {
                         Text(
-                            "Guardar",
+                            text = "Guardar",
                             color = accent,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
@@ -202,6 +207,7 @@ private fun SportField(
     onValueChange: (String) -> Unit,
     label: String,
     accent: Color,
+    onText: Color,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     trailing: @Composable (() -> Unit)? = null
 ) {
@@ -213,12 +219,12 @@ private fun SportField(
         trailingIcon = trailing,
         keyboardOptions = keyboardOptions,
         colors = OutlinedTextFieldDefaults.colors(
-            unfocusedBorderColor = Color.White.copy(alpha = 0.18f),
+            unfocusedBorderColor = onText.copy(alpha = 0.18f),
             focusedBorderColor = accent,
-            unfocusedLabelColor = Color.White.copy(alpha = 0.65f),
+            unfocusedLabelColor = onText.copy(alpha = 0.65f),
             focusedLabelColor = accent,
-            unfocusedTextColor = Color.White,
-            focusedTextColor = Color.White,
+            unfocusedTextColor = onText,
+            focusedTextColor = onText,
             cursorColor = accent
         ),
         modifier = Modifier.fillMaxWidth()
@@ -230,7 +236,8 @@ private fun SportField(
 private fun TrainingTypeDropdown(
     selected: TrainingType,
     onSelected: (TrainingType) -> Unit,
-    accent: Color
+    accent: Color,
+    onText: Color
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -249,12 +256,12 @@ private fun TrainingTypeDropdown(
                 .fillMaxWidth()
                 .menuAnchor(),
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = Color.White.copy(alpha = 0.18f),
+                unfocusedBorderColor = onText.copy(alpha = 0.18f),
                 focusedBorderColor = accent,
-                unfocusedLabelColor = Color.White.copy(alpha = 0.65f),
+                unfocusedLabelColor = onText.copy(alpha = 0.65f),
                 focusedLabelColor = accent,
-                unfocusedTextColor = Color.White,
-                focusedTextColor = Color.White,
+                unfocusedTextColor = onText,
+                focusedTextColor = onText,
                 cursorColor = accent
             )
         )

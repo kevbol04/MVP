@@ -2,10 +2,21 @@ package com.example.mvp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// --------- Brand / Sport Neon ---------
+val BgTop = Color(0xFF0B1220)
+val BgMid = Color(0xFF0E2A3B)
+val Accent = Color(0xFF00E5FF)
+val Accent2 = Color(0xFF7C4DFF)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val TextOnDark = Color(0xFFFFFFFF)
+val ButtonTextDark = Color(0xFF061018)
+
+// --------- Glass / overlays ---------
+val GlassBase = Color(0xFFFFFFFF)
+val OutlineOnDark = Color(0xFFFFFFFF)
+
+// --------- Semantic ---------
+val Danger = Color(0xFFFF6B6B)
+val Win = Color(0xFF00E676)
+val Draw = Color(0xFFFFD54F)
+val Loss = Color(0xFFFF5252)

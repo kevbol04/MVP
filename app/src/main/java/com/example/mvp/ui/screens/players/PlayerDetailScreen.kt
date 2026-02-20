@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,6 +16,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.theme.ButtonTextDark
+import com.example.mvp.ui.theme.GlassBase
+import com.example.mvp.ui.theme.Loss
+import com.example.mvp.ui.theme.Win
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,15 +29,16 @@ fun PlayerDetailScreen(
     onBack: () -> Unit = {},
     onEdit: (Player) -> Unit = {}
 ) {
-    val bgTop = Color(0xFF0B1220)
-    val bgMid = Color(0xFF0E2A3B)
-    val accent = Color(0xFF00E5FF)
-    val accent2 = Color(0xFF7C4DFF)
+    val bgTop = MaterialTheme.colorScheme.background
+    val bgMid = MaterialTheme.colorScheme.surface
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.secondary
+    val onBg = MaterialTheme.colorScheme.onBackground
 
     val (statusBg, statusFg) = when (player.status) {
-        PlayerStatus.TITULAR -> Color(0xFF00E676).copy(alpha = 0.16f) to Color(0xFF00E676)
+        PlayerStatus.TITULAR -> Win.copy(alpha = 0.16f) to Win
         PlayerStatus.SUPLENTE -> accent.copy(alpha = 0.16f) to accent
-        PlayerStatus.LESIONADO -> Color(0xFFFF5252).copy(alpha = 0.16f) to Color(0xFFFF5252)
+        PlayerStatus.LESIONADO -> Loss.copy(alpha = 0.16f) to Loss
     }
 
     Box(
@@ -66,12 +71,16 @@ fun PlayerDetailScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Volver",
+                        tint = onBg
+                    )
                 }
                 Spacer(Modifier.width(4.dp))
                 Text(
                     text = "Detalle jugador",
-                    color = Color.White,
+                    color = onBg,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -80,7 +89,7 @@ fun PlayerDetailScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
-                color = Color.White.copy(alpha = 0.08f)
+                color = GlassBase.copy(alpha = 0.08f)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -103,7 +112,7 @@ fun PlayerDetailScreen(
                         ) {
                             Text(
                                 text = initials(player.name),
-                                color = Color(0xFF061018),
+                                color = ButtonTextDark,
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Black
                             )
@@ -114,13 +123,13 @@ fun PlayerDetailScreen(
                         Column(Modifier.weight(1f)) {
                             Text(
                                 text = player.name,
-                                color = Color.White,
+                                color = onBg,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
                                 text = "${player.position.label} · #${player.number}",
-                                color = Color.White.copy(alpha = 0.70f),
+                                color = onBg.copy(alpha = 0.70f),
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -166,15 +175,40 @@ fun PlayerDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        StatCard(title = "Edad", value = "${player.age}", accent = accent, modifier = Modifier.weight(1f))
-                        StatCard(title = "Posición", value = player.position.short, accent = accent, modifier = Modifier.weight(1f))
+                        StatCard(
+                            title = "Edad",
+                            value = "${player.age}",
+                            accent = accent,
+                            onText = onBg,
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatCard(
+                            title = "Posición",
+                            value = player.position.short,
+                            accent = accent,
+                            onText = onBg,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        StatCard(title = "Dorsal", value = "#${player.number}", accent = accent, modifier = Modifier.weight(1f))
-                        StatCard(title = "Nivel", value = levelLabel(player.rating), accent = accent, modifier = Modifier.weight(1f))
+                        StatCard(
+                            title = "Dorsal",
+                            value = "#${player.number}",
+                            accent = accent,
+                            onText = onBg,
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatCard(
+                            title = "Nivel",
+                            value = levelLabel(player.rating),
+                            accent = accent,
+                            onText = onBg,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
@@ -182,7 +216,7 @@ fun PlayerDetailScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                color = Color.White.copy(alpha = 0.06f)
+                color = GlassBase.copy(alpha = 0.06f)
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
@@ -190,13 +224,13 @@ fun PlayerDetailScreen(
                 ) {
                     Text(
                         text = "Resumen",
-                        color = Color.White,
+                        color = onBg,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
                         text = "Aquí podrás añadir estadísticas avanzadas (goles, asistencias, minutos, lesiones, etc.).",
-                        color = Color.White.copy(alpha = 0.70f),
+                        color = onBg.copy(alpha = 0.70f),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -210,12 +244,13 @@ private fun StatCard(
     title: String,
     value: String,
     accent: Color,
+    onText: Color,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(18.dp),
-        color = Color.White.copy(alpha = 0.08f)
+        color = GlassBase.copy(alpha = 0.08f)
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -223,7 +258,7 @@ private fun StatCard(
         ) {
             Text(
                 text = title,
-                color = Color.White.copy(alpha = 0.60f),
+                color = onText.copy(alpha = 0.60f),
                 style = MaterialTheme.typography.labelSmall
             )
             Text(
@@ -246,8 +281,9 @@ private fun initials(name: String): String {
 }
 
 private fun levelLabel(rating: Int): String = when {
-    rating >= 88 -> "Élite"
-    rating >= 80 -> "Pro"
-    rating >= 72 -> "Medio"
+    rating >= 91 -> "Clase Mundial"
+    rating >= 85 -> "Élite"
+    rating >= 78 -> "Pro"
+    rating >= 70 -> "Medio"
     else -> "Base"
 }

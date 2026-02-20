@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.theme.ButtonTextDark
+import com.example.mvp.ui.theme.GlassBase
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,10 +29,11 @@ fun PlayerFormScreen(
     onBack: () -> Unit = {},
     onSave: (Player) -> Unit = {}
 ) {
-    val bgTop = Color(0xFF0B1220)
-    val bgMid = Color(0xFF0E2A3B)
-    val accent = Color(0xFF00E5FF)
-    val accent2 = Color(0xFF7C4DFF)
+    val bgTop = MaterialTheme.colorScheme.background
+    val bgMid = MaterialTheme.colorScheme.surface
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.secondary
+    val onBg = MaterialTheme.colorScheme.onBackground
 
     var name by remember { mutableStateOf(initial?.name ?: "") }
     var ageText by remember { mutableStateOf(initial?.age?.toString() ?: "18") }
@@ -69,7 +72,6 @@ fun PlayerFormScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = Color.Transparent
     ) { innerPadding ->
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -96,18 +98,21 @@ fun PlayerFormScreen(
                     .padding(top = 16.dp, bottom = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = { requestBack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = onBg
+                        )
                     }
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = "Jugador",
-                        color = Color.White,
+                        color = onBg,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -116,7 +121,7 @@ fun PlayerFormScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(26.dp),
-                    color = Color.White.copy(alpha = 0.08f)
+                    color = GlassBase.copy(alpha = 0.08f)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -140,7 +145,7 @@ fun PlayerFormScreen(
                             ) {
                                 Text(
                                     text = initials(name),
-                                    color = Color(0xFF061018),
+                                    color = ButtonTextDark,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Black
                                 )
@@ -149,12 +154,12 @@ fun PlayerFormScreen(
                             Column(Modifier.weight(1f)) {
                                 Text(
                                     text = title,
-                                    color = Color.White.copy(alpha = 0.75f),
+                                    color = onBg.copy(alpha = 0.75f),
                                     style = MaterialTheme.typography.bodySmall
                                 )
                                 Text(
                                     text = if (name.isBlank()) "Nombre del jugador" else name,
-                                    color = Color.White,
+                                    color = onBg,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -180,12 +185,12 @@ fun PlayerFormScreen(
                             singleLine = true,
                             label = { Text("Nombre y apellidos") },
                             colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedBorderColor = Color.White.copy(alpha = 0.18f),
+                                unfocusedBorderColor = onBg.copy(alpha = 0.18f),
                                 focusedBorderColor = accent,
-                                unfocusedLabelColor = Color.White.copy(alpha = 0.65f),
+                                unfocusedLabelColor = onBg.copy(alpha = 0.65f),
                                 focusedLabelColor = accent,
-                                unfocusedTextColor = Color.White,
-                                focusedTextColor = Color.White,
+                                unfocusedTextColor = onBg,
+                                focusedTextColor = onBg,
                                 cursorColor = accent
                             ),
                             modifier = Modifier.fillMaxWidth()
@@ -202,12 +207,12 @@ fun PlayerFormScreen(
                                 singleLine = true,
                                 label = { Text("Edad") },
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    unfocusedBorderColor = Color.White.copy(alpha = 0.18f),
+                                    unfocusedBorderColor = onBg.copy(alpha = 0.18f),
                                     focusedBorderColor = accent,
-                                    unfocusedLabelColor = Color.White.copy(alpha = 0.65f),
+                                    unfocusedLabelColor = onBg.copy(alpha = 0.65f),
                                     focusedLabelColor = accent,
-                                    unfocusedTextColor = Color.White,
-                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = onBg,
+                                    focusedTextColor = onBg,
                                     cursorColor = accent
                                 ),
                                 modifier = Modifier.weight(1f)
@@ -216,7 +221,7 @@ fun PlayerFormScreen(
                             Surface(
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(18.dp),
-                                color = Color.White.copy(alpha = 0.06f)
+                                color = GlassBase.copy(alpha = 0.06f)
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -227,26 +232,22 @@ fun PlayerFormScreen(
                                 ) {
                                     Text(
                                         text = "Dorsal",
-                                        color = Color.White.copy(alpha = 0.70f),
+                                        color = onBg.copy(alpha = 0.70f),
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        IconButton(
-                                            onClick = { number = (number - 1).coerceAtLeast(1) }
-                                        ) {
-                                            Icon(Icons.Default.Remove, null, tint = Color.White)
+                                        IconButton(onClick = { number = (number - 1).coerceAtLeast(1) }) {
+                                            Icon(Icons.Default.Remove, null, tint = onBg)
                                         }
                                         Text(
                                             text = "#$number",
-                                            color = Color.White,
+                                            color = onBg,
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.SemiBold
                                         )
-                                        IconButton(
-                                            onClick = { number = (number + 1).coerceAtMost(99) }
-                                        ) {
-                                            Icon(Icons.Default.Add, null, tint = Color.White)
+                                        IconButton(onClick = { number = (number + 1).coerceAtMost(99) }) {
+                                            Icon(Icons.Default.Add, null, tint = onBg)
                                         }
                                     }
                                 }
@@ -255,7 +256,7 @@ fun PlayerFormScreen(
 
                         Text(
                             text = "Posición",
-                            color = Color.White.copy(alpha = 0.70f),
+                            color = onBg.copy(alpha = 0.70f),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -272,8 +273,8 @@ fun PlayerFormScreen(
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = accent.copy(alpha = 0.18f),
                                         selectedLabelColor = accent,
-                                        containerColor = Color.White.copy(alpha = 0.06f),
-                                        labelColor = Color.White.copy(alpha = 0.78f)
+                                        containerColor = GlassBase.copy(alpha = 0.06f),
+                                        labelColor = onBg.copy(alpha = 0.78f)
                                     ),
                                     border = null
                                 )
@@ -282,7 +283,7 @@ fun PlayerFormScreen(
 
                         Surface(
                             shape = RoundedCornerShape(20.dp),
-                            color = Color.White.copy(alpha = 0.06f)
+                            color = GlassBase.copy(alpha = 0.06f)
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp),
@@ -295,7 +296,7 @@ fun PlayerFormScreen(
                                 ) {
                                     Text(
                                         text = "Valoración",
-                                        color = Color.White.copy(alpha = 0.70f),
+                                        color = onBg.copy(alpha = 0.70f),
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -321,7 +322,7 @@ fun PlayerFormScreen(
 
                         Text(
                             text = "Estado",
-                            color = Color.White.copy(alpha = 0.70f),
+                            color = onBg.copy(alpha = 0.70f),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -375,7 +376,7 @@ fun PlayerFormScreen(
                             ) {
                                 Text(
                                     text = if (initial == null) "Crear jugador" else "Guardar cambios",
-                                    color = Color(0xFF061018),
+                                    color = ButtonTextDark,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )

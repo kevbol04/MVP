@@ -23,6 +23,10 @@ import com.example.mvp.ui.screens.matches.MatchResult
 import com.example.mvp.ui.screens.players.Player
 import com.example.mvp.ui.screens.players.PlayerStatus
 import com.example.mvp.ui.screens.training.Training
+import com.example.mvp.ui.theme.ButtonTextDark
+import com.example.mvp.ui.theme.GlassBase
+import com.example.mvp.ui.theme.Loss
+import com.example.mvp.ui.theme.Win
 
 @Composable
 fun StatsScreen(
@@ -31,10 +35,11 @@ fun StatsScreen(
     trainings: List<Training>,
     onBack: () -> Unit
 ) {
-    val bgTop = Color(0xFF0B1220)
-    val bgMid = Color(0xFF0E2A3B)
-    val accent = Color(0xFF00E5FF)
-    val accent2 = Color(0xFF7C4DFF)
+    val bgTop = MaterialTheme.colorScheme.background
+    val bgMid = MaterialTheme.colorScheme.surface
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.secondary
+    val onBg = MaterialTheme.colorScheme.onBackground
 
     val scroll = rememberScrollState()
 
@@ -94,7 +99,7 @@ fun StatsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Header(onBack = onBack, accent = accent)
+            Header(onBack = onBack, onText = onBg)
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatKpiCard(
@@ -103,7 +108,8 @@ fun StatsScreen(
                     value = totalPlayers.toString(),
                     subtitle = "Titulares $titulares",
                     accent = accent,
-                    accent2 = accent2
+                    accent2 = accent2,
+                    onText = onBg
                 )
                 StatKpiCard(
                     modifier = Modifier.weight(1f),
@@ -111,7 +117,8 @@ fun StatsScreen(
                     value = totalMatches.toString(),
                     subtitle = "Total registrados",
                     accent = accent,
-                    accent2 = accent2
+                    accent2 = accent2,
+                    onText = onBg
                 )
             }
 
@@ -122,7 +129,8 @@ fun StatsScreen(
                     value = totalTrainings.toString(),
                     subtitle = "Total registrados",
                     accent = accent,
-                    accent2 = accent2
+                    accent2 = accent2,
+                    onText = onBg
                 )
                 StatKpiCard(
                     modifier = Modifier.weight(1f),
@@ -130,25 +138,26 @@ fun StatsScreen(
                     value = if (totalPlayers == 0) "--" else String.format("%.1f", avgRating),
                     subtitle = "Plantilla",
                     accent = accent,
-                    accent2 = accent2
+                    accent2 = accent2,
+                    onText = onBg
                 )
             }
 
-            GlassCard(title = "Últimos registros") {
-                RecentBlock(title = "Último partido", accent = accent, accent2 = accent2) {
+            GlassCard(title = "Últimos registros", onText = onBg) {
+                RecentBlock(title = "Último partido", accent = accent, accent2 = accent2, onText = onBg) {
                     if (lastMatch == null) {
-                        EmptyLine("Aún no hay partidos.")
+                        EmptyLine("Aún no hay partidos.", onText = onBg)
                     } else {
                         Text(
                             text = "${lastMatch.competition.label} · vs ${lastMatch.rival}",
-                            color = Color.White,
+                            color = onBg,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
                             text = lastMatch.dateText,
-                            color = Color.White.copy(alpha = 0.65f),
+                            color = onBg.copy(alpha = 0.65f),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(Modifier.height(8.dp))
@@ -159,20 +168,20 @@ fun StatsScreen(
                     }
                 }
 
-                RecentBlock(title = "Último entreno", accent = accent, accent2 = accent2) {
+                RecentBlock(title = "Último entreno", accent = accent, accent2 = accent2, onText = onBg) {
                     if (lastTraining == null) {
-                        EmptyLine("Aún no hay entrenos.")
+                        EmptyLine("Aún no hay entrenos.", onText = onBg)
                     } else {
                         Text(
                             text = "${lastTraining.type.label} · ${lastTraining.name}",
-                            color = Color.White,
+                            color = onBg,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
                             text = lastTraining.dateText,
-                            color = Color.White.copy(alpha = 0.65f),
+                            color = onBg.copy(alpha = 0.65f),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(Modifier.height(8.dp))
@@ -184,51 +193,53 @@ fun StatsScreen(
                 }
             }
 
-            GlassCard(title = "Estado de la plantilla") {
-                StatBarRow("Titulares", titulares, totalPlayers, Color(0xFF00E676))
-                StatBarRow("Suplentes", suplentes, totalPlayers, accent)
-                StatBarRow("Lesionados", lesionados, totalPlayers, Color(0xFFFF5252))
+            GlassCard(title = "Estado de la plantilla", onText = onBg) {
+                StatBarRow("Titulares", titulares, totalPlayers, Win, onText = onBg)
+                StatBarRow("Suplentes", suplentes, totalPlayers, accent, onText = onBg)
+                StatBarRow("Lesionados", lesionados, totalPlayers, Loss, onText = onBg)
             }
 
-            GlassCard(title = "Resultados") {
+            GlassCard(title = "Resultados", onText = onBg) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MiniPill(modifier = Modifier.weight(1f), title = "Victorias", value = wins, color = Color(0xFF00E676))
-                    MiniPill(modifier = Modifier.weight(1f), title = "Empates", value = draws, color = accent)
-                    MiniPill(modifier = Modifier.weight(1f), title = "Derrotas", value = losses, color = Color(0xFFFF5252))
+                    MiniPill(modifier = Modifier.weight(1f), title = "Victorias", value = wins, color = Win, onText = onBg)
+                    MiniPill(modifier = Modifier.weight(1f), title = "Empates", value = draws, color = accent, onText = onBg)
+                    MiniPill(modifier = Modifier.weight(1f), title = "Derrotas", value = losses, color = Loss, onText = onBg)
                 }
 
                 Spacer(Modifier.height(10.dp))
                 Text(
                     text = "Por competición",
-                    color = Color.White,
+                    color = onBg,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MiniPill(modifier = Modifier.weight(1f), title = "Liga", value = ligaMatches, color = Color(0xFF00E676))
-                    MiniPill(modifier = Modifier.weight(1f), title = "Copa", value = copaMatches, color = accent)
-                    MiniPill(modifier = Modifier.weight(1f), title = "Amist.", value = amistosos, color = accent2)
+                    MiniPill(modifier = Modifier.weight(1f), title = "Liga", value = ligaMatches, color = Win, onText = onBg)
+                    MiniPill(modifier = Modifier.weight(1f), title = "Copa", value = copaMatches, color = accent, onText = onBg)
+                    MiniPill(modifier = Modifier.weight(1f), title = "Amist.", value = amistosos, color = accent2, onText = onBg)
                 }
 
                 Spacer(Modifier.height(10.dp))
-                StatBarRow("Goles a favor", goalsFor, (goalsFor + goalsAgainst).coerceAtLeast(1), Color(0xFF00E676))
-                StatBarRow("Goles en contra", goalsAgainst, (goalsFor + goalsAgainst).coerceAtLeast(1), Color(0xFFFF5252))
+                val totalGoals = (goalsFor + goalsAgainst).coerceAtLeast(1)
+                StatBarRow("Goles a favor", goalsFor, totalGoals, Win, onText = onBg)
+                StatBarRow("Goles en contra", goalsAgainst, totalGoals, Loss, onText = onBg)
             }
 
-            GlassCard(title = "Carga de entrenamiento") {
-                StatRow(label = "Minutos totales", value = totalMinutes.toString())
+            GlassCard(title = "Carga de entrenamiento", onText = onBg) {
+                StatRow(label = "Minutos totales", value = totalMinutes.toString(), onText = onBg)
                 StatRow(
                     label = "Media por sesión",
-                    value = if (totalTrainings == 0) "--" else String.format("%.0f min", avgMinutes)
+                    value = if (totalTrainings == 0) "--" else String.format("%.0f min", avgMinutes),
+                    onText = onBg
                 )
             }
 
-            GlassCard(title = "Jugador mejor valorado") {
+            GlassCard(title = "Jugador mejor valorado", onText = onBg) {
                 if (bestPlayer == null) {
                     Text(
                         text = "Aún no hay jugadores.",
-                        color = Color.White.copy(alpha = 0.72f),
+                        color = onBg.copy(alpha = 0.72f),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 } else {
@@ -242,7 +253,7 @@ fun StatsScreen(
                         ) {
                             Text(
                                 text = bestPlayer.name.take(1).uppercase(),
-                                color = Color(0xFF061018),
+                                color = ButtonTextDark,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -252,13 +263,13 @@ fun StatsScreen(
                         Column(Modifier.weight(1f)) {
                             Text(
                                 text = bestPlayer.name,
-                                color = Color.White,
+                                color = onBg,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
                                 text = "${bestPlayer.position} · #${bestPlayer.number} · ${bestPlayer.age} años",
-                                color = Color.White.copy(alpha = 0.65f),
+                                color = onBg.copy(alpha = 0.65f),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -285,7 +296,10 @@ fun StatsScreen(
 }
 
 @Composable
-private fun Header(onBack: () -> Unit, accent: Color) {
+private fun Header(
+    onBack: () -> Unit,
+    onText: Color
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -294,7 +308,7 @@ private fun Header(onBack: () -> Unit, accent: Color) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Volver",
-                tint = Color.White
+                tint = onText
             )
         }
 
@@ -303,13 +317,13 @@ private fun Header(onBack: () -> Unit, accent: Color) {
         Column(Modifier.weight(1f)) {
             Text(
                 text = "Estadísticas",
-                color = Color.White,
+                color = onText,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
                 text = "Resumen del equipo",
-                color = Color.White.copy(alpha = 0.65f),
+                color = onText.copy(alpha = 0.65f),
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -323,11 +337,12 @@ private fun StatKpiCard(
     value: String,
     subtitle: String,
     accent: Color,
-    accent2: Color
+    accent2: Color,
+    onText: Color
 ) {
     Surface(
         modifier = modifier,
-        color = Color.White.copy(alpha = 0.06f),
+        color = GlassBase.copy(alpha = 0.06f),
         shape = RoundedCornerShape(22.dp)
     ) {
         Column(
@@ -336,12 +351,12 @@ private fun StatKpiCard(
         ) {
             Text(
                 text = title,
-                color = Color.White.copy(alpha = 0.70f),
+                color = onText.copy(alpha = 0.70f),
                 style = MaterialTheme.typography.labelLarge
             )
             Text(
                 text = value,
-                color = Color.White,
+                color = onText,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold
             )
@@ -356,7 +371,7 @@ private fun StatKpiCard(
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = subtitle,
-                    color = Color.White.copy(alpha = 0.65f),
+                    color = onText.copy(alpha = 0.65f),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -367,10 +382,11 @@ private fun StatKpiCard(
 @Composable
 private fun GlassCard(
     title: String,
+    onText: Color,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Surface(
-        color = Color.White.copy(alpha = 0.06f),
+        color = GlassBase.copy(alpha = 0.06f),
         shape = RoundedCornerShape(22.dp)
     ) {
         Column(
@@ -379,7 +395,7 @@ private fun GlassCard(
         ) {
             Text(
                 text = title,
-                color = Color.White,
+                color = onText,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -393,10 +409,11 @@ private fun RecentBlock(
     title: String,
     accent: Color,
     accent2: Color,
+    onText: Color,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Surface(
-        color = Color.White.copy(alpha = 0.06f),
+        color = GlassBase.copy(alpha = 0.06f),
         shape = RoundedCornerShape(18.dp)
     ) {
         Column(
@@ -416,7 +433,7 @@ private fun RecentBlock(
                 Spacer(Modifier.width(10.dp))
                 Text(
                     text = title,
-                    color = Color.White,
+                    color = onText,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -427,10 +444,10 @@ private fun RecentBlock(
 }
 
 @Composable
-private fun EmptyLine(text: String) {
+private fun EmptyLine(text: String, onText: Color) {
     Text(
         text = text,
-        color = Color.White.copy(alpha = 0.72f),
+        color = onText.copy(alpha = 0.72f),
         style = MaterialTheme.typography.bodyMedium
     )
 }
@@ -456,7 +473,8 @@ private fun StatBarRow(
     label: String,
     value: Int,
     total: Int,
-    color: Color
+    color: Color,
+    onText: Color
 ) {
     val safeTotal = total.coerceAtLeast(1)
     val pct = (value.toFloat() / safeTotal).coerceIn(0f, 1f)
@@ -465,13 +483,13 @@ private fun StatBarRow(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = label,
-                color = Color.White.copy(alpha = 0.75f),
+                color = onText.copy(alpha = 0.75f),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f)
             )
             Text(
                 text = value.toString(),
-                color = Color.White,
+                color = onText,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -481,7 +499,7 @@ private fun StatBarRow(
                 .fillMaxWidth()
                 .height(10.dp)
                 .clip(RoundedCornerShape(999.dp))
-                .background(Color.White.copy(alpha = 0.08f))
+                .background(GlassBase.copy(alpha = 0.08f))
         ) {
             Box(
                 modifier = Modifier
@@ -495,17 +513,17 @@ private fun StatBarRow(
 }
 
 @Composable
-private fun StatRow(label: String, value: String) {
+private fun StatRow(label: String, value: String, onText: Color) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = label,
-            color = Color.White.copy(alpha = 0.72f),
+            color = onText.copy(alpha = 0.72f),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f)
         )
         Text(
             text = value,
-            color = Color.White,
+            color = onText,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -517,11 +535,12 @@ private fun MiniPill(
     modifier: Modifier = Modifier,
     title: String,
     value: Int,
-    color: Color
+    color: Color,
+    onText: Color
 ) {
     Surface(
         modifier = modifier,
-        color = Color.White.copy(alpha = 0.06f),
+        color = GlassBase.copy(alpha = 0.06f),
         shape = RoundedCornerShape(18.dp)
     ) {
         Column(
@@ -530,7 +549,7 @@ private fun MiniPill(
         ) {
             Text(
                 text = title,
-                color = Color.White.copy(alpha = 0.70f),
+                color = onText.copy(alpha = 0.70f),
                 style = MaterialTheme.typography.labelMedium
             )
             Spacer(Modifier.height(6.dp))

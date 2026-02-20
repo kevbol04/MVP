@@ -8,8 +8,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -21,6 +21,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.theme.ButtonTextDark
+import com.example.mvp.ui.theme.GlassBase
+import com.example.mvp.ui.theme.Loss
+import com.example.mvp.ui.theme.Win
 
 enum class PlayerPosition(val short: String, val label: String) {
     POR("POR", "Portero"),
@@ -55,10 +59,11 @@ fun PlayersScreen(
     onEditPlayer: (Player) -> Unit = {},
     onOpenPlayer: (Player) -> Unit = {}
 ) {
-    val bgTop = Color(0xFF0B1220)
-    val bgMid = Color(0xFF0E2A3B)
-    val accent = Color(0xFF00E5FF)
-    val accent2 = Color(0xFF7C4DFF)
+    val bgTop = MaterialTheme.colorScheme.background
+    val bgMid = MaterialTheme.colorScheme.surface
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.secondary
+    val onBg = MaterialTheme.colorScheme.onBackground
 
     var query by remember { mutableStateOf("") }
     var selectedPos by remember { mutableStateOf<PlayerPosition?>(null) }
@@ -90,13 +95,12 @@ fun PlayersScreen(
                         .background(Brush.horizontalGradient(listOf(accent, accent2))),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Añadir", tint = Color(0xFF061018))
+                    Icon(Icons.Default.Add, contentDescription = "Añadir", tint = ButtonTextDark)
                 }
             }
         },
         containerColor = Color.Transparent
     ) { innerPadding ->
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -123,13 +127,16 @@ fun PlayersScreen(
                     .padding(top = 18.dp, bottom = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = onBg
+                        )
                     }
 
                     Spacer(Modifier.width(4.dp))
@@ -137,13 +144,13 @@ fun PlayersScreen(
                     Column(Modifier.weight(1f)) {
                         Text(
                             text = "Jugadores",
-                            color = Color.White,
+                            color = onBg,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
                             text = "Plantilla · ${players.size} jugadores",
-                            color = Color.White.copy(alpha = 0.70f),
+                            color = onBg.copy(alpha = 0.70f),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -151,7 +158,7 @@ fun PlayersScreen(
 
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = Color.White.copy(alpha = 0.07f)
+                    color = GlassBase.copy(alpha = 0.07f)
                 ) {
                     OutlinedTextField(
                         value = query,
@@ -162,13 +169,13 @@ fun PlayersScreen(
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = Color.Transparent,
                             focusedBorderColor = Color.Transparent,
-                            unfocusedTextColor = Color.White,
-                            focusedTextColor = Color.White,
-                            unfocusedLeadingIconColor = Color.White.copy(alpha = 0.6f),
+                            unfocusedTextColor = onBg,
+                            focusedTextColor = onBg,
+                            unfocusedLeadingIconColor = onBg.copy(alpha = 0.6f),
                             focusedLeadingIconColor = accent,
                             cursorColor = accent,
-                            unfocusedPlaceholderColor = Color.White.copy(alpha = 0.45f),
-                            focusedPlaceholderColor = Color.White.copy(alpha = 0.45f)
+                            unfocusedPlaceholderColor = onBg.copy(alpha = 0.45f),
+                            focusedPlaceholderColor = onBg.copy(alpha = 0.45f)
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -176,6 +183,7 @@ fun PlayersScreen(
 
                 PositionChipsRow(
                     accent = accent,
+                    onText = onBg,
                     selected = selectedPos,
                     onSelect = { selectedPos = it }
                 )
@@ -189,6 +197,7 @@ fun PlayersScreen(
                             player = player,
                             accent = accent,
                             accent2 = accent2,
+                            onText = onBg,
                             onOpen = { onOpenPlayer(player) },
                             onEdit = { onEditPlayer(player) }
                         )
@@ -202,6 +211,7 @@ fun PlayersScreen(
 @Composable
 private fun PositionChipsRow(
     accent: Color,
+    onText: Color,
     selected: PlayerPosition?,
     onSelect: (PlayerPosition?) -> Unit
 ) {
@@ -213,7 +223,7 @@ private fun PositionChipsRow(
             selected = selected == null,
             onClick = { onSelect(null) },
             label = { Text("Todos") },
-            colors = chipColors(accent),
+            colors = chipColors(accent = accent, onText = onText),
             border = null
         )
         PlayerPosition.entries.forEach { pos ->
@@ -221,7 +231,7 @@ private fun PositionChipsRow(
                 selected = selected == pos,
                 onClick = { onSelect(if (selected == pos) null else pos) },
                 label = { Text(pos.short) },
-                colors = chipColors(accent),
+                colors = chipColors(accent = accent, onText = onText),
                 border = null
             )
         }
@@ -229,11 +239,14 @@ private fun PositionChipsRow(
 }
 
 @Composable
-private fun chipColors(accent: Color) = FilterChipDefaults.filterChipColors(
+private fun chipColors(
+    accent: Color,
+    onText: Color
+) = FilterChipDefaults.filterChipColors(
     selectedContainerColor = accent.copy(alpha = 0.18f),
     selectedLabelColor = accent,
-    containerColor = Color.White.copy(alpha = 0.06f),
-    labelColor = Color.White.copy(alpha = 0.78f)
+    containerColor = GlassBase.copy(alpha = 0.06f),
+    labelColor = onText.copy(alpha = 0.78f)
 )
 
 @Composable
@@ -241,13 +254,14 @@ private fun PlayerBadgeCard(
     player: Player,
     accent: Color,
     accent2: Color,
+    onText: Color,
     onOpen: () -> Unit,
     onEdit: () -> Unit
 ) {
     val statusColors = when (player.status) {
-        PlayerStatus.TITULAR -> Color(0xFF00E676).copy(alpha = 0.16f) to Color(0xFF00E676)
+        PlayerStatus.TITULAR -> Win.copy(alpha = 0.16f) to Win
         PlayerStatus.SUPLENTE -> accent.copy(alpha = 0.16f) to accent
-        PlayerStatus.LESIONADO -> Color(0xFFFF5252).copy(alpha = 0.16f) to Color(0xFFFF5252)
+        PlayerStatus.LESIONADO -> Loss.copy(alpha = 0.16f) to Loss
     }
 
     Surface(
@@ -255,7 +269,7 @@ private fun PlayerBadgeCard(
             .fillMaxWidth()
             .clickable(onClick = onOpen),
         shape = RoundedCornerShape(24.dp),
-        color = Color.White.copy(alpha = 0.08f)
+        color = GlassBase.copy(alpha = 0.08f)
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
@@ -278,7 +292,7 @@ private fun PlayerBadgeCard(
                 ) {
                     Text(
                         text = initials(player.name),
-                        color = Color(0xFF061018),
+                        color = ButtonTextDark,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Black
                     )
@@ -289,13 +303,13 @@ private fun PlayerBadgeCard(
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = player.name,
-                        color = Color.White,
+                        color = onText,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
                         text = "${player.position.label} · #${player.number}",
-                        color = Color.White.copy(alpha = 0.70f),
+                        color = onText.copy(alpha = 0.70f),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -307,7 +321,7 @@ private fun PlayerBadgeCard(
 
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = Color.White.copy(alpha = 0.06f)
+                color = GlassBase.copy(alpha = 0.06f)
             ) {
                 Row(
                     modifier = Modifier
@@ -316,8 +330,9 @@ private fun PlayerBadgeCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    MiniStat(label = "Edad", value = "${player.age}")
-                    MiniStat(label = "OVR", value = "${player.rating}", highlight = true, accent = accent)
+                    MiniStat(label = "Edad", value = "${player.age}", onText = onText)
+                    MiniStat(label = "OVR", value = "${player.rating}", highlight = true, accent = accent, onText = onText)
+
                     Surface(shape = RoundedCornerShape(14.dp), color = statusColors.first) {
                         Text(
                             text = player.status.label,
@@ -337,18 +352,19 @@ private fun PlayerBadgeCard(
 private fun MiniStat(
     label: String,
     value: String,
+    onText: Color,
     highlight: Boolean = false,
     accent: Color = Color.Unspecified
 ) {
     Column(horizontalAlignment = Alignment.Start) {
         Text(
             text = label,
-            color = Color.White.copy(alpha = 0.60f),
+            color = onText.copy(alpha = 0.60f),
             style = MaterialTheme.typography.labelSmall
         )
         Text(
             text = value,
-            color = if (highlight) accent else Color.White,
+            color = if (highlight) accent else onText,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold
         )
