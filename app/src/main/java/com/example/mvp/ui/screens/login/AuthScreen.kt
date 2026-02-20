@@ -1,8 +1,18 @@
 package com.example.mvp.ui.screens.login
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,7 +25,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -47,12 +59,32 @@ fun AuthScreen(
     val accent2 = MaterialTheme.colorScheme.secondary
     val onBg = MaterialTheme.colorScheme.onBackground
 
+    // ✅ Animación del logo (entrada con escala + fade + “pop” suave)
+    val logoScale = remember { Animatable(0.86f) }
+    val logoAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        logoAlpha.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 420, easing = FastOutSlowInEasing)
+        )
+        logoScale.animateTo(
+            targetValue = 1.04f,
+            animationSpec = tween(durationMillis = 460, easing = FastOutSlowInEasing)
+        )
+        logoScale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMedium)
+        )
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(bgTop, bgMid, bgTop)))
             .padding(horizontal = 20.dp)
     ) {
+
         Box(
             modifier = Modifier
                 .size(220.dp)
@@ -72,24 +104,45 @@ fun AuthScreen(
                 .padding(top = 40.dp, bottom = 22.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
+
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+
                     Surface(
-                        modifier = Modifier.size(64.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        color = GlassBase.copy(alpha = 0.06f)
+                        modifier = Modifier
+                            .size(68.dp)
+                            .scale(logoScale.value)
+                            .alpha(logoAlpha.value),
+                        shape = CircleShape,
+                        color = Color.Transparent,
+                        border = BorderStroke(1.dp, onBg.copy(alpha = 0.12f))
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(
+                                            GlassBase.copy(alpha = 0.25f),
+                                            GlassBase.copy(alpha = 0.12f)
+                                        )
+                                    )
+                                )
+                                .padding(10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Image(
-                                painter = painterResource(id = R.drawable.logo_mvp),
+                                painter = painterResource(id = R.drawable.logo_mvp2),
                                 contentDescription = "Logo ProFootball",
-                                modifier = Modifier.size(60.dp),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
                                 contentScale = ContentScale.Fit
                             )
                         }
@@ -354,34 +407,63 @@ private fun GradientButton(
     enabled: Boolean = true,
     onClick: () -> Unit
 ) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.985f else 1f,
+        animationSpec = spring(dampingRatio = 0.62f, stiffness = Spring.StiffnessMedium),
+        label = "btnScale"
+    )
+
+    val elevation by animateDpAsState(
+        targetValue = if (pressed) 2.dp else 10.dp,
+        animationSpec = tween(durationMillis = 140, easing = FastOutSlowInEasing),
+        label = "btnElevation"
+    )
+
+    val alpha = if (enabled) 1f else 0.35f
+
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp),
+            .height(54.dp)
+            .scale(scale),
         shape = RoundedCornerShape(18.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-        contentPadding = PaddingValues(0.dp)
+        tonalElevation = 0.dp,
+        shadowElevation = elevation,
+        color = Color.Transparent
     ) {
-        val alpha = if (enabled) 1f else 0.35f
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(18.dp))
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(accent.copy(alpha = alpha), accent2.copy(alpha = alpha))
-                    )
-                ),
-            contentAlignment = Alignment.Center
+        Button(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = Modifier.fillMaxSize(),
+            shape = RoundedCornerShape(18.dp),
+            interactionSource = interactionSource,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+            contentPadding = PaddingValues(0.dp)
         ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = ButtonTextDark
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                accent.copy(alpha = alpha),
+                                accent2.copy(alpha = alpha)
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ButtonTextDark
+                )
+            }
         }
     }
 }
