@@ -59,7 +59,6 @@ fun AuthScreen(
     val accent2 = MaterialTheme.colorScheme.secondary
     val onBg = MaterialTheme.colorScheme.onBackground
 
-    // ✅ Animación del logo (entrada con escala + fade + “pop” suave)
     val logoScale = remember { Animatable(0.86f) }
     val logoAlpha = remember { Animatable(0f) }
 
