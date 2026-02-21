@@ -22,6 +22,8 @@ import androidx.compose.ui.window.Dialog
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
 
+private const val MIN_PASS_LEN = 4
+
 @Composable
 fun AccountScreen(
     modifier: Modifier = Modifier,
@@ -30,7 +32,13 @@ fun AccountScreen(
     onBack: () -> Unit = {},
     onSave: (String, String) -> Unit = { _, _ -> },
     onChangePassword: (current: String, new: String) -> Unit = { _, _ -> },
-    onDeleteAccount: () -> Unit = {}
+
+    onDeleteAccount: () -> Unit = {},
+    passwordLoading: Boolean = false,
+    passwordError: String? = null,
+    passwordChanged: Boolean = false,
+    onPasswordChangedConsumed: () -> Unit = {},
+    onPasswordErrorConsumed: () -> Unit = {}
 ) {
     val bgTop = MaterialTheme.colorScheme.background
     val bgMid = MaterialTheme.colorScheme.surface
@@ -49,6 +57,13 @@ fun AccountScreen(
     var showConfirmSave by remember { mutableStateOf(false) }
 
     val hasChanges = draftName.trim() != savedName.trim() || draftEmail.trim() != savedEmail.trim()
+
+    LaunchedEffect(passwordChanged) {
+        if (passwordChanged) {
+            showChangePass = false
+            onPasswordChangedConsumed()
+        }
+    }
 
     Box(
         modifier = modifier
@@ -110,7 +125,10 @@ fun AccountScreen(
                 accent = accent,
                 accent2 = accent2,
                 onText = onBg,
-                onClick = { showChangePass = true }
+                onClick = {
+                    onPasswordErrorConsumed()
+                    showChangePass = true
+                }
             )
 
             SectionHeader(title = "Datos de la cuenta", onText = onBg)
@@ -205,10 +223,8 @@ fun AccountScreen(
                 onDismiss = { showConfirmSave = false },
                 onConfirm = {
                     onSave(draftName.trim(), draftEmail.trim())
-
                     savedName = draftName.trim()
                     savedEmail = draftEmail.trim()
-
                     showConfirmSave = false
                 }
             )
@@ -219,10 +235,17 @@ fun AccountScreen(
                 accent = accent,
                 accent2 = accent2,
                 onText = onBg,
-                onDismiss = { showChangePass = false },
+                loading = passwordLoading,
+                errorText = passwordError,
+                onClearError = onPasswordErrorConsumed,
+                onDismiss = {
+                    if (!passwordLoading) {
+                        onPasswordErrorConsumed()
+                        showChangePass = false
+                    }
+                },
                 onConfirm = { current, new ->
                     onChangePassword(current, new)
-                    showChangePass = false
                 }
             )
         }
@@ -238,6 +261,236 @@ fun AccountScreen(
                     showDelete = false
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun ChangePasswordDialog(
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    loading: Boolean,
+    errorText: String?,
+    onClearError: () -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: (current: String, new: String) -> Unit
+) {
+    var current by remember { mutableStateOf("") }
+    var newPass by remember { mutableStateOf("") }
+    var repeat by remember { mutableStateOf("") }
+
+    var showCurrent by remember { mutableStateOf(false) }
+    var showNew by remember { mutableStateOf(false) }
+    var showRepeat by remember { mutableStateOf(false) }
+
+    val currentTrim = current.trim()
+    val newTrim = newPass.trim()
+    val repeatTrim = repeat.trim()
+
+    val isValid =
+        currentTrim.isNotBlank() &&
+                newTrim.isNotBlank() &&
+                repeatTrim.isNotBlank() &&
+                newTrim.length >= MIN_PASS_LEN &&
+                newTrim == repeatTrim &&
+                newTrim != currentTrim
+
+    val helperText = when {
+        currentTrim.isBlank() || newTrim.isBlank() || repeatTrim.isBlank() ->
+            "Completa todos los campos."
+        newTrim.length < MIN_PASS_LEN ->
+            "La nueva contraseña debe tener al menos $MIN_PASS_LEN caracteres."
+        newTrim != repeatTrim ->
+            "La nueva contraseña no coincide."
+        newTrim == currentTrim ->
+            "La nueva contraseña no puede ser igual a la actual."
+        else -> ""
+    }
+
+    Dialog(
+        onDismissRequest = { if (!loading) onDismiss() },
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.92f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier
+                    .padding(horizontal = 18.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = GlassBase.copy(alpha = 0.14f),
+                tonalElevation = 0.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            listOf(
+                                                accent.copy(alpha = 0.38f),
+                                                accent2.copy(alpha = 0.22f)
+                                            )
+                                        ),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.LockReset, contentDescription = null, tint = ButtonTextDark)
+                            }
+                            Column {
+                                Text(
+                                    text = "Cambiar contraseña",
+                                    color = onText,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "Refuerza la seguridad de tu cuenta",
+                                    color = onText.copy(alpha = 0.70f),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable(enabled = !loading) { onDismiss() },
+                            shape = CircleShape,
+                            color = GlassBase.copy(alpha = 0.10f)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = onText.copy(alpha = 0.70f))
+                            }
+                        }
+                    }
+
+                    Divider(color = Color.White.copy(alpha = 0.06f))
+
+                    PasswordField(
+                        label = "Contraseña actual",
+                        value = current,
+                        onValueChange = {
+                            current = it
+                            if (errorText != null) onClearError()
+                        },
+                        show = showCurrent,
+                        onToggleShow = { showCurrent = !showCurrent }
+                    )
+
+                    PasswordField(
+                        label = "Nueva contraseña",
+                        value = newPass,
+                        onValueChange = {
+                            newPass = it
+                            if (errorText != null) onClearError()
+                        },
+                        show = showNew,
+                        onToggleShow = { showNew = !showNew }
+                    )
+
+                    PasswordField(
+                        label = "Repetir nueva contraseña",
+                        value = repeat,
+                        onValueChange = {
+                            repeat = it
+                            if (errorText != null) onClearError()
+                        },
+                        show = showRepeat,
+                        onToggleShow = { showRepeat = !showRepeat }
+                    )
+
+                    if (helperText.isNotBlank()) {
+                        Text(
+                            text = helperText,
+                            color = onText.copy(alpha = 0.70f),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    if (!errorText.isNullOrBlank()) {
+                        Text(
+                            text = errorText,
+                            color = Color.Red.copy(alpha = 0.85f),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(enabled = !loading) { onDismiss() },
+                            shape = RoundedCornerShape(16.dp),
+                            color = GlassBase.copy(alpha = 0.10f)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Cancelar",
+                                    color = onText.copy(alpha = 0.80f),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(enabled = isValid && !loading) {
+                                    onConfirm(currentTrim, newTrim)
+                                },
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isValid && !loading) accent.copy(alpha = 0.20f) else GlassBase.copy(alpha = 0.08f)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (loading) {
+                                    CircularProgressIndicator(
+                                        strokeWidth = 2.dp,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Guardar",
+                                        color = if (isValid) accent else onText.copy(alpha = 0.45f),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -278,7 +531,6 @@ private fun ConfirmProfileChangesDialog(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -408,197 +660,6 @@ private fun ChangeRow(label: String, oldValue: String, newValue: String, onText:
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
         )
-    }
-}
-
-@Composable
-private fun ChangePasswordDialog(
-    accent: Color,
-    accent2: Color,
-    onText: Color,
-    onDismiss: () -> Unit,
-    onConfirm: (current: String, new: String) -> Unit
-) {
-    var current by remember { mutableStateOf("") }
-    var newPass by remember { mutableStateOf("") }
-    var repeat by remember { mutableStateOf("") }
-
-    var showCurrent by remember { mutableStateOf(false) }
-    var showNew by remember { mutableStateOf(false) }
-    var showRepeat by remember { mutableStateOf(false) }
-
-    val isValid =
-        current.isNotBlank() &&
-                newPass.isNotBlank() &&
-                repeat.isNotBlank() &&
-                newPass == repeat &&
-                newPass.length >= 6
-
-    val helperText = when {
-        current.isBlank() || newPass.isBlank() || repeat.isBlank() -> "Completa todos los campos."
-        newPass.length < 6 -> "La nueva contraseña debe tener al menos 6 caracteres."
-        newPass != repeat -> "La nueva contraseña no coincide."
-        else -> ""
-    }
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.92f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Surface(
-                modifier = Modifier
-                    .padding(horizontal = 18.dp)
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                color = GlassBase.copy(alpha = 0.14f),
-                tonalElevation = 0.dp
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .background(
-                                        Brush.horizontalGradient(
-                                            listOf(
-                                                accent.copy(alpha = 0.38f),
-                                                accent2.copy(alpha = 0.22f)
-                                            )
-                                        ),
-                                        shape = RoundedCornerShape(16.dp)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.LockReset, contentDescription = null, tint = ButtonTextDark)
-                            }
-                            Column {
-                                Text(
-                                    text = "Cambiar contraseña",
-                                    color = onText,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = "Refuerza la seguridad de tu cuenta",
-                                    color = onText.copy(alpha = 0.70f),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                        }
-
-                        Surface(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clickable { onDismiss() },
-                            shape = CircleShape,
-                            color = GlassBase.copy(alpha = 0.10f)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = onText.copy(alpha = 0.70f))
-                            }
-                        }
-                    }
-
-                    Divider(color = Color.White.copy(alpha = 0.06f))
-
-                    PasswordField(
-                        label = "Contraseña actual",
-                        value = current,
-                        onValueChange = { current = it },
-                        show = showCurrent,
-                        onToggleShow = { showCurrent = !showCurrent }
-                    )
-
-                    PasswordField(
-                        label = "Nueva contraseña",
-                        value = newPass,
-                        onValueChange = { newPass = it },
-                        show = showNew,
-                        onToggleShow = { showNew = !showNew }
-                    )
-
-                    PasswordField(
-                        label = "Repetir nueva contraseña",
-                        value = repeat,
-                        onValueChange = { repeat = it },
-                        show = showRepeat,
-                        onToggleShow = { showRepeat = !showRepeat }
-                    )
-
-                    if (helperText.isNotBlank()) {
-                        Text(
-                            text = helperText,
-                            color = onText.copy(alpha = 0.70f),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onDismiss() },
-                            shape = RoundedCornerShape(16.dp),
-                            color = GlassBase.copy(alpha = 0.10f)
-                        ) {
-                            Box(
-                                modifier = Modifier.padding(vertical = 12.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "Cancelar",
-                                    color = onText.copy(alpha = 0.80f),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable(enabled = isValid) { onConfirm(current, newPass) },
-                            shape = RoundedCornerShape(16.dp),
-                            color = if (isValid) accent.copy(alpha = 0.20f) else GlassBase.copy(alpha = 0.08f)
-                        ) {
-                            Box(
-                                modifier = Modifier.padding(vertical = 12.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "Guardar",
-                                    color = if (isValid) accent else onText.copy(alpha = 0.45f),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 

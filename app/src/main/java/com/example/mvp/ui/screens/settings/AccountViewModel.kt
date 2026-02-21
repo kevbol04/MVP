@@ -13,7 +13,8 @@ import javax.inject.Inject
 data class AccountUiState(
     val loading: Boolean = false,
     val saved: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val passwordChanged: Boolean = false
 )
 
 @HiltViewModel
@@ -34,6 +35,24 @@ class AccountViewModel @Inject constructor(
                 error = result.exceptionOrNull()?.message
             )
         }
+    }
+
+    fun changePassword(email: String, current: String, newPass: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(loading = true, error = null)
+
+            val result = repo.changePassword(email = email, currentRaw = current, newRaw = newPass)
+
+            _uiState.value = _uiState.value.copy(
+                loading = false,
+                passwordChanged = result.isSuccess,
+                error = result.exceptionOrNull()?.message
+            )
+        }
+    }
+
+    fun clearPasswordChangedFlag() {
+        _uiState.value = _uiState.value.copy(passwordChanged = false)
     }
 
     fun clearSavedFlag() {

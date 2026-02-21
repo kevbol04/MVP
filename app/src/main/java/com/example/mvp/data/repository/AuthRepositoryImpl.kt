@@ -7,6 +7,10 @@ import com.example.mvp.domain.repository.AuthRepository
 import java.security.MessageDigest
 import javax.inject.Inject
 
+private const val MIN_PASSWORD_LEN = 4
+private const val MIN_NAME_LEN = 3
+private val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+
 class AuthRepositoryImpl @Inject constructor(
     private val dao: AuthUserDao
 ) : AuthRepository {
@@ -16,12 +20,19 @@ class AuthRepositoryImpl @Inject constructor(
         email: String,
         rawPassword: String
     ): Result<AuthUser> = runCatching {
+        val nameNorm = name.trim()
+        if (nameNorm.length < MIN_NAME_LEN) error("El nombre debe tener al menos $MIN_NAME_LEN caracteres.")
+
         val normalizedEmail = email.trim().lowercase()
+        if (!EMAIL_REGEX.matches(normalizedEmail)) error("Introduce un correo válido.")
+
+        if (rawPassword.length < MIN_PASSWORD_LEN) error("La contraseña debe tener al menos $MIN_PASSWORD_LEN caracteres.")
+
         val existing = dao.findByEmail(normalizedEmail)
         if (existing != null) error("Ese correo ya está registrado.")
 
         val entity = AuthUserEntity(
-            name = name.trim(),
+            name = nameNorm,
             email = normalizedEmail,
             passwordHash = rawPassword.sha256()
         )
@@ -66,6 +77,9 @@ class AuthRepositoryImpl @Inject constructor(
         val newNorm = newEmail.trim().lowercase()
         val nameNorm = newName.trim()
 
+        if (nameNorm.length < MIN_NAME_LEN) error("El nombre debe tener al menos $MIN_NAME_LEN caracteres.")
+        if (!EMAIL_REGEX.matches(newNorm)) error("Introduce un correo válido.")
+
         val current = dao.findByEmail(oldNorm) ?: error("No se encontró la cuenta.")
 
         if (newNorm != oldNorm) {
@@ -87,6 +101,23 @@ class AuthRepositoryImpl @Inject constructor(
             passwordHash = current.passwordHash,
             createdAt = current.createdAt
         )
+    }
+
+    override suspend fun changePassword(
+        email: String,
+        currentRaw: String,
+        newRaw: String
+    ): Result<Unit> = runCatching {
+        val norm = email.trim().lowercase()
+        val user = dao.findByEmail(norm) ?: error("No se encontró la cuenta.")
+
+        val currentHash = currentRaw.sha256()
+        if (user.passwordHash != currentHash) error("La contraseña actual no es correcta.")
+
+        if (newRaw.length < MIN_PASSWORD_LEN) error("La nueva contraseña debe tener al menos $MIN_PASSWORD_LEN caracteres.")
+
+        val rows = dao.updatePasswordHash(email = norm, newHash = newRaw.sha256())
+        if (rows <= 0) error("No se pudo actualizar la contraseña.")
     }
 }
 

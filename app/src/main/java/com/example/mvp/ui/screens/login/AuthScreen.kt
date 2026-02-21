@@ -45,6 +45,10 @@ import com.example.mvp.ui.theme.GlassBase
 
 private enum class AuthMode { Login, Register }
 
+private const val MIN_PASSWORD_LEN = 4
+private const val MIN_NAME_LEN = 3
+private val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthRoute(
@@ -338,7 +342,12 @@ private fun RegisterForm(
     var confirm by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
 
+    val nameOk = name.trim().length >= MIN_NAME_LEN
+    val emailOk = EMAIL_REGEX.matches(email.trim())
+    val passwordOk = password.length >= MIN_PASSWORD_LEN
     val passwordsMatch = password.isNotBlank() && password == confirm
+
+    val canRegister = nameOk && emailOk && passwordOk && passwordsMatch
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(
@@ -355,7 +364,10 @@ private fun RegisterForm(
             leadingIcon = { Icon(Icons.Default.Person, null) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             accent = accent,
-            onText = onText
+            onText = onText,
+            supportingText = if (name.isNotBlank() && !nameOk) {
+                { Text("Mínimo $MIN_NAME_LEN caracteres", color = Danger) }
+            } else null
         )
 
         AuthTextField(
@@ -365,7 +377,10 @@ private fun RegisterForm(
             leadingIcon = { Icon(Icons.Default.Email, null) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             accent = accent,
-            onText = onText
+            onText = onText,
+            supportingText = if (email.isNotBlank() && !emailOk) {
+                { Text("Introduce un email válido (ej: nombre@dominio.com)", color = Danger) }
+            } else null
         )
 
         AuthTextField(
@@ -384,7 +399,10 @@ private fun RegisterForm(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             accent = accent,
-            onText = onText
+            onText = onText,
+            supportingText = if (password.isNotBlank() && !passwordOk) {
+                { Text("Mínimo $MIN_PASSWORD_LEN caracteres", color = Danger) }
+            } else null
         )
 
         AuthTextField(
@@ -396,16 +414,19 @@ private fun RegisterForm(
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             accent = accent,
             onText = onText,
-            supportingText = if (confirm.isNotBlank() && !passwordsMatch) {
-                { Text("Las contraseñas no coinciden", color = Danger) }
-            } else null
+            supportingText = when {
+                confirm.isBlank() -> null
+                !passwordOk -> ({ Text("La contraseña debe tener al menos $MIN_PASSWORD_LEN caracteres", color = Danger) })
+                !passwordsMatch -> ({ Text("Las contraseñas no coinciden", color = Danger) })
+                else -> null
+            }
         )
 
         GradientButton(
             text = "Crear cuenta",
             accent = accent,
             accent2 = accent2,
-            enabled = name.isNotBlank() && email.isNotBlank() && passwordsMatch,
+            enabled = canRegister,
             onClick = { onRegister(name.trim(), email.trim(), password) }
         )
 

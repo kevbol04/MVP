@@ -25,9 +25,15 @@ fun AccountRoute(
     val state by vm.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    var pendingProfileUpdate by remember { mutableStateOf<Pair<String, String>?>(null) }
+
     LaunchedEffect(state.saved) {
         if (state.saved) {
-            onProfileUpdated(name /* (se sobreescribe en AccountScreen) */, email /* idem */)
+            val pending = pendingProfileUpdate
+            if (pending != null) {
+                onProfileUpdated(pending.first, pending.second)
+                pendingProfileUpdate = null
+            }
             vm.clearSavedFlag()
         }
     }
@@ -35,7 +41,6 @@ fun AccountRoute(
     LaunchedEffect(state.error) {
         val msg = state.error ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(msg)
-        vm.clearError()
     }
 
     Scaffold(
@@ -49,11 +54,23 @@ fun AccountRoute(
                 name = name,
                 email = email,
                 onBack = onBack,
+
                 onSave = { newName, newEmail ->
+                    pendingProfileUpdate = newName to newEmail
                     vm.saveProfile(oldEmail = email, newName = newName, newEmail = newEmail)
-                    onProfileUpdated(newName, newEmail)
                 },
-                onDeleteAccount = onDeleteAccount
+
+                onChangePassword = { current, new ->
+                    vm.changePassword(email = email, current = current, newPass = new)
+                },
+
+                onDeleteAccount = onDeleteAccount,
+
+                passwordLoading = state.loading,
+                passwordError = state.error,
+                passwordChanged = state.passwordChanged,
+                onPasswordChangedConsumed = { vm.clearPasswordChangedFlag() },
+                onPasswordErrorConsumed = { vm.clearError() }
             )
 
             if (state.loading) {
