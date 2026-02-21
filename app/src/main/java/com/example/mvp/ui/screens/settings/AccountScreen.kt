@@ -38,11 +38,17 @@ fun AccountScreen(
     val accent2 = MaterialTheme.colorScheme.secondary
     val onBg = MaterialTheme.colorScheme.onBackground
 
-    var displayName by remember(name) { mutableStateOf(name) }
-    var mail by remember(email) { mutableStateOf(email) }
+    var savedName by remember(name) { mutableStateOf(name) }
+    var savedEmail by remember(email) { mutableStateOf(email) }
+
+    var draftName by remember(name) { mutableStateOf(name) }
+    var draftEmail by remember(email) { mutableStateOf(email) }
 
     var showChangePass by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
+    var showConfirmSave by remember { mutableStateOf(false) }
+
+    val hasChanges = draftName.trim() != savedName.trim() || draftEmail.trim() != savedEmail.trim()
 
     Box(
         modifier = modifier
@@ -90,8 +96,8 @@ fun AccountScreen(
             )
 
             ProfileHeroSimple(
-                name = displayName,
-                email = mail,
+                name = savedName,
+                email = savedEmail,
                 accent = accent,
                 accent2 = accent2,
                 onText = onBg
@@ -118,8 +124,8 @@ fun AccountScreen(
                     onText = onBg
                 ) {
                     OutlinedTextField(
-                        value = displayName,
-                        onValueChange = { displayName = it },
+                        value = draftName,
+                        onValueChange = { draftName = it },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp)
@@ -136,8 +142,8 @@ fun AccountScreen(
                     onText = onBg
                 ) {
                     OutlinedTextField(
-                        value = mail,
-                        onValueChange = { mail = it },
+                        value = draftEmail,
+                        onValueChange = { draftEmail = it },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp)
@@ -153,9 +159,10 @@ fun AccountScreen(
                     horizontalArrangement = Arrangement.End
                 ) {
                     Surface(
-                        modifier = Modifier.clickable { onSave(displayName, mail) },
+                        modifier = Modifier
+                            .clickable(enabled = hasChanges) { showConfirmSave = true },
                         shape = RoundedCornerShape(16.dp),
-                        color = accent.copy(alpha = 0.18f)
+                        color = if (hasChanges) accent.copy(alpha = 0.18f) else GlassBase.copy(alpha = 0.06f)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -165,11 +172,11 @@ fun AccountScreen(
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                tint = accent
+                                tint = if (hasChanges) accent else onBg.copy(alpha = 0.35f)
                             )
                             Text(
                                 text = "Guardar cambios",
-                                color = accent,
+                                color = if (hasChanges) accent else onBg.copy(alpha = 0.35f),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -183,6 +190,27 @@ fun AccountScreen(
                 subtitle = "Acción irreversible. Borra tu información.",
                 onText = onBg,
                 onClick = { showDelete = true }
+            )
+        }
+
+        if (showConfirmSave) {
+            ConfirmProfileChangesDialog(
+                accent = accent,
+                accent2 = accent2,
+                onText = onBg,
+                oldName = savedName,
+                oldEmail = savedEmail,
+                newName = draftName.trim(),
+                newEmail = draftEmail.trim(),
+                onDismiss = { showConfirmSave = false },
+                onConfirm = {
+                    onSave(draftName.trim(), draftEmail.trim())
+
+                    savedName = draftName.trim()
+                    savedEmail = draftEmail.trim()
+
+                    showConfirmSave = false
+                }
             )
         }
 
@@ -215,6 +243,175 @@ fun AccountScreen(
 }
 
 @Composable
+private fun ConfirmProfileChangesDialog(
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    oldName: String,
+    oldEmail: String,
+    newName: String,
+    newEmail: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.92f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier
+                    .padding(horizontal = 18.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = GlassBase.copy(alpha = 0.14f),
+                tonalElevation = 0.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            listOf(
+                                                accent.copy(alpha = 0.38f),
+                                                accent2.copy(alpha = 0.22f)
+                                            )
+                                        ),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = null, tint = ButtonTextDark)
+                            }
+                            Column {
+                                Text(
+                                    text = "Confirmar cambios",
+                                    color = onText,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "¿Quieres actualizar tu perfil?",
+                                    color = onText.copy(alpha = 0.70f),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable { onDismiss() },
+                            shape = CircleShape,
+                            color = GlassBase.copy(alpha = 0.10f)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = onText.copy(alpha = 0.70f))
+                            }
+                        }
+                    }
+
+                    Divider(color = Color.White.copy(alpha = 0.06f))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        ChangeRow(label = "Nombre", oldValue = oldName, newValue = newName, onText = onText)
+                        ChangeRow(label = "Email", oldValue = oldEmail, newValue = newEmail, onText = onText)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onDismiss() },
+                            shape = RoundedCornerShape(16.dp),
+                            color = GlassBase.copy(alpha = 0.10f)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Cancelar",
+                                    color = onText.copy(alpha = 0.80f),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onConfirm() },
+                            shape = RoundedCornerShape(16.dp),
+                            color = accent.copy(alpha = 0.20f)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Confirmar",
+                                    color = accent,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChangeRow(label: String, oldValue: String, newValue: String, onText: Color) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = label,
+            color = onText.copy(alpha = 0.70f),
+            style = MaterialTheme.typography.labelMedium
+        )
+        Text(
+            text = "Antes: $oldValue",
+            color = onText.copy(alpha = 0.85f),
+            style = MaterialTheme.typography.bodySmall
+        )
+        Text(
+            text = "Después: $newValue",
+            color = onText,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
 private fun ChangePasswordDialog(
     accent: Color,
     accent2: Color,
@@ -239,7 +436,7 @@ private fun ChangePasswordDialog(
 
     val helperText = when {
         current.isBlank() || newPass.isBlank() || repeat.isBlank() -> "Completa todos los campos."
-        newPass.length < 4 -> "La nueva contraseña debe tener al menos 4 caracteres."
+        newPass.length < 6 -> "La nueva contraseña debe tener al menos 6 caracteres."
         newPass != repeat -> "La nueva contraseña no coincide."
         else -> ""
     }
