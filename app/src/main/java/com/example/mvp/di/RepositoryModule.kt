@@ -1,7 +1,9 @@
 package com.example.mvp.di
 
 import com.example.mvp.data.repository.AuthRepositoryImpl
+import com.example.mvp.data.repository.TrainingRepositoryImpl
 import com.example.mvp.domain.repository.AuthRepository
+import com.example.mvp.domain.repository.TrainingRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -15,4 +17,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTrainingRepository(impl: TrainingRepositoryImpl): TrainingRepository
 }

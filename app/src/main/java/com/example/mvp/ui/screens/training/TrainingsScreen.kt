@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Groups
@@ -51,12 +52,12 @@ private enum class BottomTab {
 @Composable
 fun TrainingsScreen(
     modifier: Modifier = Modifier,
-    trainings: List<Training> = sampleTrainings(),
+    trainings: List<Training> = emptyList(),
     onBack: () -> Unit = {},
     onCreateTraining: () -> Unit = {},
     onEditTraining: (Training) -> Unit = {},
+    onDeleteTraining: (Training) -> Unit = {},
 
-    // ✅ navegación del menú inferior
     onGoMatches: () -> Unit = {},
     onGoPlayers: () -> Unit = {},
     onGoStats: () -> Unit = {}
@@ -66,6 +67,7 @@ fun TrainingsScreen(
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.secondary
     val onBg = MaterialTheme.colorScheme.onBackground
+    val danger = MaterialTheme.colorScheme.error
 
     var query by remember { mutableStateOf("") }
 
@@ -79,6 +81,8 @@ fun TrainingsScreen(
 
     var selectedTab by remember { mutableStateOf(BottomTab.Training) }
     val bottomBarHeight = 78.dp
+
+    var toDelete by remember { mutableStateOf<Training?>(null) }
 
     Box(
         modifier = modifier
@@ -153,8 +157,10 @@ fun TrainingsScreen(
                     TrainingRow(
                         training = t,
                         accent = accent,
+                        danger = danger,
                         onText = onBg,
-                        onEdit = { onEditTraining(t) }
+                        onEdit = { onEditTraining(t) },
+                        onDelete = { toDelete = t }
                     )
                 }
             }
@@ -200,21 +206,42 @@ fun TrainingsScreen(
             selected = selectedTab,
             onSelect = { tab ->
                 when (tab) {
-                    BottomTab.Training -> {
-                        selectedTab = BottomTab.Training
+                    BottomTab.Training -> selectedTab = BottomTab.Training
+                    BottomTab.Matches -> { selectedTab = BottomTab.Matches; onGoMatches() }
+                    BottomTab.Players -> { selectedTab = BottomTab.Players; onGoPlayers() }
+                    BottomTab.Stats -> { selectedTab = BottomTab.Stats; onGoStats() }
+                }
+            }
+        )
+    }
+
+    if (toDelete != null) {
+        AlertDialog(
+            onDismissRequest = { toDelete = null },
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+            tonalElevation = 6.dp,
+            shape = RoundedCornerShape(24.dp),
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            title = { Text("Eliminar entrenamiento", fontWeight = FontWeight.SemiBold) },
+            text = { Text("Se eliminará “${toDelete!!.name}”. Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteTraining(toDelete!!)
+                        toDelete = null
                     }
-                    BottomTab.Matches -> {
-                        selectedTab = BottomTab.Matches
-                        onGoMatches()
-                    }
-                    BottomTab.Players -> {
-                        selectedTab = BottomTab.Players
-                        onGoPlayers()
-                    }
-                    BottomTab.Stats -> {
-                        selectedTab = BottomTab.Stats
-                        onGoStats()
-                    }
+                ) {
+                    Text(
+                        "Eliminar",
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { toDelete = null }) {
+                    Text("Cancelar", color = MaterialTheme.colorScheme.primary)
                 }
             }
         )
@@ -348,8 +375,10 @@ private fun RowScope.BottomMenuItem(
 private fun TrainingRow(
     training: Training,
     accent: Color,
+    danger: Color,
     onText: Color,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -379,12 +408,10 @@ private fun TrainingRow(
             IconButton(onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = "Editar", tint = accent)
             }
+
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.DeleteOutline, contentDescription = "Eliminar", tint = danger.copy(alpha = 0.90f))
+            }
         }
     }
 }
-
-private fun sampleTrainings(): List<Training> = listOf(
-    Training(1, "Entrenamiento de Pierna", "12/11/2025", 90, TrainingType.FUERZA),
-    Training(2, "Técnica de pase", "10/11/2025", 60, TrainingType.TECNICA),
-    Training(3, "Resistencia aeróbica", "05/11/2025", 45, TrainingType.RESISTENCIA),
-)

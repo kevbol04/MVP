@@ -1,7 +1,10 @@
 package com.example.mvp.ui.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,7 +26,9 @@ import com.example.mvp.ui.screens.stats.StatsScreen
 import com.example.mvp.ui.screens.training.Training
 import com.example.mvp.ui.screens.training.TrainingFormScreen
 import com.example.mvp.ui.screens.training.TrainingsScreen
+import com.example.mvp.ui.screens.training.TrainingsViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavGraph(
     startDestination: String = Route.Auth.route
@@ -109,11 +114,18 @@ fun AppNavGraph(
 
         // ---------------- TRAININGS ----------------
         composable(Route.Trainings.route) {
+            val vm: TrainingsViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            val trainings by vm.trainings.collectAsState()
+
             TrainingsScreen(
                 trainings = trainings,
                 onBack = { navController.popBackStack() },
                 onCreateTraining = { navController.navigate(Route.TrainingForm.route) },
                 onEditTraining = { t -> navController.navigate(Route.TrainingFormWithId.createRoute(t.id)) },
+
+                onDeleteTraining = { t -> vm.delete(t) },
 
                 onGoMatches = { navController.navigateToTab(Route.Matches.route) },
                 onGoPlayers = { navController.navigateToTab(Route.Players.route) },
@@ -122,30 +134,39 @@ fun AppNavGraph(
         }
 
         composable(Route.TrainingForm.route) {
+            val vm: TrainingsViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
             TrainingFormScreen(
                 initial = null,
                 onBack = { navController.popBackStack() },
-                onSave = { newTraining ->
-                    val nextId = (trainings.maxOfOrNull { it.id } ?: 0) + 1
-                    trainings = listOf(newTraining.copy(id = nextId)) + trainings
+                onSave = { t ->
+                    vm.save(t.copy(id = 0))
                     navController.popBackStack()
                 }
             )
         }
 
         composable(Route.TrainingFormWithId.route) { backStackEntry ->
+            val vm: TrainingsViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            val trainings by vm.trainings.collectAsState()
+
             val id = backStackEntry.arguments
                 ?.getString(Route.TrainingFormWithId.ARG_ID)
                 ?.toIntOrNull()
+
             val current = trainings.firstOrNull { it.id == id }
 
             TrainingFormScreen(
                 initial = current,
                 onBack = { navController.popBackStack() },
                 onSave = { edited ->
-                    trainings = trainings.map { if (it.id == edited.id) edited else it }
+                    vm.save(edited)
                     navController.popBackStack()
                 }
+
             )
         }
 

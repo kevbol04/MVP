@@ -1,5 +1,7 @@
 package com.example.mvp.ui.screens.training
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -18,7 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.mvp.ui.theme.GlassBase
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.ResolverStyle
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrainingFormScreen(
@@ -38,6 +44,18 @@ fun TrainingFormScreen(
     var type by remember { mutableStateOf(initial?.type ?: TrainingType.FUERZA) }
 
     var showExitDialog by remember { mutableStateOf(false) }
+
+    var touchedName by remember { mutableStateOf(false) }
+    var touchedDate by remember { mutableStateOf(false) }
+    var touchedDuration by remember { mutableStateOf(false) }
+
+    val nameError = remember(name) { validateName(name) }
+    val dateError = remember(dateText) { validateDateStrict(dateText) }
+    val durationError = remember(durationText) { validateDuration(durationText) }
+
+    val isValid = remember(nameError, dateError, durationError) {
+        nameError == null && dateError == null && durationError == null
+    }
 
     val dirty = remember(name, dateText, durationText, type, initial) {
         val initName = initial?.name ?: ""
@@ -114,28 +132,40 @@ fun TrainingFormScreen(
 
                     SportField(
                         value = name,
-                        onValueChange = { name = it },
+                        onValueChange = { name = it; touchedName = true },
                         label = "Nombre del entrenamiento",
                         accent = accent,
-                        onText = onBg
+                        onText = onBg,
+                        isError = touchedName && nameError != null,
+                        supportingText = if (touchedName) nameError else null
                     )
 
                     SportField(
                         value = dateText,
-                        onValueChange = { dateText = it },
-                        label = "Fecha (dd/mm/aaaa)",
+                        onValueChange = {
+                            dateText = it.filter { ch -> ch.isDigit() || ch == '/' }.take(10)
+                            touchedDate = true
+                        },
+                        label = "Fecha (dd/MM/aaaa)",
                         accent = accent,
                         onText = onBg,
-                        trailing = { Icon(Icons.Default.Today, null, tint = onBg.copy(alpha = 0.65f)) }
+                        trailing = { Icon(Icons.Default.Today, null, tint = onBg.copy(alpha = 0.65f)) },
+                        isError = touchedDate && dateError != null,
+                        supportingText = if (touchedDate) (dateError ?: "Formato correcto: dd/MM/aaaa") else null
                     )
 
                     SportField(
                         value = durationText,
-                        onValueChange = { durationText = it.filter(Char::isDigit).take(3) },
+                        onValueChange = {
+                            durationText = it.filter(Char::isDigit).take(3)
+                            touchedDuration = true
+                        },
                         label = "Duración (en min)",
                         accent = accent,
                         onText = onBg,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = touchedDuration && durationError != null,
+                        supportingText = if (touchedDuration) durationError else "Recomendado: 5–300 min"
                     )
 
                     TrainingTypeDropdown(
@@ -145,12 +175,14 @@ fun TrainingFormScreen(
                         onText = onBg
                     )
 
-                    val enabled =
-                        name.isNotBlank() && dateText.isNotBlank() && (durationText.toIntOrNull() ?: 0) > 0
-
                     Button(
                         onClick = {
-                            val dur = durationText.toIntOrNull() ?: 0
+                            touchedName = true
+                            touchedDate = true
+                            touchedDuration = true
+                            if (!isValid) return@Button
+
+                            val dur = durationText.toInt()
                             onSave(
                                 Training(
                                     id = initial?.id ?: 0,
@@ -161,7 +193,7 @@ fun TrainingFormScreen(
                                 )
                             )
                         },
-                        enabled = enabled,
+                        enabled = isValid,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
@@ -180,21 +212,16 @@ fun TrainingFormScreen(
         }
 
         if (showExitDialog) {
-            AlertDialog(
-                onDismissRequest = { showExitDialog = false },
-                title = { Text("Salir sin guardar") },
-                text = { Text("¿Desea salir sin guardar el entrenamiento actual?") },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showExitDialog = false
-                            onBack()
-                        }
-                    ) { Text("Sí") }
+            GlassAlertDialog(
+                title = "Salir sin guardar",
+                text = "¿Desea salir sin guardar el entrenamiento actual?",
+                confirmText = "Sí",
+                dismissText = "No",
+                onConfirm = {
+                    showExitDialog = false
+                    onBack()
                 },
-                dismissButton = {
-                    TextButton(onClick = { showExitDialog = false }) { Text("No") }
-                }
+                onDismiss = { showExitDialog = false }
             )
         }
     }
@@ -209,7 +236,9 @@ private fun SportField(
     accent: Color,
     onText: Color,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    trailing: @Composable (() -> Unit)? = null
+    trailing: @Composable (() -> Unit)? = null,
+    isError: Boolean = false,
+    supportingText: String? = null
 ) {
     OutlinedTextField(
         value = value,
@@ -218,6 +247,8 @@ private fun SportField(
         label = { Text(label) },
         trailingIcon = trailing,
         keyboardOptions = keyboardOptions,
+        isError = isError,
+        supportingText = supportingText?.let { { Text(it) } },
         colors = OutlinedTextFieldDefaults.colors(
             unfocusedBorderColor = onText.copy(alpha = 0.18f),
             focusedBorderColor = accent,
@@ -268,17 +299,118 @@ private fun TrainingTypeDropdown(
 
         ExposedDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .background(Color.Transparent)
         ) {
-            TrainingType.entries.forEach { t ->
-                DropdownMenuItem(
-                    text = { Text(t.label) },
-                    onClick = {
-                        onSelected(t)
-                        expanded = false
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                tonalElevation = 6.dp
+            ) {
+                Column {
+                    TrainingType.entries.forEach { t ->
+                        val isSelected = t == selected
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = t.label,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
+                                )
+                            },
+                            onClick = {
+                                onSelected(t)
+                                expanded = false
+                            },
+                            modifier = Modifier.background(
+                                if (isSelected) accent.copy(alpha = 0.14f) else Color.Transparent
+                            )
+                        )
                     }
-                )
+                }
             }
         }
     }
+}
+
+@Composable
+private fun GlassAlertDialog(
+    title: String,
+    text: String,
+    confirmText: String,
+    dismissText: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        tonalElevation = 6.dp,
+        shape = RoundedCornerShape(24.dp),
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        title = {
+            Text(title, fontWeight = FontWeight.SemiBold)
+        },
+        text = {
+            Text(text)
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(
+                    confirmText,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(dismissText, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+    )
+}
+
+private fun validateName(raw: String): String? {
+    val name = raw.trim()
+    if (name.isBlank()) return "El nombre es obligatorio."
+    if (name.length < 3) return "Mínimo 3 caracteres."
+    if (name.length > 40) return "Máximo 40 caracteres."
+    val hasLetterOrDigit = name.any { it.isLetterOrDigit() }
+    if (!hasLetterOrDigit) return "Debe contener letras o números."
+    return null
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun validateDateStrict(raw: String): String? {
+    val txt = raw.trim()
+    if (txt.isBlank()) return "La fecha es obligatoria."
+    if (!Regex("""^\d{2}/\d{2}/\d{4}$""").matches(txt)) {
+        return "Formato inválido. Usa dd/MM/aaaa."
+    }
+    return try {
+        val formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu")
+            .withResolverStyle(ResolverStyle.STRICT)
+        val selectedDate = LocalDate.parse(txt, formatter)
+        val today = LocalDate.now()
+        if (selectedDate.isBefore(today)) {
+            "La fecha no puede ser anterior a hoy."
+        } else {
+            null
+        }
+    } catch (_: Exception) {
+        "Fecha no válida. Revisa día/mes."
+    }
+}
+
+private fun validateDuration(raw: String): String? {
+    val txt = raw.trim()
+    if (txt.isBlank()) return "La duración es obligatoria."
+    val minutes = txt.toIntOrNull() ?: return "Debe ser un número."
+    if (minutes < 5) return "Mínimo 5 minutos."
+    if (minutes > 300) return "Máximo 300 minutos."
+    return null
 }
