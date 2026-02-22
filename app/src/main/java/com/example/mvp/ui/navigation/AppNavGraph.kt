@@ -26,6 +26,7 @@ import com.example.mvp.ui.screens.players.PlayerFormScreen
 import com.example.mvp.ui.screens.players.PlayerPosition
 import com.example.mvp.ui.screens.players.PlayerStatus
 import com.example.mvp.ui.screens.players.PlayersScreen
+import com.example.mvp.ui.screens.players.PlayersViewModel
 import com.example.mvp.ui.screens.settings.AccountRoute
 import com.example.mvp.ui.screens.settings.SettingsScreen
 import com.example.mvp.ui.screens.stats.StatsScreen
@@ -244,12 +245,18 @@ fun AppNavGraph(
 
         // ---------------- PLAYERS ----------------
         composable(Route.Players.route) {
+            val vm: PlayersViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            val players by vm.players.collectAsState()
+
             PlayersScreen(
                 players = players,
                 onBack = { navController.popBackStack() },
                 onCreatePlayer = { navController.navigate(Route.PlayerForm.route) },
                 onEditPlayer = { p -> navController.navigate(Route.PlayerFormWithId.createRoute(p.id)) },
                 onOpenPlayer = { p -> navController.navigate(Route.PlayerDetail.createRoute(p.id)) },
+                onDeletePlayer = { p -> vm.delete(p) },
 
                 onGoTraining = { navController.navigateToTab(Route.Trainings.route) },
                 onGoMatches = { navController.navigateToTab(Route.Matches.route) },
@@ -258,48 +265,147 @@ fun AppNavGraph(
         }
 
         composable(Route.PlayerForm.route) {
+            val vm: PlayersViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
             PlayerFormScreen(
                 initial = null,
                 onBack = { navController.popBackStack() },
-                onSave = { newPlayer ->
-                    val nextId = (players.maxOfOrNull { it.id } ?: 0) + 1
-                    players = listOf(newPlayer.copy(id = nextId)) + players
+                onSave = { p ->
+                    vm.save(p.copy(id = 0))
                     navController.popBackStack()
                 }
             )
         }
 
         composable(Route.PlayerFormWithId.route) { backStackEntry ->
+            val vm: PlayersViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            val players by vm.players.collectAsState()
+
             val id = backStackEntry.arguments
                 ?.getString(Route.PlayerFormWithId.ARG_ID)
                 ?.toIntOrNull()
+
             val current = players.firstOrNull { it.id == id }
 
             PlayerFormScreen(
                 initial = current,
+                existingPlayers = players,
                 onBack = { navController.popBackStack() },
                 onSave = { edited ->
-                    players = players.map { if (it.id == edited.id) edited else it }
+                    vm.save(edited)
                     navController.popBackStack()
                 }
             )
         }
 
         composable(Route.PlayerDetail.route) { backStackEntry ->
+            val vm: PlayersViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
             val id = backStackEntry.arguments
                 ?.getString(Route.PlayerDetail.ARG_ID)
                 ?.toIntOrNull()
-            val current = players.firstOrNull { it.id == id }
+
+            if (id == null) {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+                return@composable
+            }
+
+            val current by vm.playerById(id).collectAsState(initial = null)
 
             if (current == null) {
-                LaunchedEffect(Unit) { navController.popBackStack() }
-            } else {
-                PlayerDetailScreen(
-                    player = current,
-                    onBack = { navController.popBackStack() },
-                    onEdit = { p -> navController.navigate(Route.PlayerFormWithId.createRoute(p.id)) }
-                )
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+                return@composable
             }
+
+            PlayerDetailScreen(
+                player = current!!,
+                onBack = { navController.popBackStack() },
+                onEdit = { p -> navController.navigate(Route.PlayerFormWithId.createRoute(p.id)) }
+            )
+        }
+
+        composable(Route.PlayerForm.route) {
+            val vm: PlayersViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            val players by vm.players.collectAsState()
+
+            PlayerFormScreen(
+                initial = null,
+                existingPlayers = players,
+                onBack = { navController.popBackStack() },
+                onSave = { newPlayer ->
+                    vm.save(newPlayer.copy(id = 0))
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Route.PlayerFormWithId.route) { backStackEntry ->
+            val vm: PlayersViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            val id = backStackEntry.arguments
+                ?.getString(Route.PlayerFormWithId.ARG_ID)
+                ?.toIntOrNull()
+
+            if (id == null) {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+                return@composable
+            }
+
+            val current by vm.playerById(id).collectAsState(initial = null)
+
+            if (current == null) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+                return@composable
+            }
+
+            PlayerFormScreen(
+                initial = current,
+                onBack = { navController.popBackStack() },
+                onSave = { edited ->
+                    vm.save(edited)
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Route.PlayerDetail.route) { backStackEntry ->
+            val vm: PlayersViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            val id = backStackEntry.arguments
+                ?.getString(Route.PlayerDetail.ARG_ID)
+                ?.toIntOrNull()
+
+            if (id == null) {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+                return@composable
+            }
+
+            val current by vm.playerById(id).collectAsState(initial = null)
+
+            if (current == null) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+                return@composable
+            }
+
+            PlayerDetailScreen(
+                player = current!!,
+                onBack = { navController.popBackStack() },
+                onEdit = { p -> navController.navigate(Route.PlayerFormWithId.createRoute(p.id)) }
+            )
         }
 
         // ---------------- STATS ----------------

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.example.mvp.data.local.dao.AuthUserDao
 import com.example.mvp.data.local.dao.MatchDao
+import com.example.mvp.data.local.dao.PlayerDao
 import com.example.mvp.data.local.dao.TrainingDao
 import dagger.Module
 import dagger.Provides
@@ -38,4 +39,7 @@ object DatabaseModule {
 
     @Provides
     fun provideMatchDao(db: AppDatabase): MatchDao = db.matchDao()
+
+    @Provides
+    fun providePlayerDao(db: AppDatabase): PlayerDao = db.playerDao()
 }

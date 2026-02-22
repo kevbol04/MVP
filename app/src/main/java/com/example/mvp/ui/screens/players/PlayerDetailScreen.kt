@@ -175,40 +175,16 @@ fun PlayerDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        StatCard(
-                            title = "Edad",
-                            value = "${player.age}",
-                            accent = accent,
-                            onText = onBg,
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            title = "Posición",
-                            value = player.position.short,
-                            accent = accent,
-                            onText = onBg,
-                            modifier = Modifier.weight(1f)
-                        )
+                        StatCard("Edad", "${player.age}", accent, onBg, Modifier.weight(1f))
+                        StatCard("Posición", player.position.short, accent, onBg, Modifier.weight(1f))
                     }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        StatCard(
-                            title = "Dorsal",
-                            value = "#${player.number}",
-                            accent = accent,
-                            onText = onBg,
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            title = "Nivel",
-                            value = levelLabel(player.rating),
-                            accent = accent,
-                            onText = onBg,
-                            modifier = Modifier.weight(1f)
-                        )
+                        StatCard("Dorsal", "#${player.number}", accent, onBg, Modifier.weight(1f))
+                        StatCard("Nivel", levelLabel(player.rating), accent, onBg, Modifier.weight(1f))
                     }
                 }
             }

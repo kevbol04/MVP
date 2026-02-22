@@ -9,13 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SportsSoccer
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,11 +55,13 @@ private enum class BottomTab {
 @Composable
 fun PlayersScreen(
     modifier: Modifier = Modifier,
-    players: List<Player> = defaultPlayers(),
+    players: List<Player> = emptyList(),
     onBack: () -> Unit = {},
     onCreatePlayer: () -> Unit = {},
     onEditPlayer: (Player) -> Unit = {},
     onOpenPlayer: (Player) -> Unit = {},
+
+    onDeletePlayer: (Player) -> Unit = {},
 
     onGoTraining: () -> Unit = {},
     onGoMatches: () -> Unit = {},
@@ -95,6 +91,8 @@ fun PlayersScreen(
 
     var selectedTab by remember { mutableStateOf(BottomTab.Players) }
     val bottomBarHeight = 78.dp
+
+    var pendingDelete by remember { mutableStateOf<Player?>(null) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -208,14 +206,15 @@ fun PlayersScreen(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(filtered) { player ->
+                    items(filtered, key = { it.id }) { player ->
                         PlayerBadgeCard(
                             player = player,
                             accent = accent,
                             accent2 = accent2,
                             onText = onBg,
                             onOpen = { onOpenPlayer(player) },
-                            onEdit = { onEditPlayer(player) }
+                            onEdit = { onEditPlayer(player) },
+                            onDelete = { pendingDelete = player }
                         )
                     }
                 }
@@ -232,25 +231,47 @@ fun PlayersScreen(
                 selected = selectedTab,
                 onSelect = { tab ->
                     when (tab) {
-                        BottomTab.Players -> {
-                            selectedTab = BottomTab.Players
-                        }
-                        BottomTab.Training -> {
-                            selectedTab = BottomTab.Training
-                            onGoTraining()
-                        }
-                        BottomTab.Matches -> {
-                            selectedTab = BottomTab.Matches
-                            onGoMatches()
-                        }
-                        BottomTab.Stats -> {
-                            selectedTab = BottomTab.Stats
-                            onGoStats()
-                        }
+                        BottomTab.Players -> selectedTab = BottomTab.Players
+                        BottomTab.Training -> { selectedTab = BottomTab.Training; onGoTraining() }
+                        BottomTab.Matches -> { selectedTab = BottomTab.Matches; onGoMatches() }
+                        BottomTab.Stats -> { selectedTab = BottomTab.Stats; onGoStats() }
                     }
                 }
             )
         }
+    }
+
+    if (pendingDelete != null) {
+        val p = pendingDelete!!
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+            tonalElevation = 6.dp,
+            shape = RoundedCornerShape(24.dp),
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            title = { Text("Eliminar jugador", fontWeight = FontWeight.SemiBold) },
+            text = { Text("Se eliminará a ${p.name}. ¿Deseas continuar?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeletePlayer(p)
+                        pendingDelete = null
+                    }
+                ) {
+                    Text(
+                        "Eliminar",
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) {
+                    Text("Cancelar", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        )
     }
 }
 
@@ -283,42 +304,18 @@ private fun BottomMenuBar(
                 .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            BottomMenuItem(
-                label = "Entr",
-                icon = Icons.Default.FitnessCenter,
-                isSelected = selected == BottomTab.Training,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Training) }
-            )
-            BottomMenuItem(
-                label = "Part",
-                icon = Icons.Default.SportsSoccer,
-                isSelected = selected == BottomTab.Matches,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Matches) }
-            )
-            BottomMenuItem(
-                label = "Jug",
-                icon = Icons.Default.Groups,
-                isSelected = selected == BottomTab.Players,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Players) }
-            )
-            BottomMenuItem(
-                label = "Est",
-                icon = Icons.Default.BarChart,
-                isSelected = selected == BottomTab.Stats,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Stats) }
-            )
+            BottomMenuItem("Entr", Icons.Default.FitnessCenter, selected == BottomTab.Training, accent, accent2, onText) {
+                onSelect(BottomTab.Training)
+            }
+            BottomMenuItem("Part", Icons.Default.SportsSoccer, selected == BottomTab.Matches, accent, accent2, onText) {
+                onSelect(BottomTab.Matches)
+            }
+            BottomMenuItem("Jug", Icons.Default.Groups, selected == BottomTab.Players, accent, accent2, onText) {
+                onSelect(BottomTab.Players)
+            }
+            BottomMenuItem("Est", Icons.Default.BarChart, selected == BottomTab.Stats, accent, accent2, onText) {
+                onSelect(BottomTab.Stats)
+            }
         }
     }
 }
@@ -334,12 +331,7 @@ private fun RowScope.BottomMenuItem(
     onClick: () -> Unit
 ) {
     val bgBrush = if (isSelected) {
-        Brush.horizontalGradient(
-            listOf(
-                accent.copy(alpha = 0.30f),
-                accent2.copy(alpha = 0.24f)
-            )
-        )
+        Brush.horizontalGradient(listOf(accent.copy(alpha = 0.30f), accent2.copy(alpha = 0.24f)))
     } else {
         Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
     }
@@ -392,7 +384,7 @@ private fun PositionChipsRow(
             selected = selected == null,
             onClick = { onSelect(null) },
             label = { Text("Todos") },
-            colors = chipColors(accent = accent, onText = onText),
+            colors = chipColors(accent, onText),
             border = null
         )
         PlayerPosition.entries.forEach { pos ->
@@ -400,7 +392,7 @@ private fun PositionChipsRow(
                 selected = selected == pos,
                 onClick = { onSelect(if (selected == pos) null else pos) },
                 label = { Text(pos.short) },
-                colors = chipColors(accent = accent, onText = onText),
+                colors = chipColors(accent, onText),
                 border = null
             )
         }
@@ -408,15 +400,13 @@ private fun PositionChipsRow(
 }
 
 @Composable
-private fun chipColors(
-    accent: Color,
-    onText: Color
-) = FilterChipDefaults.filterChipColors(
-    selectedContainerColor = accent.copy(alpha = 0.18f),
-    selectedLabelColor = accent,
-    containerColor = GlassBase.copy(alpha = 0.06f),
-    labelColor = onText.copy(alpha = 0.78f)
-)
+private fun chipColors(accent: Color, onText: Color) =
+    FilterChipDefaults.filterChipColors(
+        selectedContainerColor = accent.copy(alpha = 0.18f),
+        selectedLabelColor = accent,
+        containerColor = GlassBase.copy(alpha = 0.06f),
+        labelColor = onText.copy(alpha = 0.78f)
+    )
 
 @Composable
 private fun PlayerBadgeCard(
@@ -425,7 +415,8 @@ private fun PlayerBadgeCard(
     accent2: Color,
     onText: Color,
     onOpen: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val statusColors = when (player.status) {
         PlayerStatus.TITULAR -> Win.copy(alpha = 0.16f) to Win
@@ -486,6 +477,9 @@ private fun PlayerBadgeCard(
                 IconButton(onClick = onEdit) {
                     Icon(Icons.Default.Edit, contentDescription = "Editar", tint = accent)
                 }
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                }
             }
 
             Surface(
@@ -543,21 +537,8 @@ private fun MiniStat(
 private fun initials(name: String): String {
     val parts = name.trim().split(" ").filter { it.isNotBlank() }
     return when {
-        parts.isEmpty() -> "?"
+        parts.isEmpty() -> "??"
         parts.size == 1 -> parts.first().take(2).uppercase()
         else -> (parts[0].take(1) + parts[1].take(1)).uppercase()
     }
 }
-
-private fun defaultPlayers(): List<Player> = listOf(
-    Player(1, "Álex Romero", PlayerPosition.POR, 23, 1, 78, PlayerStatus.TITULAR),
-    Player(2, "Sergio Vidal", PlayerPosition.DEF, 27, 2, 80, PlayerStatus.TITULAR),
-    Player(3, "Mario Costa", PlayerPosition.DEF, 21, 4, 74, PlayerStatus.SUPLENTE),
-    Player(4, "Hugo Navarro", PlayerPosition.DEF, 29, 5, 82, PlayerStatus.TITULAR),
-    Player(5, "Iván Paredes", PlayerPosition.MED, 24, 6, 79, PlayerStatus.TITULAR),
-    Player(6, "Dani Serrano", PlayerPosition.MED, 22, 8, 77, PlayerStatus.SUPLENTE),
-    Player(7, "Lucas Prieto", PlayerPosition.MED, 26, 10, 83, PlayerStatus.TITULAR),
-    Player(8, "Adrián Molina", PlayerPosition.DEL, 25, 9, 84, PlayerStatus.TITULAR),
-    Player(9, "Eric Salas", PlayerPosition.DEL, 20, 11, 73, PlayerStatus.LESIONADO),
-    Player(10, "Bruno Sanz", PlayerPosition.DEL, 28, 7, 81, PlayerStatus.SUPLENTE),
-)

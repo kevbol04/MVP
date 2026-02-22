@@ -26,6 +26,9 @@ import kotlin.math.roundToInt
 fun PlayerFormScreen(
     modifier: Modifier = Modifier,
     initial: Player? = null,
+
+    existingPlayers: List<Player> = emptyList(),
+
     onBack: () -> Unit = {},
     onSave: (Player) -> Unit = {}
 ) {
@@ -44,9 +47,36 @@ fun PlayerFormScreen(
 
     var showExitDialog by remember { mutableStateOf(false) }
 
-    val age = ageText.toIntOrNull() ?: 18
+    var touchedName by remember { mutableStateOf(false) }
+    var touchedAge by remember { mutableStateOf(false) }
+    var touchedNumber by remember { mutableStateOf(false) }
+
+    val age = ageText.toIntOrNull() ?: 0
     val ratingInt = rating.roundToInt().coerceIn(40, 99)
     val title = if (initial == null) "Nuevo jugador" else "Editar jugador"
+
+    val nameError = remember(name) { validatePlayerName(name) }
+
+    val ageError = remember(ageText) {
+        val v = ageText.toIntOrNull()
+        when {
+            ageText.isBlank() -> "La edad es obligatoria."
+            v == null -> "Introduce una edad válida."
+            v !in 16..40 -> "La edad debe estar entre 16 y 40."
+            else -> null
+        }
+    }
+
+    val numberError = remember(number, existingPlayers, initial) {
+        val exists = existingPlayers.any { p ->
+            p.id != (initial?.id ?: 0) && p.number == number
+        }
+        if (exists) "El dorsal #$number ya está asignado a otro jugador." else null
+    }
+
+    val enabled = remember(nameError, ageError, numberError) {
+        nameError == null && ageError == null && numberError == null
+    }
 
     val dirty = remember(name, ageText, number, position, rating, status, initial) {
         val initName = initial?.name ?: ""
@@ -127,6 +157,7 @@ fun PlayerFormScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -158,10 +189,11 @@ fun PlayerFormScreen(
                                     style = MaterialTheme.typography.bodySmall
                                 )
                                 Text(
-                                    text = if (name.isBlank()) "Nombre del jugador" else name,
+                                    text = if (name.isBlank()) "Nombre del jugador" else name.trim(),
                                     color = onBg,
                                     style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1
                                 )
                             }
 
@@ -181,9 +213,16 @@ fun PlayerFormScreen(
 
                         OutlinedTextField(
                             value = name,
-                            onValueChange = { name = it },
+                            onValueChange = {
+                                name = it.take(40)
+                                touchedName = true
+                            },
                             singleLine = true,
                             label = { Text("Nombre y apellidos") },
+                            isError = touchedName && nameError != null,
+                            supportingText = {
+                                if (touchedName && nameError != null) Text(nameError)
+                            },
                             colors = OutlinedTextFieldDefaults.colors(
                                 unfocusedBorderColor = onBg.copy(alpha = 0.18f),
                                 focusedBorderColor = accent,
@@ -203,9 +242,16 @@ fun PlayerFormScreen(
                         ) {
                             OutlinedTextField(
                                 value = ageText,
-                                onValueChange = { ageText = it.filter(Char::isDigit).take(2).ifBlank { "0" } },
+                                onValueChange = {
+                                    ageText = it.filter(Char::isDigit).take(2)
+                                    touchedAge = true
+                                },
                                 singleLine = true,
                                 label = { Text("Edad") },
+                                isError = touchedAge && ageError != null,
+                                supportingText = {
+                                    if (touchedAge && ageError != null) Text(ageError)
+                                },
                                 colors = OutlinedTextFieldDefaults.colors(
                                     unfocusedBorderColor = onBg.copy(alpha = 0.18f),
                                     focusedBorderColor = accent,
@@ -223,32 +269,50 @@ fun PlayerFormScreen(
                                 shape = RoundedCornerShape(18.dp),
                                 color = GlassBase.copy(alpha = 0.06f)
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 10.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Text(
-                                        text = "Dorsal",
-                                        color = onBg.copy(alpha = 0.70f),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        IconButton(onClick = { number = (number - 1).coerceAtLeast(1) }) {
-                                            Icon(Icons.Default.Remove, null, tint = onBg)
-                                        }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
                                         Text(
-                                            text = "#$number",
-                                            color = onBg,
-                                            style = MaterialTheme.typography.titleMedium,
+                                            text = "Dorsal",
+                                            color = onBg.copy(alpha = 0.70f),
+                                            style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.SemiBold
                                         )
-                                        IconButton(onClick = { number = (number + 1).coerceAtMost(99) }) {
-                                            Icon(Icons.Default.Add, null, tint = onBg)
+
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            IconButton(onClick = {
+                                                touchedNumber = true
+                                                number = (number - 1).coerceAtLeast(1)
+                                            }) {
+                                                Icon(Icons.Default.Remove, null, tint = onBg)
+                                            }
+                                            Text(
+                                                text = "#$number",
+                                                color = onBg,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            IconButton(onClick = {
+                                                touchedNumber = true
+                                                number = (number + 1).coerceAtMost(99)
+                                            }) {
+                                                Icon(Icons.Default.Add, null, tint = onBg)
+                                            }
                                         }
+                                    }
+
+                                    if (touchedNumber && numberError != null) {
+                                        Text(
+                                            text = numberError,
+                                            color = MaterialTheme.colorScheme.error,
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
                                     }
                                 }
                             }
@@ -333,21 +397,23 @@ fun PlayerFormScreen(
                                     selected = status == s,
                                     onClick = { status = s },
                                     shape = SegmentedButtonDefaults.itemShape(index, PlayerStatus.entries.size)
-                                ) {
-                                    Text(s.label)
-                                }
+                                ) { Text(s.label) }
                             }
                         }
 
-                        val enabled = name.isNotBlank() && age in 10..60
                         Button(
                             onClick = {
+                                touchedName = true
+                                touchedAge = true
+                                touchedNumber = true
+                                if (!enabled) return@Button
+
                                 onSave(
                                     Player(
                                         id = initial?.id ?: 0,
                                         name = name.trim(),
                                         position = position,
-                                        age = age.coerceIn(10, 60),
+                                        age = age.coerceIn(16, 40),
                                         number = number.coerceIn(1, 99),
                                         rating = ratingInt,
                                         status = status
@@ -389,13 +455,22 @@ fun PlayerFormScreen(
             if (showExitDialog) {
                 AlertDialog(
                     onDismissRequest = { showExitDialog = false },
-                    title = { Text("Salir sin guardar") },
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                    tonalElevation = 6.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    title = { Text("Salir sin guardar", fontWeight = FontWeight.SemiBold) },
                     text = { Text("¿Desea salir sin guardar los cambios del jugador?") },
                     confirmButton = {
-                        TextButton(onClick = { showExitDialog = false; onBack() }) { Text("Sí") }
+                        TextButton(onClick = { showExitDialog = false; onBack() }) {
+                            Text("Sí", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                        }
                     },
                     dismissButton = {
-                        TextButton(onClick = { showExitDialog = false }) { Text("No") }
+                        TextButton(onClick = { showExitDialog = false }) {
+                            Text("No", color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 )
             }
@@ -410,4 +485,17 @@ private fun initials(name: String): String {
         parts.size == 1 -> parts.first().take(2).uppercase()
         else -> (parts[0].take(1) + parts[1].take(1)).uppercase()
     }
+}
+
+private fun validatePlayerName(raw: String): String? {
+    val name = raw.trim()
+
+    if (name.isBlank()) return "El nombre es obligatorio."
+    if (name.length < 3) return "El nombre debe tener al menos 3 caracteres."
+    if (name.length > 40) return "El nombre no puede superar 40 caracteres."
+    if (name.contains(Regex("""\s{2,}"""))) return "Evita espacios dobles."
+    if (!Regex("""^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$""").matches(name)) {
+        return "Solo letras y espacios (se permite ' y -)."
+    }
+    return null
 }
