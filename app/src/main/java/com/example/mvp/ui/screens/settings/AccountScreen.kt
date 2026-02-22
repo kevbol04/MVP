@@ -34,11 +34,17 @@ fun AccountScreen(
     onChangePassword: (current: String, new: String) -> Unit = { _, _ -> },
 
     onDeleteAccount: () -> Unit = {},
+
     passwordLoading: Boolean = false,
     passwordError: String? = null,
     passwordChanged: Boolean = false,
     onPasswordChangedConsumed: () -> Unit = {},
-    onPasswordErrorConsumed: () -> Unit = {}
+    onPasswordErrorConsumed: () -> Unit = {},
+
+    deleteLoading: Boolean = false,
+    deleteError: String? = null,
+    accountDeleted: Boolean = false,
+    onDeleteErrorConsumed: () -> Unit = {}
 ) {
     val bgTop = MaterialTheme.colorScheme.background
     val bgMid = MaterialTheme.colorScheme.surface
@@ -62,6 +68,12 @@ fun AccountScreen(
         if (passwordChanged) {
             showChangePass = false
             onPasswordChangedConsumed()
+        }
+    }
+
+    LaunchedEffect(accountDeleted) {
+        if (accountDeleted) {
+            showDelete = false
         }
     }
 
@@ -177,8 +189,7 @@ fun AccountScreen(
                     horizontalArrangement = Arrangement.End
                 ) {
                     Surface(
-                        modifier = Modifier
-                            .clickable(enabled = hasChanges) { showConfirmSave = true },
+                        modifier = Modifier.clickable(enabled = hasChanges) { showConfirmSave = true },
                         shape = RoundedCornerShape(16.dp),
                         color = if (hasChanges) accent.copy(alpha = 0.18f) else GlassBase.copy(alpha = 0.06f)
                     ) {
@@ -205,9 +216,12 @@ fun AccountScreen(
 
             DangerBanner(
                 title = "Eliminar cuenta",
-                subtitle = "Acción irreversible. Borra tu información.",
+                subtitle = "Acción irreversible. Borrará tu información.",
                 onText = onBg,
-                onClick = { showDelete = true }
+                onClick = {
+                    onDeleteErrorConsumed()
+                    showDelete = true
+                }
             )
         }
 
@@ -255,10 +269,18 @@ fun AccountScreen(
                 accent = accent,
                 accent2 = accent2,
                 onText = onBg,
-                onDismiss = { showDelete = false },
+                loading = deleteLoading,
+                errorText = deleteError,
+                onClearError = onDeleteErrorConsumed,
+                onDismiss = {
+                    if (!deleteLoading) {
+                        onDeleteErrorConsumed()
+                        showDelete = false
+                    }
+                },
                 onConfirmDelete = {
+                    onDeleteErrorConsumed()
                     onDeleteAccount()
-                    showDelete = false
                 }
             )
         }
@@ -496,6 +518,184 @@ private fun ChangePasswordDialog(
 }
 
 @Composable
+private fun DeleteAccountDialog(
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    loading: Boolean,
+    errorText: String?,
+    onClearError: () -> Unit,
+    onDismiss: () -> Unit,
+    onConfirmDelete: () -> Unit
+) {
+    var confirmText by remember { mutableStateOf("") }
+    val token = "ELIMINAR"
+    val enabled = confirmText.trim() == token
+
+    Dialog(
+        onDismissRequest = { if (!loading) onDismiss() },
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.92f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier
+                    .padding(horizontal = 18.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = GlassBase.copy(alpha = 0.14f),
+                tonalElevation = 0.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            listOf(
+                                                Color.Red.copy(alpha = 0.28f),
+                                                accent2.copy(alpha = 0.14f)
+                                            )
+                                        ),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Warning, contentDescription = null, tint = ButtonTextDark)
+                            }
+                            Column {
+                                Text(
+                                    text = "Eliminar cuenta",
+                                    color = onText,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "Esta acción no se puede deshacer",
+                                    color = onText.copy(alpha = 0.70f),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable(enabled = !loading) { onDismiss() },
+                            shape = CircleShape,
+                            color = GlassBase.copy(alpha = 0.10f)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = onText.copy(alpha = 0.70f))
+                            }
+                        }
+                    }
+
+                    Divider(color = Color.White.copy(alpha = 0.06f))
+
+                    Text(
+                        text = "Para confirmar, escribe \"$token\".",
+                        color = onText.copy(alpha = 0.80f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+
+                    OutlinedTextField(
+                        value = confirmText,
+                        onValueChange = {
+                            confirmText = it
+                            if (errorText != null) onClearError()
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        placeholder = { Text(token) },
+                        enabled = !loading
+                    )
+
+                    if (!errorText.isNullOrBlank()) {
+                        Text(
+                            text = errorText,
+                            color = Color.Red.copy(alpha = 0.85f),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(enabled = !loading) { onDismiss() },
+                            shape = RoundedCornerShape(16.dp),
+                            color = GlassBase.copy(alpha = 0.10f)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Cancelar",
+                                    color = onText.copy(alpha = 0.80f),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(enabled = enabled && !loading) { onConfirmDelete() },
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (enabled && !loading) Color.Red.copy(alpha = 0.16f) else GlassBase.copy(alpha = 0.08f)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (loading) {
+                                    CircularProgressIndicator(
+                                        strokeWidth = 2.dp,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Eliminar",
+                                        color = if (enabled) Color.Red.copy(alpha = 0.90f) else onText.copy(alpha = 0.45f),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun ConfirmProfileChangesDialog(
     accent: Color,
     accent2: Color,
@@ -660,162 +860,6 @@ private fun ChangeRow(label: String, oldValue: String, newValue: String, onText:
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
         )
-    }
-}
-
-@Composable
-private fun DeleteAccountDialog(
-    accent: Color,
-    accent2: Color,
-    onText: Color,
-    onDismiss: () -> Unit,
-    onConfirmDelete: () -> Unit
-) {
-    var confirmText by remember { mutableStateOf("") }
-    val token = "ELIMINAR"
-    val enabled = confirmText.trim() == token
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.92f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Surface(
-                modifier = Modifier
-                    .padding(horizontal = 18.dp)
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                color = GlassBase.copy(alpha = 0.14f),
-                tonalElevation = 0.dp
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .background(
-                                        Brush.horizontalGradient(
-                                            listOf(
-                                                Color.Red.copy(alpha = 0.28f),
-                                                accent2.copy(alpha = 0.14f)
-                                            )
-                                        ),
-                                        shape = RoundedCornerShape(16.dp)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Warning, contentDescription = null, tint = ButtonTextDark)
-                            }
-                            Column {
-                                Text(
-                                    text = "Eliminar cuenta",
-                                    color = onText,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = "Esta acción no se puede deshacer",
-                                    color = onText.copy(alpha = 0.70f),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                        }
-
-                        Surface(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clickable { onDismiss() },
-                            shape = CircleShape,
-                            color = GlassBase.copy(alpha = 0.10f)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = onText.copy(alpha = 0.70f))
-                            }
-                        }
-                    }
-
-                    Divider(color = Color.White.copy(alpha = 0.06f))
-
-                    Text(
-                        text = "Para confirmar, escribe \"$token\".",
-                        color = onText.copy(alpha = 0.80f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-
-                    OutlinedTextField(
-                        value = confirmText,
-                        onValueChange = { confirmText = it },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        placeholder = { Text(token) }
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onDismiss() },
-                            shape = RoundedCornerShape(16.dp),
-                            color = GlassBase.copy(alpha = 0.10f)
-                        ) {
-                            Box(
-                                modifier = Modifier.padding(vertical = 12.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "Cancelar",
-                                    color = onText.copy(alpha = 0.80f),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable(enabled = enabled) { onConfirmDelete() },
-                            shape = RoundedCornerShape(16.dp),
-                            color = if (enabled) Color.Red.copy(alpha = 0.16f) else GlassBase.copy(alpha = 0.08f)
-                        ) {
-                            Box(
-                                modifier = Modifier.padding(vertical = 12.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "Eliminar",
-                                    color = if (enabled) Color.Red.copy(alpha = 0.90f) else onText.copy(alpha = 0.45f),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 

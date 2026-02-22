@@ -18,7 +18,6 @@ import com.example.mvp.ui.screens.players.PlayerPosition
 import com.example.mvp.ui.screens.players.PlayerStatus
 import com.example.mvp.ui.screens.players.PlayersScreen
 import com.example.mvp.ui.screens.settings.AccountRoute
-import com.example.mvp.ui.screens.settings.AccountScreen
 import com.example.mvp.ui.screens.settings.SettingsScreen
 import com.example.mvp.ui.screens.stats.StatsScreen
 import com.example.mvp.ui.screens.training.Training

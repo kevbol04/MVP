@@ -119,6 +119,14 @@ class AuthRepositoryImpl @Inject constructor(
         val rows = dao.updatePasswordHash(email = norm, newHash = newRaw.sha256())
         if (rows <= 0) error("No se pudo actualizar la contraseña.")
     }
+
+    override suspend fun deleteAccount(email: String): Result<Unit> = runCatching {
+        val norm = email.trim().lowercase()
+        val existing = dao.findByEmail(norm) ?: error("No se encontró la cuenta.")
+
+        val rows = dao.deleteByEmail(existing.email)
+        if (rows <= 0) error("No se pudo eliminar la cuenta.")
+    }
 }
 
 private fun String.sha256(): String {

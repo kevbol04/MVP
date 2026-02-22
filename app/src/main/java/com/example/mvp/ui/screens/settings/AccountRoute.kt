@@ -3,6 +3,7 @@ package com.example.mvp.ui.screens.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -29,12 +30,25 @@ fun AccountRoute(
 
     LaunchedEffect(state.saved) {
         if (state.saved) {
-            val pending = pendingProfileUpdate
-            if (pending != null) {
-                onProfileUpdated(pending.first, pending.second)
-                pendingProfileUpdate = null
+            pendingProfileUpdate?.let { (n, e) ->
+                onProfileUpdated(n, e)
             }
+            pendingProfileUpdate = null
             vm.clearSavedFlag()
+        }
+    }
+
+    LaunchedEffect(state.passwordChanged) {
+        if (state.passwordChanged) {
+            snackbarHostState.showSnackbar("Contraseña actualizada correctamente.")
+            vm.clearPasswordChangedFlag()
+        }
+    }
+
+    LaunchedEffect(state.accountDeleted) {
+        if (state.accountDeleted) {
+            vm.clearAccountDeletedFlag()
+            onDeleteAccount()
         }
     }
 
@@ -47,30 +61,35 @@ fun AccountRoute(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = Color.Transparent
     ) { padding ->
-        Box(Modifier.fillMaxSize()) {
-
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             AccountScreen(
                 modifier = Modifier.fillMaxSize(),
                 name = name,
                 email = email,
                 onBack = onBack,
-
                 onSave = { newName, newEmail ->
                     pendingProfileUpdate = newName to newEmail
                     vm.saveProfile(oldEmail = email, newName = newName, newEmail = newEmail)
                 },
-
                 onChangePassword = { current, new ->
                     vm.changePassword(email = email, current = current, newPass = new)
                 },
-
-                onDeleteAccount = onDeleteAccount,
-
+                onDeleteAccount = {
+                    vm.deleteAccount(email)
+                },
                 passwordLoading = state.loading,
                 passwordError = state.error,
                 passwordChanged = state.passwordChanged,
                 onPasswordChangedConsumed = { vm.clearPasswordChangedFlag() },
-                onPasswordErrorConsumed = { vm.clearError() }
+                onPasswordErrorConsumed = { vm.clearError() },
+                deleteLoading = state.loading,
+                deleteError = state.error,
+                accountDeleted = state.accountDeleted,
+                onDeleteErrorConsumed = { vm.clearError() }
             )
 
             if (state.loading) {

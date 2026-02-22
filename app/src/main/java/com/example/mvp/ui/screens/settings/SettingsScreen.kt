@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
 
@@ -39,6 +40,7 @@ fun SettingsScreen(
     var matchReminders by remember { mutableStateOf(true) }
     var trainingReminders by remember { mutableStateOf(false) }
     var biometric by remember { mutableStateOf(false) }
+    var showLogoutConfirm by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier
@@ -175,7 +177,7 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 4.dp)
-                        .clickable { onLogout() },
+                        .clickable { showLogoutConfirm = true },
                     shape = RoundedCornerShape(22.dp),
                     color = GlassBase.copy(alpha = 0.08f)
                 ) {
@@ -213,6 +215,163 @@ fun SettingsScreen(
                             contentDescription = null,
                             tint = onBg.copy(alpha = 0.55f)
                         )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showLogoutConfirm) {
+        ConfirmLogoutDialog(
+            accent = accent,
+            accent2 = accent2,
+            onText = onBg,
+            onDismiss = { showLogoutConfirm = false },
+            onConfirm = {
+                showLogoutConfirm = false
+                onLogout()
+            }
+        )
+    }
+}
+
+@Composable
+private fun ConfirmLogoutDialog(
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.92f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier
+                    .padding(horizontal = 18.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = GlassBase.copy(alpha = 0.14f),
+                tonalElevation = 0.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            listOf(
+                                                accent.copy(alpha = 0.38f),
+                                                accent2.copy(alpha = 0.22f)
+                                            )
+                                        ),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Logout, contentDescription = null, tint = ButtonTextDark)
+                            }
+                            Column {
+                                Text(
+                                    text = "Cerrar sesión",
+                                    color = onText,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "¿Seguro que quieres salir?",
+                                    color = onText.copy(alpha = 0.70f),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable { onDismiss() },
+                            shape = CircleShape,
+                            color = GlassBase.copy(alpha = 0.10f)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = onText.copy(alpha = 0.70f))
+                            }
+                        }
+                    }
+
+                    Divider(color = Color.White.copy(alpha = 0.06f))
+
+                    Text(
+                        text = "Podrás volver a iniciar sesión cuando quieras.",
+                        color = onText.copy(alpha = 0.78f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onDismiss() },
+                            shape = RoundedCornerShape(16.dp),
+                            color = GlassBase.copy(alpha = 0.10f)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Cancelar",
+                                    color = onText.copy(alpha = 0.80f),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onConfirm() },
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.Red.copy(alpha = 0.16f)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Cerrar sesión",
+                                    color = Color.Red.copy(alpha = 0.90f),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
                     }
                 }
             }

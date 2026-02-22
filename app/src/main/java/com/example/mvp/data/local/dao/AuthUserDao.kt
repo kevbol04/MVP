@@ -23,4 +23,7 @@ interface AuthUserDao {
 
     @Query("UPDATE auth_users SET passwordHash = :newHash WHERE email = :email")
     suspend fun updatePasswordHash(email: String, newHash: String): Int
+
+    @Query("DELETE FROM auth_users WHERE email = :email")
+    suspend fun deleteByEmail(email: String): Int
 }

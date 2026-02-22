@@ -8,4 +8,5 @@ interface AuthRepository {
 
     suspend fun updateProfile(oldEmail: String, newName: String, newEmail: String): Result<AuthUser>
     suspend fun changePassword(email: String, currentRaw: String, newRaw: String): Result<Unit>
+    suspend fun deleteAccount(email: String): Result<Unit>
 }

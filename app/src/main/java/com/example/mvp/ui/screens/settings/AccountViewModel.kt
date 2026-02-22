@@ -14,7 +14,8 @@ data class AccountUiState(
     val loading: Boolean = false,
     val saved: Boolean = false,
     val error: String? = null,
-    val passwordChanged: Boolean = false
+    val passwordChanged: Boolean = false,
+    val accountDeleted: Boolean = false
 )
 
 @HiltViewModel
@@ -51,6 +52,18 @@ class AccountViewModel @Inject constructor(
         }
     }
 
+    fun deleteAccount(email: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(loading = true, error = null)
+            val result = repo.deleteAccount(email)
+            _uiState.value = _uiState.value.copy(
+                loading = false,
+                accountDeleted = result.isSuccess,
+                error = result.exceptionOrNull()?.message
+            )
+        }
+    }
+
     fun clearPasswordChangedFlag() {
         _uiState.value = _uiState.value.copy(passwordChanged = false)
     }
@@ -61,5 +74,9 @@ class AccountViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun clearAccountDeletedFlag() {
+        _uiState.value = _uiState.value.copy(accountDeleted = false)
     }
 }
