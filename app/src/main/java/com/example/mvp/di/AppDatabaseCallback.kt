@@ -2,8 +2,11 @@ package com.example.mvp.di
 
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.mvp.data.local.SamplePayLoad
 import com.example.mvp.data.local.dao.AuthUserDao
-import com.example.mvp.data.local.entities.AuthUserEntity
+import com.example.mvp.data.local.dao.MatchDao
+import com.example.mvp.data.local.dao.PlayerDao
+import com.example.mvp.data.local.dao.TrainingDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -14,22 +17,27 @@ import javax.inject.Singleton
 
 @Singleton
 class AppDatabaseCallback @Inject constructor(
-    private val authUserDaoProvider: Provider<AuthUserDao>
+    private val authUserDaoProvider: Provider<AuthUserDao>,
+    private val playerDaoProvider: Provider<PlayerDao>,
+    private val matchDaoProvider: Provider<MatchDao>,
+    private val trainingDaoProvider: Provider<TrainingDao>
 ) : RoomDatabase.Callback() {
 
     override fun onCreate(db: SupportSQLiteDatabase) {
         super.onCreate(db)
 
         CoroutineScope(Dispatchers.IO).launch {
-            val dao = authUserDaoProvider.get()
+            val authUserDao = authUserDaoProvider.get()
+            val playerDao = playerDaoProvider.get()
+            val matchDao = matchDaoProvider.get()
+            val trainingDao = trainingDaoProvider.get()
 
-            val demo = AuthUserEntity(
-                name = "User",
-                email = "user@gmail.com",
-                passwordHash = "1234".sha256()
+            SamplePayLoad.seed(
+                authUserDao = authUserDao,
+                playerDao = playerDao,
+                matchDao = matchDao,
+                trainingDao = trainingDao
             )
-
-            runCatching { dao.insert(demo) }
         }
     }
 }
