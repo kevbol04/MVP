@@ -38,10 +38,10 @@ fun TrainingFormScreen(
     val accent = MaterialTheme.colorScheme.primary
     val onBg = MaterialTheme.colorScheme.onBackground
 
-    var name by remember { mutableStateOf(initial?.name ?: "") }
-    var dateText by remember { mutableStateOf(initial?.dateText ?: "") }
-    var durationText by remember { mutableStateOf(initial?.durationMin?.toString() ?: "") }
-    var type by remember { mutableStateOf(initial?.type ?: TrainingType.FUERZA) }
+    var name by remember { mutableStateOf("") }
+    var dateText by remember { mutableStateOf("") }
+    var durationText by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf(TrainingType.FUERZA) }
 
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -49,8 +49,21 @@ fun TrainingFormScreen(
     var touchedDate by remember { mutableStateOf(false) }
     var touchedDuration by remember { mutableStateOf(false) }
 
+    LaunchedEffect(initial?.id) {
+        name = initial?.name ?: ""
+        dateText = initial?.dateText ?: ""
+        durationText = initial?.durationMin?.toString() ?: ""
+        type = initial?.type ?: TrainingType.FUERZA
+
+        touchedName = false
+        touchedDate = false
+        touchedDuration = false
+    }
+
+    val isEditing = initial != null
+
     val nameError = remember(name) { validateName(name) }
-    val dateError = remember(dateText) { validateDateStrict(dateText) }
+    val dateError = remember(dateText, isEditing) { validateDateStrict(dateText, allowPast = isEditing) }
     val durationError = remember(durationText) { validateDuration(durationText) }
 
     val isValid = remember(nameError, dateError, durationError) {
@@ -300,8 +313,7 @@ private fun TrainingTypeDropdown(
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .background(Color.Transparent)
+            modifier = Modifier.background(Color.Transparent)
         ) {
             Surface(
                 shape = RoundedCornerShape(18.dp),
@@ -385,7 +397,7 @@ private fun validateName(raw: String): String? {
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
-private fun validateDateStrict(raw: String): String? {
+private fun validateDateStrict(raw: String, allowPast: Boolean = false): String? {
     val txt = raw.trim()
     if (txt.isBlank()) return "La fecha es obligatoria."
     if (!Regex("""^\d{2}/\d{2}/\d{4}$""").matches(txt)) {
@@ -395,12 +407,14 @@ private fun validateDateStrict(raw: String): String? {
         val formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu")
             .withResolverStyle(ResolverStyle.STRICT)
         val selectedDate = LocalDate.parse(txt, formatter)
-        val today = LocalDate.now()
-        if (selectedDate.isBefore(today)) {
-            "La fecha no puede ser anterior a hoy."
-        } else {
-            null
+
+        if (!allowPast) {
+            val today = LocalDate.now()
+            if (selectedDate.isBefore(today)) {
+                return "La fecha no puede ser anterior a hoy."
+            }
         }
+        null
     } catch (_: Exception) {
         "Fecha no válida. Revisa día/mes."
     }

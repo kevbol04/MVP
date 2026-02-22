@@ -202,7 +202,7 @@ object SamplePayLoad {
             MatchEntity(
                 userId = userId,
                 rival = "FC Barcelona",
-                dateText = "2026-02-10/02/2026",
+                dateText = "10/02/2026",
                 competition = com.example.mvp.ui.screens.matches.Competition.COPA.name,
                 result = com.example.mvp.ui.screens.matches.MatchResult.EMPATE.name,
                 goalsFor = 1,
