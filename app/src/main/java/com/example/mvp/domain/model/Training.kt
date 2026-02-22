@@ -1,12 +1,5 @@
 package com.example.mvp.domain.model
-
-enum class TrainingType(val label: String) {
-    FUERZA("Fuerza"),
-    RESISTENCIA("Resistencia"),
-    VELOCIDAD("Velocidad"),
-    TECNICA("Técnica"),
-    RECUPERACION("Recuperación")
-}
+import com.example.mvp.ui.screens.training.TrainingType
 
 data class Training(
     val id: Long = 0L,

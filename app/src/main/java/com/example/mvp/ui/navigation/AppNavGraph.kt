@@ -2,8 +2,13 @@ package com.example.mvp.ui.navigation
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -14,6 +19,7 @@ import com.example.mvp.ui.screens.login.AuthRoute
 import com.example.mvp.ui.screens.matches.Match
 import com.example.mvp.ui.screens.matches.MatchFormScreen
 import com.example.mvp.ui.screens.matches.MatchesScreen
+import com.example.mvp.ui.screens.matches.MatchesViewModel
 import com.example.mvp.ui.screens.players.Player
 import com.example.mvp.ui.screens.players.PlayerDetailScreen
 import com.example.mvp.ui.screens.players.PlayerFormScreen
@@ -172,11 +178,17 @@ fun AppNavGraph(
 
         // ---------------- MATCHES ----------------
         composable(Route.Matches.route) {
+            val vm: MatchesViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            val matches by vm.matches.collectAsState()
+
             MatchesScreen(
                 matches = matches,
                 onBack = { navController.popBackStack() },
                 onCreateMatch = { navController.navigate(Route.MatchForm.route) },
                 onEditMatch = { m -> navController.navigate(Route.MatchFormWithId.createRoute(m.id)) },
+                onDeleteMatch = { m -> vm.delete(m) },
 
                 onGoTraining = { navController.navigateToTab(Route.Trainings.route) },
                 onGoPlayers = { navController.navigateToTab(Route.Players.route) },
@@ -185,28 +197,46 @@ fun AppNavGraph(
         }
 
         composable(Route.MatchForm.route) {
+            val vm: MatchesViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
             MatchFormScreen(
                 initial = null,
                 onBack = { navController.popBackStack() },
-                onSave = { newMatch ->
-                    val nextId = (matches.maxOfOrNull { it.id } ?: 0) + 1
-                    matches = listOf(newMatch.copy(id = nextId)) + matches
+                onSave = { m ->
+                    vm.save(m.copy(id = 0))
                     navController.popBackStack()
                 }
             )
         }
 
         composable(Route.MatchFormWithId.route) { backStackEntry ->
+            val vm: MatchesViewModel = hiltViewModel()
+            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
             val id = backStackEntry.arguments
                 ?.getString(Route.MatchFormWithId.ARG_ID)
                 ?.toIntOrNull()
-            val current = matches.firstOrNull { it.id == id }
+
+            if (id == null) {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+                return@composable
+            }
+
+            val current by vm.matchById(id).collectAsState(initial = null)
+
+            if (current == null) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+                return@composable
+            }
 
             MatchFormScreen(
                 initial = current,
                 onBack = { navController.popBackStack() },
                 onSave = { edited ->
-                    matches = matches.map { if (it.id == edited.id) edited else it }
+                    vm.save(edited)
                     navController.popBackStack()
                 }
             )
@@ -295,17 +325,3 @@ private fun NavHostController.navigateToTab(route: String) {
         popUpTo(Route.Dashboard.route) { saveState = true }
     }
 }
-
-@Suppress("unused")
-private fun defaultPlayersForNavInit(): List<Player> = listOf(
-    Player(1, "Álex Romero", PlayerPosition.POR, 23, 1, 78, PlayerStatus.TITULAR),
-    Player(2, "Sergio Vidal", PlayerPosition.DEF, 27, 2, 80, PlayerStatus.TITULAR),
-    Player(3, "Mario Costa", PlayerPosition.DEF, 21, 4, 74, PlayerStatus.SUPLENTE),
-    Player(4, "Hugo Navarro", PlayerPosition.DEF, 29, 5, 82, PlayerStatus.TITULAR),
-    Player(5, "Iván Paredes", PlayerPosition.MED, 24, 6, 79, PlayerStatus.TITULAR),
-    Player(6, "Dani Serrano", PlayerPosition.MED, 22, 8, 77, PlayerStatus.SUPLENTE),
-    Player(7, "Lucas Prieto", PlayerPosition.MED, 26, 10, 83, PlayerStatus.TITULAR),
-    Player(8, "Adrián Molina", PlayerPosition.DEL, 25, 9, 84, PlayerStatus.TITULAR),
-    Player(9, "Eric Salas", PlayerPosition.DEL, 20, 11, 73, PlayerStatus.LESIONADO),
-    Player(10, "Bruno Sanz", PlayerPosition.DEL, 28, 7, 81, PlayerStatus.SUPLENTE),
-)

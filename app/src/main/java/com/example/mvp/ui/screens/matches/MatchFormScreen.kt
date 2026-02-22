@@ -1,5 +1,7 @@
 package com.example.mvp.ui.screens.matches
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -24,7 +26,11 @@ import com.example.mvp.ui.theme.Draw
 import com.example.mvp.ui.theme.GlassBase
 import com.example.mvp.ui.theme.Loss
 import com.example.mvp.ui.theme.Win
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.ResolverStyle
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MatchFormScreen(
@@ -48,6 +54,8 @@ fun MatchFormScreen(
 
     var showExitDialog by remember { mutableStateOf(false) }
 
+    var touchedDate by remember { mutableStateOf(false) }
+
     val goalsFor = goalsForText.toIntOrNull() ?: 0
     val goalsAgainst = goalsAgainstText.toIntOrNull() ?: 0
 
@@ -57,6 +65,11 @@ fun MatchFormScreen(
             goalsFor == goalsAgainst -> MatchResult.EMPATE
             else -> MatchResult.DERROTA
         }
+    }
+
+    val dateError = remember(dateText) { validateDateStrict(dateText) }
+    val isValid = remember(rival, dateText, dateError) {
+        rival.trim().isNotBlank() && dateError == null
     }
 
     val dirty = remember(rival, dateText, competition, goalsForText, goalsAgainstText, initial) {
@@ -168,10 +181,19 @@ fun MatchFormScreen(
 
                     OutlinedTextField(
                         value = dateText,
-                        onValueChange = { dateText = it },
+                        onValueChange = {
+                            dateText = it.filter { ch -> ch.isDigit() || ch == '/' }.take(10)
+                            touchedDate = true
+                        },
                         singleLine = true,
-                        label = { Text("Fecha (dd/mm/aaaa)") },
+                        label = { Text("Fecha (dd/MM/aaaa)") },
                         leadingIcon = { Icon(Icons.Default.CalendarToday, null) },
+                        isError = touchedDate && dateError != null,
+                        supportingText = {
+                            if (touchedDate) {
+                                Text(dateError ?: "Formato correcto: dd/MM/aaaa")
+                            }
+                        },
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = onBg.copy(alpha = 0.18f),
                             focusedBorderColor = accent,
@@ -274,9 +296,11 @@ fun MatchFormScreen(
                         )
                     }
 
-                    val enabled = rival.isNotBlank() && dateText.isNotBlank()
                     Button(
                         onClick = {
+                            touchedDate = true
+                            if (!isValid) return@Button
+
                             onSave(
                                 Match(
                                     id = initial?.id ?: 0,
@@ -289,7 +313,7 @@ fun MatchFormScreen(
                                 )
                             )
                         },
-                        enabled = enabled,
+                        enabled = isValid,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
@@ -297,7 +321,7 @@ fun MatchFormScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                         contentPadding = PaddingValues(0.dp)
                     ) {
-                        val alpha = if (enabled) 1f else 0.35f
+                        val alpha = if (isValid) 1f else 0.35f
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -324,7 +348,12 @@ fun MatchFormScreen(
         if (showExitDialog) {
             AlertDialog(
                 onDismissRequest = { showExitDialog = false },
-                title = { Text("Salir sin guardar") },
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                tonalElevation = 6.dp,
+                shape = RoundedCornerShape(24.dp),
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                title = { Text("Salir sin guardar", fontWeight = FontWeight.SemiBold) },
                 text = { Text("¿Desea salir sin guardar el partido actual?") },
                 confirmButton = {
                     TextButton(
@@ -332,10 +361,12 @@ fun MatchFormScreen(
                             showExitDialog = false
                             onBack()
                         }
-                    ) { Text("Sí") }
+                    ) { Text("Sí", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showExitDialog = false }) { Text("No") }
+                    TextButton(onClick = { showExitDialog = false }) {
+                        Text("No", color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             )
         }
@@ -379,16 +410,35 @@ private fun CompetitionDropdown(
 
         ExposedDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Color.Transparent)
         ) {
-            Competition.entries.forEach { c ->
-                DropdownMenuItem(
-                    text = { Text(c.label) },
-                    onClick = {
-                        onSelected(c)
-                        expanded = false
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                tonalElevation = 6.dp
+            ) {
+                Column {
+                    Competition.entries.forEach { c ->
+                        val isSelected = c == selected
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = c.label,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
+                                )
+                            },
+                            onClick = {
+                                onSelected(c)
+                                expanded = false
+                            },
+                            modifier = Modifier.background(
+                                if (isSelected) accent.copy(alpha = 0.14f) else Color.Transparent
+                            )
+                        )
                     }
-                )
+                }
             }
         }
     }
@@ -443,4 +493,20 @@ private fun ScoreBox(
 private fun String.onlyScoreDigits(): String {
     val cleaned = this.filter { it.isDigit() }.take(2)
     return if (cleaned.isBlank()) "0" else cleaned
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun validateDateStrict(raw: String): String? {
+    val txt = raw.trim()
+    if (txt.isBlank()) return "La fecha es obligatoria."
+    if (!Regex("""^\d{2}/\d{2}/\d{4}$""").matches(txt)) return "Formato inválido. Usa dd/MM/aaaa."
+
+    return try {
+        val formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu")
+            .withResolverStyle(ResolverStyle.STRICT)
+        LocalDate.parse(txt, formatter)
+        null
+    } catch (_: Exception) {
+        "Fecha no válida. Revisa día/mes."
+    }
 }

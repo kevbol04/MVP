@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Groups
@@ -53,18 +54,17 @@ data class Match(
     val result: MatchResult
 )
 
-private enum class BottomTab {
-    Training, Matches, Players, Stats
-}
+private enum class BottomTab { Training, Matches, Players, Stats }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MatchesScreen(
     modifier: Modifier = Modifier,
-    matches: List<Match> = sampleMatches(),
+    matches: List<Match> = emptyList(),
     onBack: () -> Unit = {},
     onCreateMatch: () -> Unit = {},
     onEditMatch: (Match) -> Unit = {},
+    onDeleteMatch: (Match) -> Unit = {},
 
     onGoTraining: () -> Unit = {},
     onGoPlayers: () -> Unit = {},
@@ -75,6 +75,7 @@ fun MatchesScreen(
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.secondary
     val onBg = MaterialTheme.colorScheme.onBackground
+    val danger = MaterialTheme.colorScheme.error
 
     var query by remember { mutableStateOf("") }
     var selectedCompetition by remember { mutableStateOf<Competition?>(null) }
@@ -94,6 +95,8 @@ fun MatchesScreen(
 
     var selectedTab by remember { mutableStateOf(BottomTab.Matches) }
     val bottomBarHeight = 78.dp
+
+    var toDelete by remember { mutableStateOf<Match?>(null) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -210,8 +213,10 @@ fun MatchesScreen(
                             match = match,
                             accent = accent,
                             accent2 = accent2,
+                            danger = danger,
                             onText = onBg,
-                            onEdit = { onEditMatch(match) }
+                            onEdit = { onEditMatch(match) },
+                            onDelete = { toDelete = match }
                         )
                     }
                 }
@@ -228,25 +233,46 @@ fun MatchesScreen(
                 selected = selectedTab,
                 onSelect = { tab ->
                     when (tab) {
-                        BottomTab.Matches -> {
-                            selectedTab = BottomTab.Matches
-                        }
-                        BottomTab.Training -> {
-                            selectedTab = BottomTab.Training
-                            onGoTraining()
-                        }
-                        BottomTab.Players -> {
-                            selectedTab = BottomTab.Players
-                            onGoPlayers()
-                        }
-                        BottomTab.Stats -> {
-                            selectedTab = BottomTab.Stats
-                            onGoStats()
-                        }
+                        BottomTab.Matches -> selectedTab = BottomTab.Matches
+                        BottomTab.Training -> { selectedTab = BottomTab.Training; onGoTraining() }
+                        BottomTab.Players -> { selectedTab = BottomTab.Players; onGoPlayers() }
+                        BottomTab.Stats -> { selectedTab = BottomTab.Stats; onGoStats() }
                     }
                 }
             )
         }
+    }
+
+    if (toDelete != null) {
+        AlertDialog(
+            onDismissRequest = { toDelete = null },
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+            tonalElevation = 6.dp,
+            shape = RoundedCornerShape(24.dp),
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            title = { Text("Eliminar partido", fontWeight = FontWeight.SemiBold) },
+            text = { Text("Se eliminará “${toDelete!!.rival}”. Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteMatch(toDelete!!)
+                        toDelete = null
+                    }
+                ) {
+                    Text(
+                        "Eliminar",
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { toDelete = null }) {
+                    Text("Cancelar", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        )
     }
 }
 
@@ -391,7 +417,6 @@ private fun FilterChipsRow(
             onText = onText,
             onClick = { onSelectCompetition(if (selectedCompetition == Competition.LIGA) null else Competition.LIGA) }
         )
-
         CompetitionChip(
             text = "Copa",
             selected = selectedCompetition == Competition.COPA,
@@ -399,7 +424,6 @@ private fun FilterChipsRow(
             onText = onText,
             onClick = { onSelectCompetition(if (selectedCompetition == Competition.COPA) null else Competition.COPA) }
         )
-
         CompetitionChip(
             text = "Amist.",
             selected = selectedCompetition == Competition.AMISTOSO,
@@ -437,8 +461,10 @@ private fun MatchScoreCard(
     match: Match,
     accent: Color,
     accent2: Color,
+    danger: Color,
     onText: Color,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val (badgeBase, badgeText) = when (match.result) {
         MatchResult.VICTORIA -> Win to Win
@@ -475,8 +501,16 @@ private fun MatchScoreCard(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
+
                 IconButton(onClick = onEdit) {
                     Icon(Icons.Default.Edit, contentDescription = "Editar", tint = accent)
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.DeleteOutline,
+                        contentDescription = "Eliminar",
+                        tint = danger.copy(alpha = 0.92f)
+                    )
                 }
             }
 
@@ -534,10 +568,3 @@ private fun MatchScoreCard(
         }
     }
 }
-
-private fun sampleMatches(): List<Match> = listOf(
-    Match(1, "Real Betis", "12/11/2025", Competition.LIGA, 2, 1, MatchResult.VICTORIA),
-    Match(2, "Villarreal", "09/11/2025", Competition.LIGA, 1, 1, MatchResult.EMPATE),
-    Match(3, "Valencia", "02/11/2025", Competition.COPA, 0, 2, MatchResult.DERROTA),
-    Match(4, "Levante", "28/10/2025", Competition.AMISTOSO, 3, 0, MatchResult.VICTORIA)
-)
