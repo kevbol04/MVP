@@ -24,25 +24,30 @@ import androidx.compose.ui.unit.dp
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
 
-data class RecentItem(
-    val title: String,
-    val subtitle: String
-)
-
-private enum class BottomTab {
-    Training, Matches, Players, Stats
+sealed class RecentItem {
+    data class Training(val title: String, val subtitle: String, val trainingId: Long) : RecentItem()
+    data class Match(val title: String, val subtitle: String, val matchId: Long) : RecentItem()
+    data class Player(val title: String, val subtitle: String, val playerId: Long) : RecentItem()
 }
+
+private enum class BottomTab { Training, Matches, Players, Stats }
 
 @Composable
 fun DashboardScreen(
     modifier: Modifier = Modifier,
     username: String = "Usuario",
+    sessionsToComplete: Int = 0,
+    lastTraining: RecentItem.Training? = null,
+    lastMatch: RecentItem.Match? = null,
+    lastPlayer: RecentItem.Player? = null,
     onGoTraining: () -> Unit = {},
     onGoMatches: () -> Unit = {},
     onGoPlayers: () -> Unit = {},
     onGoStats: () -> Unit = {},
     onGoSettings: () -> Unit = {},
-    onOpenRecent: (RecentItem) -> Unit = {}
+    onOpenTraining: (Long) -> Unit = {},
+    onOpenMatch: (Long) -> Unit = {},
+    onOpenPlayer: (Long) -> Unit = {},
 ) {
     val bgTop = MaterialTheme.colorScheme.background
     val bgMid = MaterialTheme.colorScheme.surface
@@ -50,11 +55,13 @@ fun DashboardScreen(
     val accent2 = MaterialTheme.colorScheme.secondary
     val onBg = MaterialTheme.colorScheme.onBackground
 
-    val recents = listOf(
-        RecentItem("Entrenamiento de Pierna", "12/11/2025 · 90 min · Fuerza"),
-        RecentItem("Partido: Real Sociedad vs Real Betis", "Jornada 12 · Estadísticas"),
-        RecentItem("Jugador destacado", "Progreso semanal actualizado")
-    )
+    val recents = remember(lastTraining, lastMatch, lastPlayer) {
+        buildList<RecentItem> {
+            lastTraining?.let { add(it) }
+            lastMatch?.let { add(it) }
+            lastPlayer?.let { add(it) }
+        }
+    }
 
     var selectedTab by remember { mutableStateOf<BottomTab?>(null) }
     val bottomBarHeight = 78.dp
@@ -87,10 +94,12 @@ fun DashboardScreen(
             item {
                 DashboardHeader(
                     username = username,
+                    sessionsToComplete = sessionsToComplete,
                     accent = accent,
                     accent2 = accent2,
                     onText = onBg,
-                    onGoSettings = onGoSettings
+                    onGoSettings = onGoSettings,
+                    onOpenObjective = onGoTraining
                 )
             }
 
@@ -106,17 +115,34 @@ fun DashboardScreen(
                 )
             }
 
-            item {
-                SectionTitle(title = "Recientes", onText = onBg)
-            }
+            if (recents.isNotEmpty()) {
+                item { SectionTitle(title = "Recientes", onText = onBg) }
 
-            items(recents) { recent ->
-                RecentCard(
-                    item = recent,
-                    accent = accent,
-                    onText = onBg,
-                    onClick = { onOpenRecent(recent) }
-                )
+                items(recents) { recent ->
+                    when (recent) {
+                        is RecentItem.Training -> RecentCard(
+                            title = recent.title,
+                            subtitle = recent.subtitle,
+                            accent = accent,
+                            onText = onBg,
+                            onClick = { onOpenTraining(recent.trainingId) }
+                        )
+                        is RecentItem.Match -> RecentCard(
+                            title = recent.title,
+                            subtitle = recent.subtitle,
+                            accent = accent,
+                            onText = onBg,
+                            onClick = { onOpenMatch(recent.matchId) }
+                        )
+                        is RecentItem.Player -> RecentCard(
+                            title = recent.title,
+                            subtitle = recent.subtitle,
+                            accent = accent,
+                            onText = onBg,
+                            onClick = { onOpenPlayer(recent.playerId) }
+                        )
+                    }
+                }
             }
         }
 
@@ -143,135 +169,14 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun BottomMenuBar(
-    modifier: Modifier = Modifier,
-    accent: Color,
-    accent2: Color,
-    onText: Color,
-    selected: BottomTab?,
-    onSelect: (BottomTab) -> Unit
-) {
-    Surface(
-        modifier = modifier.height(64.dp),
-        shape = RoundedCornerShape(22.dp),
-        color = GlassBase.copy(alpha = 0.10f),
-        tonalElevation = 2.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            accent.copy(alpha = 0.10f),
-                            accent2.copy(alpha = 0.08f)
-                        )
-                    )
-                )
-                .padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomMenuItem(
-                label = "Entrenamientos",
-                icon = Icons.Default.FitnessCenter,
-                isSelected = selected == BottomTab.Training,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Training) }
-            )
-            BottomMenuItem(
-                label = "Partidos",
-                icon = Icons.Default.SportsSoccer,
-                isSelected = selected == BottomTab.Matches,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Matches) }
-            )
-            BottomMenuItem(
-                label = "Jugadores",
-                icon = Icons.Default.Groups,
-                isSelected = selected == BottomTab.Players,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Players) }
-            )
-            BottomMenuItem(
-                label = "Est",
-                icon = Icons.Default.BarChart,
-                isSelected = selected == BottomTab.Stats,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Stats) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun RowScope.BottomMenuItem(
-    label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    isSelected: Boolean,
-    accent: Color,
-    accent2: Color,
-    onText: Color,
-    onClick: () -> Unit
-) {
-    val bgBrush = if (isSelected) {
-        Brush.horizontalGradient(
-            listOf(
-                accent.copy(alpha = 0.30f),
-                accent2.copy(alpha = 0.24f)
-            )
-        )
-    } else {
-        Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
-    }
-
-    val tint = if (isSelected) ButtonTextDark else onText.copy(alpha = 0.78f)
-
-    Surface(
-        modifier = Modifier
-            .height(46.dp)
-            .weight(1f)
-            .padding(horizontal = 4.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        color = GlassBase.copy(alpha = if (isSelected) 0.12f else 0.02f),
-        tonalElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(bgBrush)
-                .padding(horizontal = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(icon, contentDescription = label, tint = tint)
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = label,
-                color = tint,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                maxLines = 1
-            )
-        }
-    }
-}
-
-@Composable
 private fun DashboardHeader(
     username: String,
+    sessionsToComplete: Int,
     accent: Color,
     accent2: Color,
     onText: Color,
-    onGoSettings: () -> Unit
+    onGoSettings: () -> Unit,
+    onOpenObjective: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
@@ -325,6 +230,9 @@ private fun DashboardHeader(
         }
 
         Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onOpenObjective() },
             shape = RoundedCornerShape(18.dp),
             color = GlassBase.copy(alpha = 0.06f)
         ) {
@@ -337,12 +245,15 @@ private fun DashboardHeader(
             ) {
                 Column {
                     Text(
-                        text = "Objetivo de hoy",
+                        text = "Objetivos a cumplir",
                         color = onText.copy(alpha = 0.70f),
                         style = MaterialTheme.typography.labelMedium
                     )
                     Text(
-                        text = "Completar 1 sesión",
+                        text = if (sessionsToComplete == 0)
+                            "No hay sesiones pendientes"
+                        else
+                            "Completar $sessionsToComplete sesión${if (sessionsToComplete == 1) "" else "es"}",
                         color = onText,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
@@ -354,7 +265,7 @@ private fun DashboardHeader(
                     color = accent.copy(alpha = 0.18f)
                 ) {
                     Text(
-                        text = "ON",
+                        text = "VER",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         color = accent,
                         style = MaterialTheme.typography.labelLarge,
@@ -390,7 +301,6 @@ private fun QuickActionsGrid(
                 modifier = Modifier.weight(1f),
                 onClick = onGoTraining
             )
-
             ActionCard(
                 title = "Partidos",
                 subtitle = "Encuentros & resultados",
@@ -414,7 +324,6 @@ private fun QuickActionsGrid(
                 modifier = Modifier.weight(1f),
                 onClick = onGoPlayers
             )
-
             ActionCard(
                 title = "Estadísticas",
                 subtitle = "Progreso & datos",
@@ -497,7 +406,8 @@ private fun SectionTitle(title: String, onText: Color) {
 
 @Composable
 private fun RecentCard(
-    item: RecentItem,
+    title: String,
+    subtitle: String,
     accent: Color,
     onText: Color,
     onClick: () -> Unit
@@ -518,13 +428,13 @@ private fun RecentCard(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = item.title,
+                    text = title,
                     color = onText,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = item.subtitle,
+                    text = subtitle,
                     color = onText.copy(alpha = 0.70f),
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -542,6 +452,97 @@ private fun RecentCard(
                     fontWeight = FontWeight.SemiBold
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun BottomMenuBar(
+    modifier: Modifier = Modifier,
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    selected: BottomTab?,
+    onSelect: (BottomTab) -> Unit
+) {
+    Surface(
+        modifier = modifier.height(64.dp),
+        shape = RoundedCornerShape(22.dp),
+        color = GlassBase.copy(alpha = 0.10f),
+        tonalElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(accent.copy(alpha = 0.10f), accent2.copy(alpha = 0.08f))
+                    )
+                )
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BottomMenuItem("Entr", Icons.Default.FitnessCenter, selected == BottomTab.Training, accent, accent2, onText) {
+                onSelect(BottomTab.Training)
+            }
+            BottomMenuItem("Part", Icons.Default.SportsSoccer, selected == BottomTab.Matches, accent, accent2, onText) {
+                onSelect(BottomTab.Matches)
+            }
+            BottomMenuItem("Jug", Icons.Default.Groups, selected == BottomTab.Players, accent, accent2, onText) {
+                onSelect(BottomTab.Players)
+            }
+            BottomMenuItem("Est", Icons.Default.BarChart, selected == BottomTab.Stats, accent, accent2, onText) {
+                onSelect(BottomTab.Stats)
+            }
+        }
+    }
+}
+
+@Composable
+private fun RowScope.BottomMenuItem(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isSelected: Boolean,
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    onClick: () -> Unit
+) {
+    val bgBrush = if (isSelected) {
+        Brush.horizontalGradient(listOf(accent.copy(alpha = 0.30f), accent2.copy(alpha = 0.24f)))
+    } else {
+        Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+    }
+
+    val tint = if (isSelected) ButtonTextDark else onText.copy(alpha = 0.78f)
+
+    Surface(
+        modifier = Modifier
+            .height(46.dp)
+            .weight(1f)
+            .padding(horizontal = 4.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        color = GlassBase.copy(alpha = if (isSelected) 0.12f else 0.02f),
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(bgBrush)
+                .padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(icon, contentDescription = label, tint = tint)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = label,
+                color = tint,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                maxLines = 1
+            )
         }
     }
 }

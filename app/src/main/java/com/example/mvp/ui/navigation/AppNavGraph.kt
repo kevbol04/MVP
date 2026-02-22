@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mvp.ui.screens.dashboard.DashboardScreen
+import com.example.mvp.ui.screens.dashboard.RecentItem
 import com.example.mvp.ui.screens.login.AuthRoute
 import com.example.mvp.ui.screens.matches.Match
 import com.example.mvp.ui.screens.matches.MatchFormScreen
@@ -67,13 +68,69 @@ fun AppNavGraph(
 
         // ---------------- DASHBOARD ----------------
         composable(Route.Dashboard.route) {
+
+            val playersVm: PlayersViewModel = hiltViewModel()
+            val matchesVm: MatchesViewModel = hiltViewModel()
+            val trainingsVm: TrainingsViewModel = hiltViewModel()
+
+            LaunchedEffect(currentUserId) {
+                playersVm.setUser(currentUserId)
+                matchesVm.setUser(currentUserId)
+                trainingsVm.setUser(currentUserId)
+            }
+
+            val players by playersVm.players.collectAsState()
+            val matches by matchesVm.matches.collectAsState()
+            val trainings by trainingsVm.trainings.collectAsState()
+
+            val sessionsToComplete = trainings.size
+
+            val lastTraining = trainings.maxByOrNull { it.id }?.let {
+                RecentItem.Training(
+                    title = it.name,
+                    subtitle = "${it.dateText} · ${it.durationMin} min · ${it.type.label}",
+                    trainingId = it.id.toLong()
+                )
+            }
+
+            val lastMatch = matches.maxByOrNull { it.id }?.let {
+                RecentItem.Match(
+                    title = "Partido: ${it.rival}",
+                    subtitle = "${it.competition.label} · ${it.result.label}",
+                    matchId = it.id.toLong()
+                )
+            }
+
+            val lastPlayer = players.maxByOrNull { it.id }?.let {
+                RecentItem.Player(
+                    title = "Jugador: ${it.name}",
+                    subtitle = "${it.position.label} · #${it.number} · OVR ${it.rating}",
+                    playerId = it.id.toLong()
+                )
+            }
+
             DashboardScreen(
                 username = currentUsername,
+                sessionsToComplete = sessionsToComplete,
+                lastTraining = lastTraining,
+                lastMatch = lastMatch,
+                lastPlayer = lastPlayer,
+
                 onGoTraining = { navController.navigateToTab(Route.Trainings.route) },
                 onGoMatches = { navController.navigateToTab(Route.Matches.route) },
                 onGoPlayers = { navController.navigateToTab(Route.Players.route) },
                 onGoStats = { navController.navigateToTab(Route.Stats.route) },
-                onGoSettings = { navController.navigate(Route.Settings.route) }
+                onGoSettings = { navController.navigate(Route.Settings.route) },
+
+                onOpenTraining = { id ->
+                    navController.navigate(Route.TrainingFormWithId.createRoute(id.toInt()))
+                },
+                onOpenMatch = { id ->
+                    navController.navigate(Route.MatchFormWithId.createRoute(id.toInt()))
+                },
+                onOpenPlayer = { id ->
+                    navController.navigate(Route.PlayerDetail.createRoute(id.toInt()))
+                }
             )
         }
 

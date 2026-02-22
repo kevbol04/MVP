@@ -188,29 +188,6 @@ fun PlayerDetailScreen(
                     }
                 }
             }
-
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                color = GlassBase.copy(alpha = 0.06f)
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Resumen",
-                        color = onBg,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "Aquí podrás añadir estadísticas avanzadas (goles, asistencias, minutos, lesiones, etc.).",
-                        color = onBg.copy(alpha = 0.70f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
         }
     }
 }
