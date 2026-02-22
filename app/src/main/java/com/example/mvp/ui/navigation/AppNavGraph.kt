@@ -46,10 +46,6 @@ fun AppNavGraph(
     var currentEmail by rememberSaveable { mutableStateOf("") }
     var currentUserId by rememberSaveable { mutableStateOf(0L) }
 
-    var trainings by remember { mutableStateOf(emptyList<Training>()) }
-    var matches by remember { mutableStateOf(emptyList<Match>()) }
-    var players by remember { mutableStateOf(emptyList<Player>()) }
-
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -410,6 +406,20 @@ fun AppNavGraph(
 
         // ---------------- STATS ----------------
         composable(Route.Stats.route) {
+            val playersVm: PlayersViewModel = hiltViewModel()
+            val matchesVm: MatchesViewModel = hiltViewModel()
+            val trainingsVm: TrainingsViewModel = hiltViewModel()
+
+            LaunchedEffect(currentUserId) {
+                playersVm.setUser(currentUserId)
+                matchesVm.setUser(currentUserId)
+                trainingsVm.setUser(currentUserId)
+            }
+
+            val players by playersVm.players.collectAsState()
+            val matches by matchesVm.matches.collectAsState()
+            val trainings by trainingsVm.trainings.collectAsState()
+
             StatsScreen(
                 players = players,
                 matches = matches,
