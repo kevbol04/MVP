@@ -53,52 +53,33 @@ private val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}
 @Composable
 fun AuthRoute(
     modifier: Modifier = Modifier,
-    onSuccess: (Long, String, String) -> Unit,
-    vm: AuthViewModel = hiltViewModel()
+    onSuccess: (Long, String, String) -> Unit
 ) {
-    val state by vm.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(state.isAuthenticated) {
-        if (state.isAuthenticated) {
-            val u = state.user
-            onSuccess(
-                u?.id ?: 0L,
-                u?.name ?: "Usuario",
-                u?.email ?: ""
-            )
-        }
-    }
-
-    LaunchedEffect(state.error) {
-        val msg = state.error ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(message = msg)
-        vm.clearError()
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = Color.Transparent
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
 
             AuthScreen(
                 modifier = Modifier.fillMaxSize(),
-                onLogin = { email, password -> vm.login(email, password) },
-                onRegister = { name, email, password -> vm.register(name, email, password) }
-            )
 
-            if (state.loading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.25f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+                onLogin = { email, _password ->
+                    onSuccess(
+                        1L,
+                        "Usuario",
+                        email.trim()
+                    )
+                },
+
+                onRegister = { name, email, _password ->
+                    onSuccess(
+                        1L,
+                        name.trim().ifBlank { "Usuario" },
+                        email.trim()
+                    )
                 }
-            }
+            )
         }
     }
 }
