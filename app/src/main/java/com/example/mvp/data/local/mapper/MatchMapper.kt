@@ -10,10 +10,10 @@ fun MatchEntity.toModel(): Match {
         id = id,
         rival = rival,
         dateText = dateText,
-        competition = Competition.valueOf(competition),
+        competition = competition.toCompetition(),
         goalsFor = goalsFor,
         goalsAgainst = goalsAgainst,
-        result = MatchResult.valueOf(result)
+        result = result.toMatchResult()
     )
 }
 
@@ -28,4 +28,16 @@ fun Match.toEntity(userId: Long): MatchEntity {
         goalsAgainst = goalsAgainst,
         result = result.name
     )
+}
+
+private fun String.toCompetition(): Competition {
+    return Competition.entries.firstOrNull { competition ->
+        competition.name == this || competition.label == this
+    } ?: Competition.entries.first()
+}
+
+private fun String.toMatchResult(): MatchResult {
+    return MatchResult.entries.firstOrNull { result ->
+        result.name == this || result.label == this
+    } ?: MatchResult.entries.first()
 }

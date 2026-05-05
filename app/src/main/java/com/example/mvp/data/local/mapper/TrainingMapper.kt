@@ -10,7 +10,7 @@ fun TrainingEntity.toModel(): Training {
         name = name,
         dateText = dateText,
         durationMin = durationMin,
-        type = TrainingType.valueOf(type)
+        type = type.toTrainingType()
     )
 }
 
@@ -23,4 +23,10 @@ fun Training.toEntity(userId: Long): TrainingEntity {
         durationMin = durationMin,
         type = type.name
     )
+}
+
+private fun String.toTrainingType(): TrainingType {
+    return TrainingType.entries.firstOrNull { trainingType ->
+        trainingType.name == this || trainingType.label == this
+    } ?: TrainingType.entries.first()
 }
