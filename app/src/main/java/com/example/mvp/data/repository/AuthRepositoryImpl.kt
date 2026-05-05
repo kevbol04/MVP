@@ -2,9 +2,10 @@ package com.example.mvp.data.repository
 
 import com.example.mvp.data.local.dao.AuthUserDao
 import com.example.mvp.data.local.entities.AuthUserEntity
+import com.example.mvp.data.local.mapper.toDomain
+import com.example.mvp.data.security.AuthPasswordHasher
 import com.example.mvp.domain.model.AuthUser
 import com.example.mvp.domain.repository.AuthRepository
-import java.security.MessageDigest
 import javax.inject.Inject
 
 private const val MIN_PASSWORD_LEN = 4
@@ -21,31 +22,36 @@ class AuthRepositoryImpl @Inject constructor(
         rawPassword: String
     ): Result<AuthUser> = runCatching {
         val nameNorm = name.trim()
-        if (nameNorm.length < MIN_NAME_LEN) error("El nombre debe tener al menos $MIN_NAME_LEN caracteres.")
+        if (nameNorm.length < MIN_NAME_LEN) {
+            error("El nombre debe tener al menos $MIN_NAME_LEN caracteres.")
+        }
 
         val normalizedEmail = email.trim().lowercase()
-        if (!EMAIL_REGEX.matches(normalizedEmail)) error("Introduce un correo válido.")
+        if (!EMAIL_REGEX.matches(normalizedEmail)) {
+            error("Introduce un correo válido.")
+        }
 
-        if (rawPassword.length < MIN_PASSWORD_LEN) error("La contraseña debe tener al menos $MIN_PASSWORD_LEN caracteres.")
+        if (rawPassword.length < MIN_PASSWORD_LEN) {
+            error("La contraseña debe tener al menos $MIN_PASSWORD_LEN caracteres.")
+        }
 
         val existing = dao.findByEmail(normalizedEmail)
-        if (existing != null) error("Ese correo ya está registrado.")
+        if (existing != null) {
+            error("Ese correo ya está registrado.")
+        }
+
+        val credentials = AuthPasswordHasher.hashPassword(rawPassword)
 
         val entity = AuthUserEntity(
             name = nameNorm,
             email = normalizedEmail,
-            passwordHash = rawPassword.sha256()
+            passwordHash = credentials.hash,
+            passwordSalt = credentials.salt
         )
 
         val newId = dao.insert(entity)
 
-        AuthUser(
-            id = newId,
-            name = entity.name,
-            email = entity.email,
-            passwordHash = entity.passwordHash,
-            createdAt = entity.createdAt
-        )
+        entity.copy(id = newId).toDomain()
     }
 
     override suspend fun login(
@@ -53,19 +59,20 @@ class AuthRepositoryImpl @Inject constructor(
         rawPassword: String
     ): Result<AuthUser> = runCatching {
         val normalizedEmail = email.trim().lowercase()
+
         val user = dao.findByEmail(normalizedEmail)
             ?: error("No existe una cuenta con ese correo.")
 
-        val providedHash = rawPassword.sha256()
-        if (user.passwordHash != providedHash) error("Contraseña incorrecta.")
-
-        AuthUser(
-            id = user.id,
-            name = user.name,
-            email = user.email,
-            passwordHash = user.passwordHash,
-            createdAt = user.createdAt
+        val passwordIsValid = verifyPasswordAndUpgradeIfNeeded(
+            user = user,
+            rawPassword = rawPassword
         )
+
+        if (!passwordIsValid) {
+            error("Contraseña incorrecta.")
+        }
+
+        user.toDomain()
     }
 
     override suspend fun updateProfile(
@@ -77,14 +84,22 @@ class AuthRepositoryImpl @Inject constructor(
         val newNorm = newEmail.trim().lowercase()
         val nameNorm = newName.trim()
 
-        if (nameNorm.length < MIN_NAME_LEN) error("El nombre debe tener al menos $MIN_NAME_LEN caracteres.")
-        if (!EMAIL_REGEX.matches(newNorm)) error("Introduce un correo válido.")
+        if (nameNorm.length < MIN_NAME_LEN) {
+            error("El nombre debe tener al menos $MIN_NAME_LEN caracteres.")
+        }
 
-        val current = dao.findByEmail(oldNorm) ?: error("No se encontró la cuenta.")
+        if (!EMAIL_REGEX.matches(newNorm)) {
+            error("Introduce un correo válido.")
+        }
+
+        val current = dao.findByEmail(oldNorm)
+            ?: error("No se encontró la cuenta.")
 
         if (newNorm != oldNorm) {
             val exists = dao.findByEmail(newNorm)
-            if (exists != null) error("Ese correo ya está registrado.")
+            if (exists != null) {
+                error("Ese correo ya está registrado.")
+            }
         }
 
         val rows = dao.updateProfileByEmail(
@@ -92,15 +107,15 @@ class AuthRepositoryImpl @Inject constructor(
             newName = nameNorm,
             newEmail = newNorm
         )
-        if (rows <= 0) error("No se pudo actualizar el perfil.")
 
-        AuthUser(
-            id = current.id,
+        if (rows <= 0) {
+            error("No se pudo actualizar el perfil.")
+        }
+
+        current.copy(
             name = nameNorm,
-            email = newNorm,
-            passwordHash = current.passwordHash,
-            createdAt = current.createdAt
-        )
+            email = newNorm
+        ).toDomain()
     }
 
     override suspend fun changePassword(
@@ -109,27 +124,80 @@ class AuthRepositoryImpl @Inject constructor(
         newRaw: String
     ): Result<Unit> = runCatching {
         val norm = email.trim().lowercase()
-        val user = dao.findByEmail(norm) ?: error("No se encontró la cuenta.")
 
-        val currentHash = currentRaw.sha256()
-        if (user.passwordHash != currentHash) error("La contraseña actual no es correcta.")
+        val user = dao.findByEmail(norm)
+            ?: error("No se encontró la cuenta.")
 
-        if (newRaw.length < MIN_PASSWORD_LEN) error("La nueva contraseña debe tener al menos $MIN_PASSWORD_LEN caracteres.")
+        val currentPasswordIsValid = verifyPasswordAndUpgradeIfNeeded(
+            user = user,
+            rawPassword = currentRaw
+        )
 
-        val rows = dao.updatePasswordHash(email = norm, newHash = newRaw.sha256())
-        if (rows <= 0) error("No se pudo actualizar la contraseña.")
+        if (!currentPasswordIsValid) {
+            error("La contraseña actual no es correcta.")
+        }
+
+        if (newRaw.length < MIN_PASSWORD_LEN) {
+            error("La nueva contraseña debe tener al menos $MIN_PASSWORD_LEN caracteres.")
+        }
+
+        val newCredentials = AuthPasswordHasher.hashPassword(newRaw)
+
+        val rows = dao.updatePasswordCredentials(
+            email = norm,
+            newHash = newCredentials.hash,
+            newSalt = newCredentials.salt
+        )
+
+        if (rows <= 0) {
+            error("No se pudo actualizar la contraseña.")
+        }
     }
 
     override suspend fun deleteAccount(email: String): Result<Unit> = runCatching {
         val norm = email.trim().lowercase()
-        val existing = dao.findByEmail(norm) ?: error("No se encontró la cuenta.")
+
+        val existing = dao.findByEmail(norm)
+            ?: error("No se encontró la cuenta.")
 
         val rows = dao.deleteByEmail(existing.email)
-        if (rows <= 0) error("No se pudo eliminar la cuenta.")
-    }
-}
 
-private fun String.sha256(): String {
-    val bytes = MessageDigest.getInstance("SHA-256").digest(this.toByteArray())
-    return bytes.joinToString("") { "%02x".format(it) }
+        if (rows <= 0) {
+            error("No se pudo eliminar la cuenta.")
+        }
+    }
+
+    private suspend fun verifyPasswordAndUpgradeIfNeeded(
+        user: AuthUserEntity,
+        rawPassword: String
+    ): Boolean {
+        val salt = user.passwordSalt
+
+        if (!salt.isNullOrBlank()) {
+            return AuthPasswordHasher.verifyPassword(
+                rawPassword = rawPassword,
+                storedHash = user.passwordHash,
+                storedSalt = salt
+            )
+        }
+
+        val legacyPasswordIsValid = AuthPasswordHasher.verifyLegacySha256(
+            rawPassword = rawPassword,
+            storedHash = user.passwordHash
+        )
+
+        if (!legacyPasswordIsValid) {
+            return false
+        }
+
+        val newCredentials = AuthPasswordHasher.hashPassword(rawPassword)
+
+        dao.updatePasswordCredentials(
+            email = user.email,
+            newHash = newCredentials.hash,
+            newSalt = newCredentials.salt
+        )
+
+        return true
+    }
 }

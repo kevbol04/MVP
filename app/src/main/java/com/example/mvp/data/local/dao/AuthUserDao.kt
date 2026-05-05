@@ -19,10 +19,22 @@ interface AuthUserDao {
     suspend fun findById(id: Long): AuthUserEntity?
 
     @Query("UPDATE auth_users SET name = :newName, email = :newEmail WHERE email = :oldEmail")
-    suspend fun updateProfileByEmail(oldEmail: String, newName: String, newEmail: String): Int
+    suspend fun updateProfileByEmail(
+        oldEmail: String,
+        newName: String,
+        newEmail: String
+    ): Int
 
-    @Query("UPDATE auth_users SET passwordHash = :newHash WHERE email = :email")
-    suspend fun updatePasswordHash(email: String, newHash: String): Int
+    @Query("""
+        UPDATE auth_users 
+        SET passwordHash = :newHash, passwordSalt = :newSalt 
+        WHERE email = :email
+    """)
+    suspend fun updatePasswordCredentials(
+        email: String,
+        newHash: String,
+        newSalt: String
+    ): Int
 
     @Query("DELETE FROM auth_users WHERE email = :email")
     suspend fun deleteByEmail(email: String): Int

@@ -2,6 +2,8 @@ package com.example.mvp.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.mvp.data.local.dao.AuthUserDao
 import com.example.mvp.data.local.dao.MatchDao
 import com.example.mvp.data.local.dao.PlayerDao
@@ -19,6 +21,12 @@ object DatabaseModule {
 
     private const val DB_NAME = "mvp_database"
 
+    private val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE auth_users ADD COLUMN passwordSalt TEXT")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(
@@ -27,7 +35,7 @@ object DatabaseModule {
     ): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, DB_NAME)
             .addCallback(callback)
-            .fallbackToDestructiveMigration()
+            .addMigrations(MIGRATION_1_2)
             .build()
     }
 

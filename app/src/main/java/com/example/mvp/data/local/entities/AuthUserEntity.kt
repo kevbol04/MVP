@@ -9,9 +9,11 @@ import androidx.room.PrimaryKey
     indices = [Index(value = ["email"], unique = true)]
 )
 data class AuthUserEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0L,
     val name: String,
     val email: String,
     val passwordHash: String,
+    val passwordSalt: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

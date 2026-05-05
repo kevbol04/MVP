@@ -7,14 +7,5 @@ fun AuthUserEntity.toDomain(): AuthUser = AuthUser(
     id = id,
     name = name,
     email = email,
-    passwordHash = passwordHash,
-    createdAt = createdAt
-)
-
-fun AuthUser.toEntity(): AuthUserEntity = AuthUserEntity(
-    id = id,
-    name = name,
-    email = email,
-    passwordHash = passwordHash,
     createdAt = createdAt
 )

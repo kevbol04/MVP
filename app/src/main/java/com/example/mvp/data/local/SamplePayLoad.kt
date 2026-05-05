@@ -12,7 +12,7 @@ import com.example.mvp.ui.screens.matches.Competition
 import com.example.mvp.ui.screens.players.PlayerPosition
 import com.example.mvp.ui.screens.players.PlayerStatus
 import com.example.mvp.ui.screens.training.TrainingType
-import java.security.MessageDigest
+import com.example.mvp.data.security.AuthPasswordHasher
 
 object SamplePayLoad {
 
@@ -28,11 +28,14 @@ object SamplePayLoad {
     ) {
         if (authUserDao.findByEmail(DEMO_EMAIL) != null) return
 
+        val credentials = AuthPasswordHasher.hashPassword(DEMO_PASSWORD)
+
         val userId = authUserDao.insert(
             AuthUserEntity(
                 name = DEMO_NAME,
                 email = DEMO_EMAIL,
-                passwordHash = DEMO_PASSWORD.sha256()
+                passwordHash = credentials.hash,
+                passwordSalt = credentials.salt
             )
         )
 
@@ -236,9 +239,4 @@ object SamplePayLoad {
                 type = TrainingType.RESISTENCIA.name
             )
         )
-}
-
-private fun String.sha256(): String {
-    val bytes = MessageDigest.getInstance("SHA-256").digest(this.toByteArray())
-    return bytes.joinToString("") { "%02x".format(it) }
 }
