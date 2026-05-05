@@ -10,7 +10,6 @@ import com.example.mvp.data.local.dao.TrainingDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -40,9 +39,4 @@ class AppDatabaseCallback @Inject constructor(
             )
         }
     }
-}
-
-private fun String.sha256(): String {
-    val bytes = MessageDigest.getInstance("SHA-256").digest(this.toByteArray())
-    return bytes.joinToString("") { "%02x".format(it) }
 }
