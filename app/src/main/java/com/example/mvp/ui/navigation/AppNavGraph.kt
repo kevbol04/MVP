@@ -5,11 +5,16 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -17,21 +22,17 @@ import androidx.navigation.compose.rememberNavController
 import com.example.mvp.ui.screens.dashboard.DashboardScreen
 import com.example.mvp.ui.screens.dashboard.RecentItem
 import com.example.mvp.ui.screens.login.AuthRoute
-import com.example.mvp.ui.screens.matches.Match
 import com.example.mvp.ui.screens.matches.MatchFormScreen
 import com.example.mvp.ui.screens.matches.MatchesScreen
 import com.example.mvp.ui.screens.matches.MatchesViewModel
-import com.example.mvp.ui.screens.players.Player
 import com.example.mvp.ui.screens.players.PlayerDetailScreen
 import com.example.mvp.ui.screens.players.PlayerFormScreen
-import com.example.mvp.ui.screens.players.PlayerPosition
-import com.example.mvp.ui.screens.players.PlayerStatus
 import com.example.mvp.ui.screens.players.PlayersScreen
 import com.example.mvp.ui.screens.players.PlayersViewModel
 import com.example.mvp.ui.screens.settings.AccountRoute
 import com.example.mvp.ui.screens.settings.SettingsScreen
+import com.example.mvp.ui.screens.session.SessionViewModel
 import com.example.mvp.ui.screens.stats.StatsScreen
-import com.example.mvp.ui.screens.training.Training
 import com.example.mvp.ui.screens.training.TrainingFormScreen
 import com.example.mvp.ui.screens.training.TrainingsScreen
 import com.example.mvp.ui.screens.training.TrainingsViewModel
@@ -43,13 +44,45 @@ fun AppNavGraph(
 ) {
     val navController = rememberNavController()
 
-    var currentUsername by rememberSaveable { mutableStateOf("Usuario") }
-    var currentEmail by rememberSaveable { mutableStateOf("") }
-    var currentUserId by rememberSaveable { mutableStateOf(0L) }
+    val sessionViewModel: SessionViewModel = hiltViewModel()
+    val sessionState by sessionViewModel.uiState.collectAsState()
+    val savedSession = sessionState.userSession
+
+    if (sessionState.loading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    var currentUsername by rememberSaveable {
+        mutableStateOf(savedSession?.name ?: "Usuario")
+    }
+
+    var currentEmail by rememberSaveable {
+        mutableStateOf(savedSession?.email ?: "")
+    }
+
+    var currentUserId by rememberSaveable {
+        mutableStateOf(savedSession?.userId ?: 0L)
+    }
+
+    LaunchedEffect(savedSession) {
+        currentUserId = savedSession?.userId ?: 0L
+        currentUsername = savedSession?.name ?: "Usuario"
+        currentEmail = savedSession?.email ?: ""
+    }
 
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = if (savedSession != null) {
+            Route.Dashboard.route
+        } else {
+            startDestination
+        }
     ) {
 
         // ---------------- LOGIN ----------------
@@ -59,8 +92,17 @@ fun AppNavGraph(
                     currentUserId = id
                     currentUsername = name
                     currentEmail = email
+
+                    sessionViewModel.saveSession(
+                        userId = id,
+                        name = name,
+                        email = email
+                    )
+
                     navController.navigate(Route.Dashboard.route) {
-                        popUpTo(Route.Auth.route) { inclusive = true }
+                        popUpTo(Route.Auth.route) {
+                            inclusive = true
+                        }
                     }
                 }
             )
@@ -116,20 +158,36 @@ fun AppNavGraph(
                 lastMatch = lastMatch,
                 lastPlayer = lastPlayer,
 
-                onGoTraining = { navController.navigateToTab(Route.Trainings.route) },
-                onGoMatches = { navController.navigateToTab(Route.Matches.route) },
-                onGoPlayers = { navController.navigateToTab(Route.Players.route) },
-                onGoStats = { navController.navigateToTab(Route.Stats.route) },
-                onGoSettings = { navController.navigate(Route.Settings.route) },
+                onGoTraining = {
+                    navController.navigateToTab(Route.Trainings.route)
+                },
+                onGoMatches = {
+                    navController.navigateToTab(Route.Matches.route)
+                },
+                onGoPlayers = {
+                    navController.navigateToTab(Route.Players.route)
+                },
+                onGoStats = {
+                    navController.navigateToTab(Route.Stats.route)
+                },
+                onGoSettings = {
+                    navController.navigate(Route.Settings.route)
+                },
 
                 onOpenTraining = { id ->
-                    navController.navigate(Route.TrainingFormWithId.createRoute(id.toInt()))
+                    navController.navigate(
+                        Route.TrainingFormWithId.createRoute(id.toInt())
+                    )
                 },
                 onOpenMatch = { id ->
-                    navController.navigate(Route.MatchFormWithId.createRoute(id.toInt()))
+                    navController.navigate(
+                        Route.MatchFormWithId.createRoute(id.toInt())
+                    )
                 },
                 onOpenPlayer = { id ->
-                    navController.navigate(Route.PlayerDetail.createRoute(id.toInt()))
+                    navController.navigate(
+                        Route.PlayerDetail.createRoute(id.toInt())
+                    )
                 }
             )
         }
@@ -138,35 +196,59 @@ fun AppNavGraph(
         composable(Route.Settings.route) {
             SettingsScreen(
                 username = currentUsername,
-                onBack = { navController.popBackStack() },
-                onOpenAccount = { navController.navigate(Route.Account.route) },
+                onBack = {
+                    navController.popBackStack()
+                },
+                onOpenAccount = {
+                    navController.navigate(Route.Account.route)
+                },
                 onOpenPrivacy = { },
                 onOpenAbout = { },
                 onLogout = {
                     currentUserId = 0L
                     currentUsername = "Usuario"
                     currentEmail = ""
+
+                    sessionViewModel.clearSession()
+
                     navController.navigate(Route.Auth.route) {
-                        popUpTo(Route.Dashboard.route) { inclusive = true }
+                        popUpTo(Route.Dashboard.route) {
+                            inclusive = true
+                        }
                     }
                 }
             )
         }
 
+        // ---------------- ACCOUNT ----------------
         composable(Route.Account.route) {
             AccountRoute(
                 name = currentUsername,
                 email = currentEmail,
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    navController.popBackStack()
+                },
                 onProfileUpdated = { newName, newEmail ->
                     currentUsername = newName
                     currentEmail = newEmail
+
+                    sessionViewModel.saveSession(
+                        userId = currentUserId,
+                        name = newName,
+                        email = newEmail
+                    )
                 },
                 onDeleteAccount = {
+                    currentUserId = 0L
                     currentUsername = "Usuario"
                     currentEmail = ""
+
+                    sessionViewModel.clearSession()
+
                     navController.navigate(Route.Auth.route) {
-                        popUpTo(0) { inclusive = true }
+                        popUpTo(0) {
+                            inclusive = true
+                        }
                     }
                 }
             )
@@ -175,33 +257,56 @@ fun AppNavGraph(
         // ---------------- TRAININGS ----------------
         composable(Route.Trainings.route) {
             val vm: TrainingsViewModel = hiltViewModel()
-            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            LaunchedEffect(currentUserId) {
+                vm.setUser(currentUserId)
+            }
 
             val trainings by vm.trainings.collectAsState()
 
             TrainingsScreen(
                 trainings = trainings,
-                onBack = { navController.popBackStack() },
-                onCreateTraining = { navController.navigate(Route.TrainingForm.route) },
-                onEditTraining = { t -> navController.navigate(Route.TrainingFormWithId.createRoute(t.id)) },
+                onBack = {
+                    navController.popBackStack()
+                },
+                onCreateTraining = {
+                    navController.navigate(Route.TrainingForm.route)
+                },
+                onEditTraining = { training ->
+                    navController.navigate(
+                        Route.TrainingFormWithId.createRoute(training.id)
+                    )
+                },
+                onDeleteTraining = { training ->
+                    vm.delete(training)
+                },
 
-                onDeleteTraining = { t -> vm.delete(t) },
-
-                onGoMatches = { navController.navigateToTab(Route.Matches.route) },
-                onGoPlayers = { navController.navigateToTab(Route.Players.route) },
-                onGoStats = { navController.navigateToTab(Route.Stats.route) }
+                onGoMatches = {
+                    navController.navigateToTab(Route.Matches.route)
+                },
+                onGoPlayers = {
+                    navController.navigateToTab(Route.Players.route)
+                },
+                onGoStats = {
+                    navController.navigateToTab(Route.Stats.route)
+                }
             )
         }
 
         composable(Route.TrainingForm.route) {
             val vm: TrainingsViewModel = hiltViewModel()
-            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            LaunchedEffect(currentUserId) {
+                vm.setUser(currentUserId)
+            }
 
             TrainingFormScreen(
                 initial = null,
-                onBack = { navController.popBackStack() },
-                onSave = { t ->
-                    vm.save(t.copy(id = 0))
+                onBack = {
+                    navController.popBackStack()
+                },
+                onSave = { training ->
+                    vm.save(training.copy(id = 0))
                     navController.popBackStack()
                 }
             )
@@ -209,7 +314,10 @@ fun AppNavGraph(
 
         composable(Route.TrainingFormWithId.route) { backStackEntry ->
             val vm: TrainingsViewModel = hiltViewModel()
-            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            LaunchedEffect(currentUserId) {
+                vm.setUser(currentUserId)
+            }
 
             val trainings by vm.trainings.collectAsState()
 
@@ -221,44 +329,69 @@ fun AppNavGraph(
 
             TrainingFormScreen(
                 initial = current,
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    navController.popBackStack()
+                },
                 onSave = { edited ->
                     vm.save(edited)
                     navController.popBackStack()
                 }
-
             )
         }
 
         // ---------------- MATCHES ----------------
         composable(Route.Matches.route) {
             val vm: MatchesViewModel = hiltViewModel()
-            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            LaunchedEffect(currentUserId) {
+                vm.setUser(currentUserId)
+            }
 
             val matches by vm.matches.collectAsState()
 
             MatchesScreen(
                 matches = matches,
-                onBack = { navController.popBackStack() },
-                onCreateMatch = { navController.navigate(Route.MatchForm.route) },
-                onEditMatch = { m -> navController.navigate(Route.MatchFormWithId.createRoute(m.id)) },
-                onDeleteMatch = { m -> vm.delete(m) },
+                onBack = {
+                    navController.popBackStack()
+                },
+                onCreateMatch = {
+                    navController.navigate(Route.MatchForm.route)
+                },
+                onEditMatch = { match ->
+                    navController.navigate(
+                        Route.MatchFormWithId.createRoute(match.id)
+                    )
+                },
+                onDeleteMatch = { match ->
+                    vm.delete(match)
+                },
 
-                onGoTraining = { navController.navigateToTab(Route.Trainings.route) },
-                onGoPlayers = { navController.navigateToTab(Route.Players.route) },
-                onGoStats = { navController.navigateToTab(Route.Stats.route) }
+                onGoTraining = {
+                    navController.navigateToTab(Route.Trainings.route)
+                },
+                onGoPlayers = {
+                    navController.navigateToTab(Route.Players.route)
+                },
+                onGoStats = {
+                    navController.navigateToTab(Route.Stats.route)
+                }
             )
         }
 
         composable(Route.MatchForm.route) {
             val vm: MatchesViewModel = hiltViewModel()
-            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            LaunchedEffect(currentUserId) {
+                vm.setUser(currentUserId)
+            }
 
             MatchFormScreen(
                 initial = null,
-                onBack = { navController.popBackStack() },
-                onSave = { m ->
-                    vm.save(m.copy(id = 0))
+                onBack = {
+                    navController.popBackStack()
+                },
+                onSave = { match ->
+                    vm.save(match.copy(id = 0))
                     navController.popBackStack()
                 }
             )
@@ -266,21 +399,29 @@ fun AppNavGraph(
 
         composable(Route.MatchFormWithId.route) { backStackEntry ->
             val vm: MatchesViewModel = hiltViewModel()
-            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            LaunchedEffect(currentUserId) {
+                vm.setUser(currentUserId)
+            }
 
             val id = backStackEntry.arguments
                 ?.getString(Route.MatchFormWithId.ARG_ID)
                 ?.toIntOrNull()
 
             if (id == null) {
-                LaunchedEffect(Unit) { navController.popBackStack() }
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
                 return@composable
             }
 
             val current by vm.matchById(id).collectAsState(initial = null)
 
             if (current == null) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
                 return@composable
@@ -288,7 +429,9 @@ fun AppNavGraph(
 
             MatchFormScreen(
                 initial = current,
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    navController.popBackStack()
+                },
                 onSave = { edited ->
                     vm.save(edited)
                     navController.popBackStack()
@@ -299,33 +442,61 @@ fun AppNavGraph(
         // ---------------- PLAYERS ----------------
         composable(Route.Players.route) {
             val vm: PlayersViewModel = hiltViewModel()
-            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            LaunchedEffect(currentUserId) {
+                vm.setUser(currentUserId)
+            }
 
             val players by vm.players.collectAsState()
 
             PlayersScreen(
                 players = players,
-                onBack = { navController.popBackStack() },
-                onCreatePlayer = { navController.navigate(Route.PlayerForm.route) },
-                onEditPlayer = { p -> navController.navigate(Route.PlayerFormWithId.createRoute(p.id)) },
-                onOpenPlayer = { p -> navController.navigate(Route.PlayerDetail.createRoute(p.id)) },
-                onDeletePlayer = { p -> vm.delete(p) },
+                onBack = {
+                    navController.popBackStack()
+                },
+                onCreatePlayer = {
+                    navController.navigate(Route.PlayerForm.route)
+                },
+                onEditPlayer = { player ->
+                    navController.navigate(
+                        Route.PlayerFormWithId.createRoute(player.id)
+                    )
+                },
+                onOpenPlayer = { player ->
+                    navController.navigate(
+                        Route.PlayerDetail.createRoute(player.id)
+                    )
+                },
+                onDeletePlayer = { player ->
+                    vm.delete(player)
+                },
 
-                onGoTraining = { navController.navigateToTab(Route.Trainings.route) },
-                onGoMatches = { navController.navigateToTab(Route.Matches.route) },
-                onGoStats = { navController.navigateToTab(Route.Stats.route) }
+                onGoTraining = {
+                    navController.navigateToTab(Route.Trainings.route)
+                },
+                onGoMatches = {
+                    navController.navigateToTab(Route.Matches.route)
+                },
+                onGoStats = {
+                    navController.navigateToTab(Route.Stats.route)
+                }
             )
         }
 
         composable(Route.PlayerForm.route) {
             val vm: PlayersViewModel = hiltViewModel()
-            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            LaunchedEffect(currentUserId) {
+                vm.setUser(currentUserId)
+            }
 
             PlayerFormScreen(
                 initial = null,
-                onBack = { navController.popBackStack() },
-                onSave = { p ->
-                    vm.save(p.copy(id = 0))
+                onBack = {
+                    navController.popBackStack()
+                },
+                onSave = { player ->
+                    vm.save(player.copy(id = 0))
                     navController.popBackStack()
                 }
             )
@@ -333,7 +504,10 @@ fun AppNavGraph(
 
         composable(Route.PlayerFormWithId.route) { backStackEntry ->
             val vm: PlayersViewModel = hiltViewModel()
-            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            LaunchedEffect(currentUserId) {
+                vm.setUser(currentUserId)
+            }
 
             val players by vm.players.collectAsState()
 
@@ -346,7 +520,9 @@ fun AppNavGraph(
             PlayerFormScreen(
                 initial = current,
                 existingPlayers = players,
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    navController.popBackStack()
+                },
                 onSave = { edited ->
                     vm.save(edited)
                     navController.popBackStack()
@@ -356,21 +532,29 @@ fun AppNavGraph(
 
         composable(Route.PlayerDetail.route) { backStackEntry ->
             val vm: PlayersViewModel = hiltViewModel()
-            LaunchedEffect(currentUserId) { vm.setUser(currentUserId) }
+
+            LaunchedEffect(currentUserId) {
+                vm.setUser(currentUserId)
+            }
 
             val id = backStackEntry.arguments
                 ?.getString(Route.PlayerDetail.ARG_ID)
                 ?.toIntOrNull()
 
             if (id == null) {
-                LaunchedEffect(Unit) { navController.popBackStack() }
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
                 return@composable
             }
 
             val current by vm.playerById(id).collectAsState(initial = null)
 
             if (current == null) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
                 return@composable
@@ -378,8 +562,14 @@ fun AppNavGraph(
 
             PlayerDetailScreen(
                 player = current!!,
-                onBack = { navController.popBackStack() },
-                onEdit = { p -> navController.navigate(Route.PlayerFormWithId.createRoute(p.id)) }
+                onBack = {
+                    navController.popBackStack()
+                },
+                onEdit = { player ->
+                    navController.navigate(
+                        Route.PlayerFormWithId.createRoute(player.id)
+                    )
+                }
             )
         }
 
@@ -403,11 +593,19 @@ fun AppNavGraph(
                 players = players,
                 matches = matches,
                 trainings = trainings,
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    navController.popBackStack()
+                },
 
-                onGoTraining = { navController.navigateToTab(Route.Trainings.route) },
-                onGoMatches = { navController.navigateToTab(Route.Matches.route) },
-                onGoPlayers = { navController.navigateToTab(Route.Players.route) }
+                onGoTraining = {
+                    navController.navigateToTab(Route.Trainings.route)
+                },
+                onGoMatches = {
+                    navController.navigateToTab(Route.Matches.route)
+                },
+                onGoPlayers = {
+                    navController.navigateToTab(Route.Players.route)
+                }
             )
         }
     }
@@ -417,6 +615,8 @@ private fun NavHostController.navigateToTab(route: String) {
     navigate(route) {
         launchSingleTop = true
         restoreState = true
-        popUpTo(Route.Dashboard.route) { saveState = true }
+        popUpTo(Route.Dashboard.route) {
+            saveState = true
+        }
     }
 }
