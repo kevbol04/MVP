@@ -9,6 +9,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import com.example.mvp.ui.screens.settings.AboutScreen
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -226,7 +227,9 @@ fun AppNavGraph(
                         navController.navigate(Route.Account.route)
                     },
                     onOpenPrivacy = { },
-                    onOpenAbout = { },
+                    onOpenAbout = {
+                        navController.navigate(Route.About.route)
+                    },
                     onLogout = {
                         currentUserId = 0L
                         currentUsername = "Usuario"
@@ -277,6 +280,15 @@ fun AppNavGraph(
                         }
 
                         showSnackbar("Cuenta eliminada")
+                    }
+                )
+            }
+
+            // ---------------- ABOUT ----------------
+            composable(Route.About.route) {
+                AboutScreen(
+                    onBack = {
+                        navController.popBackStack()
                     }
                 )
             }
