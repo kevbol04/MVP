@@ -321,6 +321,9 @@ fun AppNavGraph(
                         showSnackbar("Entrenamiento eliminado")
                     },
 
+                    onGoDashboard = {
+                        navController.navigateToTab(Route.Dashboard.route)
+                    },
                     onGoMatches = {
                         navController.navigateToTab(Route.Matches.route)
                     },
@@ -409,6 +412,9 @@ fun AppNavGraph(
                         showSnackbar("Partido eliminado")
                     },
 
+                    onGoDashboard = {
+                        navController.navigateToTab(Route.Dashboard.route)
+                    },
                     onGoTraining = {
                         navController.navigateToTab(Route.Trainings.route)
                     },
@@ -517,6 +523,9 @@ fun AppNavGraph(
                         showSnackbar("Jugador eliminado")
                     },
 
+                    onGoDashboard = {
+                        navController.navigateToTab(Route.Dashboard.route)
+                    },
                     onGoTraining = {
                         navController.navigateToTab(Route.Trainings.route)
                     },
@@ -645,6 +654,9 @@ fun AppNavGraph(
                         navController.popBackStack()
                     },
 
+                    onGoDashboard = {
+                        navController.navigateToTab(Route.Dashboard.route)
+                    },
                     onGoTraining = {
                         navController.navigateToTab(Route.Trainings.route)
                     },

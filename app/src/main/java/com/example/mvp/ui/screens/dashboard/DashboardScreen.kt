@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.components.BottomBarDestination
+import com.example.mvp.ui.components.ProFootballBottomBar
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
 
@@ -64,8 +66,7 @@ fun DashboardScreen(
         }
     }
 
-    var selectedTab by remember { mutableStateOf<BottomTab?>(null) }
-    val bottomBarHeight = 78.dp
+    val bottomBarHeight = 96.dp
 
     Box(
         modifier = modifier
@@ -163,24 +164,21 @@ fun DashboardScreen(
             }
         }
 
-        BottomMenuBar(
+        ProFootballBottomBar(
+            selected = BottomBarDestination.Dashboard,
+            onSelect = { destination ->
+                when (destination) {
+                    BottomBarDestination.Training -> onGoTraining()
+                    BottomBarDestination.Players -> onGoPlayers()
+                    BottomBarDestination.Dashboard -> Unit
+                    BottomBarDestination.Matches -> onGoMatches()
+                    BottomBarDestination.Stats -> onGoStats()
+                }
+            },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 14.dp),
-            accent = accent,
-            accent2 = accent2,
-            onText = onBg,
-            selected = selectedTab,
-            onSelect = { tab ->
-                selectedTab = tab
-                when (tab) {
-                    BottomTab.Training -> onGoTraining()
-                    BottomTab.Matches -> onGoMatches()
-                    BottomTab.Players -> onGoPlayers()
-                    BottomTab.Stats -> onGoStats()
-                }
-            }
+                .padding(horizontal = 18.dp, vertical = 12.dp)
         )
     }
 }

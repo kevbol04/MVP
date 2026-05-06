@@ -26,7 +26,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.components.BottomBarDestination
 import com.example.mvp.ui.components.EmptyState
+import com.example.mvp.ui.components.ProFootballBottomBar
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.Draw
 import com.example.mvp.ui.theme.GlassBase
@@ -67,6 +69,7 @@ fun MatchesScreen(
     onEditMatch: (Match) -> Unit = {},
     onDeleteMatch: (Match) -> Unit = {},
 
+    onGoDashboard: () -> Unit = {},
     onGoTraining: () -> Unit = {},
     onGoPlayers: () -> Unit = {},
     onGoStats: () -> Unit = {}
@@ -94,8 +97,7 @@ fun MatchesScreen(
         }
     }
 
-    var selectedTab by remember { mutableStateOf(BottomTab.Matches) }
-    val bottomBarHeight = 78.dp
+    val bottomBarHeight = 96.dp
 
     var toDelete by remember { mutableStateOf<Match?>(null) }
 
@@ -247,23 +249,21 @@ fun MatchesScreen(
                 }
             }
 
-            BottomMenuBar(
+            ProFootballBottomBar(
+                selected = BottomBarDestination.Matches,
+                onSelect = { destination ->
+                    when (destination) {
+                        BottomBarDestination.Training -> onGoTraining()
+                        BottomBarDestination.Players -> onGoPlayers()
+                        BottomBarDestination.Dashboard -> onGoDashboard()
+                        BottomBarDestination.Matches -> Unit
+                        BottomBarDestination.Stats -> onGoStats()
+                    }
+                },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
-                accent = accent,
-                accent2 = accent2,
-                onText = onBg,
-                selected = selectedTab,
-                onSelect = { tab ->
-                    when (tab) {
-                        BottomTab.Matches -> selectedTab = BottomTab.Matches
-                        BottomTab.Training -> { selectedTab = BottomTab.Training; onGoTraining() }
-                        BottomTab.Players -> { selectedTab = BottomTab.Players; onGoPlayers() }
-                        BottomTab.Stats -> { selectedTab = BottomTab.Stats; onGoStats() }
-                    }
-                }
+                    .padding(horizontal = 18.dp, vertical = 12.dp)
             )
         }
     }

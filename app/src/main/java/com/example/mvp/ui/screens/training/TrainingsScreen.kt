@@ -26,7 +26,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.components.BottomBarDestination
 import com.example.mvp.ui.components.EmptyState
+import com.example.mvp.ui.components.ProFootballBottomBar
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
 
@@ -46,9 +48,7 @@ data class Training(
     val type: TrainingType
 )
 
-private enum class BottomTab {
-    Training, Matches, Players, Stats
-}
+private enum class BottomTab { Training, Matches, Players, Stats }
 
 @Composable
 fun TrainingsScreen(
@@ -59,6 +59,7 @@ fun TrainingsScreen(
     onEditTraining: (Training) -> Unit = {},
     onDeleteTraining: (Training) -> Unit = {},
 
+    onGoDashboard: () -> Unit = {},
     onGoMatches: () -> Unit = {},
     onGoPlayers: () -> Unit = {},
     onGoStats: () -> Unit = {}
@@ -80,8 +81,7 @@ fun TrainingsScreen(
         }
     }
 
-    var selectedTab by remember { mutableStateOf(BottomTab.Training) }
-    val bottomBarHeight = 78.dp
+    val bottomBarHeight = 96.dp
 
     var toDelete by remember { mutableStateOf<Training?>(null) }
 
@@ -218,23 +218,21 @@ fun TrainingsScreen(
             }
         }
 
-        BottomMenuBar(
+        ProFootballBottomBar(
+            selected = BottomBarDestination.Training,
+            onSelect = { destination ->
+                when (destination) {
+                    BottomBarDestination.Training -> Unit
+                    BottomBarDestination.Players -> onGoPlayers()
+                    BottomBarDestination.Dashboard -> onGoDashboard()
+                    BottomBarDestination.Matches -> onGoMatches()
+                    BottomBarDestination.Stats -> onGoStats()
+                }
+            },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 14.dp),
-            accent = accent,
-            accent2 = accent2,
-            onText = onBg,
-            selected = selectedTab,
-            onSelect = { tab ->
-                when (tab) {
-                    BottomTab.Training -> selectedTab = BottomTab.Training
-                    BottomTab.Matches -> { selectedTab = BottomTab.Matches; onGoMatches() }
-                    BottomTab.Players -> { selectedTab = BottomTab.Players; onGoPlayers() }
-                    BottomTab.Stats -> { selectedTab = BottomTab.Stats; onGoStats() }
-                }
-            }
+                .padding(horizontal = 18.dp, vertical = 12.dp)
         )
     }
 
