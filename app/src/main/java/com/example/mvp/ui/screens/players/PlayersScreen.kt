@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.components.EmptyState
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
 import com.example.mvp.ui.theme.Loss
@@ -202,20 +203,44 @@ fun PlayersScreen(
                     onSelect = { selectedPos = it }
                 )
 
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(filtered, key = { it.id }) { player ->
-                        PlayerBadgeCard(
-                            player = player,
-                            accent = accent,
-                            accent2 = accent2,
-                            onText = onBg,
-                            onOpen = { onOpenPlayer(player) },
-                            onEdit = { onEditPlayer(player) },
-                            onDelete = { pendingDelete = player }
+                when {
+                    players.isEmpty() -> {
+                        EmptyState(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.Groups,
+                            title = "Todavía no tienes jugadores",
+                            message = "Añade tu primer jugador para empezar a crear tu plantilla.",
+                            buttonText = "Crear jugador",
+                            onButtonClick = onCreatePlayer
                         )
+                    }
+
+                    filtered.isEmpty() -> {
+                        EmptyState(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.Search,
+                            title = "No hay jugadores con ese filtro",
+                            message = "Prueba con otro nombre, posición o vuelve a mostrar todos los jugadores."
+                        )
+                    }
+
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(filtered, key = { it.id }) { player ->
+                                PlayerBadgeCard(
+                                    player = player,
+                                    accent = accent,
+                                    accent2 = accent2,
+                                    onText = onBg,
+                                    onOpen = { onOpenPlayer(player) },
+                                    onEdit = { onEditPlayer(player) },
+                                    onDelete = { pendingDelete = player }
+                                )
+                            }
+                        }
                     }
                 }
             }

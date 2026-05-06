@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.components.EmptyState
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
 
@@ -149,19 +150,41 @@ fun TrainingsScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(filtered) { t ->
-                    TrainingRow(
-                        training = t,
-                        accent = accent,
-                        danger = danger,
-                        onText = onBg,
-                        onEdit = { onEditTraining(t) },
-                        onDelete = { toDelete = t }
+            when {
+                trainings.isEmpty() -> {
+                    EmptyState(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.FitnessCenter,
+                        title = "Todavía no tienes entrenamientos",
+                        message = "Crea tu primer entrenamiento para empezar a registrar el progreso del equipo."
                     )
+                }
+
+                filtered.isEmpty() -> {
+                    EmptyState(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Search,
+                        title = "No hay entrenamientos con ese filtro",
+                        message = "Prueba con otro nombre o tipo de entrenamiento."
+                    )
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(filtered) { t ->
+                            TrainingRow(
+                                training = t,
+                                accent = accent,
+                                danger = danger,
+                                onText = onBg,
+                                onEdit = { onEditTraining(t) },
+                                onDelete = { toDelete = t }
+                            )
+                        }
+                    }
                 }
             }
 

@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mvp.ui.components.EmptyState
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.Draw
 import com.example.mvp.ui.theme.GlassBase
@@ -204,20 +205,44 @@ fun MatchesScreen(
                     onSelectCompetition = { selectedCompetition = it }
                 )
 
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(filtered) { match ->
-                        MatchScoreCard(
-                            match = match,
-                            accent = accent,
-                            accent2 = accent2,
-                            danger = danger,
-                            onText = onBg,
-                            onEdit = { onEditMatch(match) },
-                            onDelete = { toDelete = match }
+                when {
+                    matches.isEmpty() -> {
+                        EmptyState(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.SportsSoccer,
+                            title = "Todavía no tienes partidos",
+                            message = "Registra tu primer partido para controlar resultados y estadísticas.",
+                            buttonText = "Crear partido",
+                            onButtonClick = onCreateMatch
                         )
+                    }
+
+                    filtered.isEmpty() -> {
+                        EmptyState(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.Search,
+                            title = "No hay partidos con ese filtro",
+                            message = "Prueba con otro rival, competición o resultado."
+                        )
+                    }
+
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(filtered) { match ->
+                                MatchScoreCard(
+                                    match = match,
+                                    accent = accent,
+                                    accent2 = accent2,
+                                    danger = danger,
+                                    onText = onBg,
+                                    onEdit = { onEditMatch(match) },
+                                    onDelete = { toDelete = match }
+                                )
+                            }
+                        }
                     }
                 }
             }

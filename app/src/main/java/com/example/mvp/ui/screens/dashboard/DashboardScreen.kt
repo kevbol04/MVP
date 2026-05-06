@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
@@ -95,6 +96,7 @@ fun DashboardScreen(
                 DashboardHeader(
                     username = username,
                     sessionsToComplete = sessionsToComplete,
+                    hasRecentActivity = recents.isNotEmpty(),
                     accent = accent,
                     accent2 = accent2,
                     onText = onBg,
@@ -115,9 +117,22 @@ fun DashboardScreen(
                 )
             }
 
-            if (recents.isNotEmpty()) {
-                item { SectionTitle(title = "Recientes", onText = onBg) }
+            item {
+                SectionTitle(title = "Recientes", onText = onBg)
+            }
 
+            if (recents.isEmpty()) {
+                item {
+                    EmptyRecentCard(
+                        accent = accent,
+                        accent2 = accent2,
+                        onText = onBg,
+                        onCreateTraining = onGoTraining,
+                        onCreatePlayer = onGoPlayers,
+                        onCreateMatch = onGoMatches
+                    )
+                }
+            } else {
                 items(recents) { recent ->
                     when (recent) {
                         is RecentItem.Training -> RecentCard(
@@ -127,6 +142,7 @@ fun DashboardScreen(
                             onText = onBg,
                             onClick = { onOpenTraining(recent.trainingId) }
                         )
+
                         is RecentItem.Match -> RecentCard(
                             title = recent.title,
                             subtitle = recent.subtitle,
@@ -134,6 +150,7 @@ fun DashboardScreen(
                             onText = onBg,
                             onClick = { onOpenMatch(recent.matchId) }
                         )
+
                         is RecentItem.Player -> RecentCard(
                             title = recent.title,
                             subtitle = recent.subtitle,
@@ -172,6 +189,7 @@ fun DashboardScreen(
 private fun DashboardHeader(
     username: String,
     sessionsToComplete: Int,
+    hasRecentActivity: Boolean,
     accent: Color,
     accent2: Color,
     onText: Color,
@@ -250,10 +268,16 @@ private fun DashboardHeader(
                         style = MaterialTheme.typography.labelMedium
                     )
                     Text(
-                        text = if (sessionsToComplete == 0)
-                            "No hay sesiones pendientes"
-                        else
-                            "Completar $sessionsToComplete sesión${if (sessionsToComplete == 1) "" else "es"}",
+                        text = when {
+                            sessionsToComplete > 0 ->
+                                "Completar $sessionsToComplete sesión${if (sessionsToComplete == 1) "" else "es"}"
+
+                            !hasRecentActivity ->
+                                "Empieza creando tu primer registro"
+
+                            else ->
+                                "No hay sesiones pendientes"
+                        },
                         color = onText,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
@@ -402,6 +426,109 @@ private fun SectionTitle(title: String, onText: Color) {
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold
     )
+}
+
+@Composable
+private fun EmptyRecentCard(
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    onCreateTraining: () -> Unit,
+    onCreatePlayer: () -> Unit,
+    onCreateMatch: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = GlassBase.copy(alpha = 0.08f)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            listOf(
+                                accent.copy(alpha = 0.38f),
+                                accent2.copy(alpha = 0.32f)
+                            )
+                        ),
+                        shape = RoundedCornerShape(18.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FitnessCenter,
+                    contentDescription = null,
+                    tint = ButtonTextDark
+                )
+            }
+
+            Text(
+                text = "Todavía no hay actividad reciente",
+                color = onText,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 14.dp)
+            )
+
+            Text(
+                text = "Cuando añadas entrenamientos, partidos o jugadores, aparecerán aquí.",
+                color = onText.copy(alpha = 0.68f),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onCreateTraining,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = accent.copy(alpha = 0.90f),
+                    contentColor = ButtonTextDark
+                )
+            ) {
+                Text("Crear entrenamiento")
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedButton(
+                    onClick = onCreatePlayer,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = onText
+                    )
+                ) {
+                    Text("Jugador")
+                }
+
+                OutlinedButton(
+                    onClick = onCreateMatch,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = onText
+                    )
+                ) {
+                    Text("Partido")
+                }
+            }
+        }
+    }
 }
 
 @Composable
