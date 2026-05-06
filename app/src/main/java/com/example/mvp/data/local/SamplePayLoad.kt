@@ -195,29 +195,92 @@ object SamplePayLoad {
         listOf(
             MatchEntity(
                 userId = userId,
-                rival = "Real Madrid",
-                dateText = "22/02/2026",
+                rival = "Atlético de Madrid",
+                dateText = "05/04/2026",
                 competition = com.example.mvp.ui.screens.matches.Competition.LIGA.name,
                 result = com.example.mvp.ui.screens.matches.MatchResult.VICTORIA.name,
-                goalsFor = 2,
+                goalsFor = 3,
                 goalsAgainst = 1
             ),
             MatchEntity(
                 userId = userId,
                 rival = "FC Barcelona",
-                dateText = "10/02/2026",
+                dateText = "29/03/2026",
                 competition = com.example.mvp.ui.screens.matches.Competition.COPA.name,
+                result = com.example.mvp.ui.screens.matches.MatchResult.EMPATE.name,
+                goalsFor = 2,
+                goalsAgainst = 2
+            ),
+            MatchEntity(
+                userId = userId,
+                rival = "Valencia CF",
+                dateText = "22/03/2026",
+                competition = com.example.mvp.ui.screens.matches.Competition.LIGA.name,
+                result = com.example.mvp.ui.screens.matches.MatchResult.VICTORIA.name,
+                goalsFor = 2,
+                goalsAgainst = 0
+            ),
+            MatchEntity(
+                userId = userId,
+                rival = "Sevilla FC",
+                dateText = "15/03/2026",
+                competition = com.example.mvp.ui.screens.matches.Competition.LIGA.name,
+                result = com.example.mvp.ui.screens.matches.MatchResult.DERROTA.name,
+                goalsFor = 1,
+                goalsAgainst = 2
+            ),
+            MatchEntity(
+                userId = userId,
+                rival = "Real Sociedad",
+                dateText = "08/03/2026",
+                competition = com.example.mvp.ui.screens.matches.Competition.COPA.name,
+                result = com.example.mvp.ui.screens.matches.MatchResult.VICTORIA.name,
+                goalsFor = 4,
+                goalsAgainst = 2
+            ),
+            MatchEntity(
+                userId = userId,
+                rival = "Villarreal CF",
+                dateText = "01/03/2026",
+                competition = com.example.mvp.ui.screens.matches.Competition.AMISTOSO.name,
                 result = com.example.mvp.ui.screens.matches.MatchResult.EMPATE.name,
                 goalsFor = 1,
                 goalsAgainst = 1
             ),
             MatchEntity(
                 userId = userId,
-                rival = "Valencia CF",
-                dateText = "01/02/2026",
-                competition = com.example.mvp.ui.screens.matches.Competition.AMISTOSO.name,
+                rival = "Real Betis",
+                dateText = "22/02/2026",
+                competition = com.example.mvp.ui.screens.matches.Competition.LIGA.name,
+                result = com.example.mvp.ui.screens.matches.MatchResult.VICTORIA.name,
+                goalsFor = 3,
+                goalsAgainst = 0
+            ),
+            MatchEntity(
+                userId = userId,
+                rival = "Athletic Club",
+                dateText = "15/02/2026",
+                competition = com.example.mvp.ui.screens.matches.Competition.LIGA.name,
                 result = com.example.mvp.ui.screens.matches.MatchResult.DERROTA.name,
                 goalsFor = 0,
+                goalsAgainst = 1
+            ),
+            MatchEntity(
+                userId = userId,
+                rival = "Getafe CF",
+                dateText = "08/02/2026",
+                competition = com.example.mvp.ui.screens.matches.Competition.AMISTOSO.name,
+                result = com.example.mvp.ui.screens.matches.MatchResult.VICTORIA.name,
+                goalsFor = 2,
+                goalsAgainst = 1
+            ),
+            MatchEntity(
+                userId = userId,
+                rival = "Girona FC",
+                dateText = "01/02/2026",
+                competition = com.example.mvp.ui.screens.matches.Competition.LIGA.name,
+                result = com.example.mvp.ui.screens.matches.MatchResult.VICTORIA.name,
+                goalsFor = 5,
                 goalsAgainst = 2
             )
         )
@@ -226,17 +289,87 @@ object SamplePayLoad {
         listOf(
             TrainingEntity(
                 userId = userId,
-                name = "Entrenamiento físico",
-                dateText = "23/03/2026",
+                name = "Sesión de fuerza tren inferior",
+                dateText = "07/04/2026",
+                durationMin = 75,
+                type = TrainingType.FUERZA.name
+            ),
+            TrainingEntity(
+                userId = userId,
+                name = "Trabajo táctico ofensivo",
+                dateText = "06/04/2026",
+                durationMin = 90,
+                type = TrainingType.TECNICA.name
+            ),
+            TrainingEntity(
+                userId = userId,
+                name = "Resistencia con balón",
+                dateText = "04/04/2026",
+                durationMin = 80,
+                type = TrainingType.RESISTENCIA.name
+            ),
+            TrainingEntity(
+                userId = userId,
+                name = "Velocidad y reacción",
+                dateText = "02/04/2026",
                 durationMin = 60,
                 type = TrainingType.VELOCIDAD.name
             ),
             TrainingEntity(
                 userId = userId,
-                name = "Entrenamiento táctico",
-                dateText = "24/03/2026",
+                name = "Recuperación activa",
+                dateText = "31/03/2026",
+                durationMin = 45,
+                type = TrainingType.RECUPERACION.name
+            ),
+            TrainingEntity(
+                userId = userId,
+                name = "Finalización y centros",
+                dateText = "28/03/2026",
+                durationMin = 85,
+                type = TrainingType.TECNICA.name
+            ),
+            TrainingEntity(
+                userId = userId,
+                name = "Presión tras pérdida",
+                dateText = "26/03/2026",
                 durationMin = 90,
                 type = TrainingType.RESISTENCIA.name
+            ),
+            TrainingEntity(
+                userId = userId,
+                name = "Potencia y cambios de ritmo",
+                dateText = "24/03/2026",
+                durationMin = 70,
+                type = TrainingType.VELOCIDAD.name
+            ),
+            TrainingEntity(
+                userId = userId,
+                name = "Fuerza preventiva",
+                dateText = "21/03/2026",
+                durationMin = 65,
+                type = TrainingType.FUERZA.name
+            ),
+            TrainingEntity(
+                userId = userId,
+                name = "Salida de balón",
+                dateText = "19/03/2026",
+                durationMin = 90,
+                type = TrainingType.TECNICA.name
+            ),
+            TrainingEntity(
+                userId = userId,
+                name = "Bloque defensivo",
+                dateText = "17/03/2026",
+                durationMin = 80,
+                type = TrainingType.TECNICA.name
+            ),
+            TrainingEntity(
+                userId = userId,
+                name = "Recuperación post partido",
+                dateText = "16/03/2026",
+                durationMin = 40,
+                type = TrainingType.RECUPERACION.name
             )
         )
 }
