@@ -200,18 +200,49 @@ private fun DashboardHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
-                Text(
-                    text = "ProFootball",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = onText,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "Bienvenido, $username",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = onText.copy(alpha = 0.80f)
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                listOf(
+                                    accent.copy(alpha = 0.34f),
+                                    accent2.copy(alpha = 0.24f)
+                                )
+                            ),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = usernameInitial(username),
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                    Text(
+                        text = "ProFootball",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = onText,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Text(
+                        text = "Bienvenido, $username",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = onText.copy(alpha = 0.80f),
+                        maxLines = 1
+                    )
+                }
             }
 
             Surface(
@@ -239,7 +270,7 @@ private fun DashboardHeader(
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = "Configuración",
-                        tint = ButtonTextDark
+                        tint = Color.White
                     )
                 }
             }
@@ -265,6 +296,7 @@ private fun DashboardHeader(
                         color = onText.copy(alpha = 0.70f),
                         style = MaterialTheme.typography.labelMedium
                     )
+
                     Text(
                         text = when {
                             sessionsToComplete > 0 ->
@@ -670,4 +702,13 @@ private fun RowScope.BottomMenuItem(
             )
         }
     }
+}
+
+private fun usernameInitial(username: String): String {
+    return username
+        .trim()
+        .firstOrNull()
+        ?.uppercaseChar()
+        ?.toString()
+        ?: "U"
 }
