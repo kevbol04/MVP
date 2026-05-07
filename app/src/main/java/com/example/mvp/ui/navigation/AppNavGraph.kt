@@ -4,11 +4,13 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import com.example.mvp.ui.components.AppLoadingScreen
 import com.example.mvp.ui.screens.settings.AboutScreen
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -71,13 +73,17 @@ fun AppNavGraph(
     val sessionState by sessionViewModel.uiState.collectAsState()
     val savedSession = sessionState.userSession
 
-    if (sessionState.loading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
+    var minimumSplashFinished by remember {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(Unit) {
+        delay(900)
+        minimumSplashFinished = true
+    }
+
+    if (sessionState.loading || !minimumSplashFinished) {
+        AppLoadingScreen()
         return
     }
 
