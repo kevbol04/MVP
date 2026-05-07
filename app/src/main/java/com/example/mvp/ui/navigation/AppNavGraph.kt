@@ -4,14 +4,11 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import com.example.mvp.ui.components.AppLoadingScreen
-import com.example.mvp.ui.screens.settings.AboutScreen
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,11 +25,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.mvp.ui.screens.settings.PrivacyScreen
+import com.example.mvp.ui.components.AppLoadingScreen
 import com.example.mvp.ui.components.AppSnackbarHost
 import com.example.mvp.ui.screens.dashboard.DashboardScreen
 import com.example.mvp.ui.screens.dashboard.RecentItem
 import com.example.mvp.ui.screens.login.AuthRoute
+import com.example.mvp.ui.screens.matches.MatchDetailScreen
 import com.example.mvp.ui.screens.matches.MatchFormScreen
 import com.example.mvp.ui.screens.matches.MatchesScreen
 import com.example.mvp.ui.screens.matches.MatchesViewModel
@@ -41,12 +39,15 @@ import com.example.mvp.ui.screens.players.PlayerFormScreen
 import com.example.mvp.ui.screens.players.PlayersScreen
 import com.example.mvp.ui.screens.players.PlayersViewModel
 import com.example.mvp.ui.screens.session.SessionViewModel
+import com.example.mvp.ui.screens.settings.AboutScreen
 import com.example.mvp.ui.screens.settings.AccountRoute
+import com.example.mvp.ui.screens.settings.PrivacyScreen
 import com.example.mvp.ui.screens.settings.SettingsScreen
 import com.example.mvp.ui.screens.stats.StatsScreen
 import com.example.mvp.ui.screens.training.TrainingFormScreen
 import com.example.mvp.ui.screens.training.TrainingsScreen
 import com.example.mvp.ui.screens.training.TrainingsViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -212,7 +213,7 @@ fun AppNavGraph(
                     },
                     onOpenMatch = { id ->
                         navController.navigate(
-                            Route.MatchFormWithId.createRoute(id.toInt())
+                            Route.MatchDetail.createRoute(id.toInt())
                         )
                     },
                     onOpenPlayer = { id ->
@@ -420,6 +421,11 @@ fun AppNavGraph(
                     onCreateMatch = {
                         navController.navigate(Route.MatchForm.route)
                     },
+                    onOpenMatch = { match ->
+                        navController.navigate(
+                            Route.MatchDetail.createRoute(match.id)
+                        )
+                    },
                     onEditMatch = { match ->
                         navController.navigate(
                             Route.MatchFormWithId.createRoute(match.id)
@@ -461,6 +467,50 @@ fun AppNavGraph(
                         vm.save(match.copy(id = 0))
                         navController.popBackStack()
                         showSnackbar("Partido creado correctamente")
+                    }
+                )
+            }
+
+            // ---------------- MATCH DETAIL ----------------
+            composable(Route.MatchDetail.route) { backStackEntry ->
+                val vm: MatchesViewModel = hiltViewModel()
+
+                LaunchedEffect(currentUserId) {
+                    vm.setUser(currentUserId)
+                }
+
+                val id = backStackEntry.arguments
+                    ?.getString(Route.MatchDetail.ARG_ID)
+                    ?.toIntOrNull()
+
+                if (id == null) {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack()
+                    }
+                    return@composable
+                }
+
+                val current by vm.matchById(id).collectAsState(initial = null)
+
+                if (current == null) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                    return@composable
+                }
+
+                MatchDetailScreen(
+                    match = current!!,
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onEdit = { match ->
+                        navController.navigate(
+                            Route.MatchFormWithId.createRoute(match.id)
+                        )
                     }
                 )
             }

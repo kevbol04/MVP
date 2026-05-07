@@ -30,6 +30,10 @@ sealed class Route(val route: String) {
         const val ARG_ID = "matchId"
         fun createRoute(id: Int) = "match_form/$id"
     }
+    data object MatchDetail : Route("match_detail/{matchId}") {
+        const val ARG_ID = "matchId"
+        fun createRoute(id: Int) = "match_detail/$id"
+    }
 
     // Players
     data object Players : Route("players")

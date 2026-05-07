@@ -67,6 +67,7 @@ fun MatchesScreen(
     onBack: () -> Unit = {},
     onCreateMatch: () -> Unit = {},
     onEditMatch: (Match) -> Unit = {},
+    onOpenMatch: (Match) -> Unit = {},
     onDeleteMatch: (Match) -> Unit = {},
 
     onGoDashboard: () -> Unit = {},
@@ -240,6 +241,7 @@ fun MatchesScreen(
                                     accent2 = accent2,
                                     danger = danger,
                                     onText = onBg,
+                                    onOpen = { onOpenMatch(match) },
                                     onEdit = { onEditMatch(match) },
                                     onDelete = { toDelete = match }
                                 )
@@ -488,6 +490,7 @@ private fun MatchScoreCard(
     accent2: Color,
     danger: Color,
     onText: Color,
+    onOpen: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -500,7 +503,9 @@ private fun MatchScoreCard(
     val badgeFg = badgeText
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpen() },
         shape = RoundedCornerShape(24.dp),
         color = GlassBase.copy(alpha = 0.08f),
         tonalElevation = 1.dp
