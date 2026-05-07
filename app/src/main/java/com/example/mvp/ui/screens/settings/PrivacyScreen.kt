@@ -288,9 +288,9 @@ private fun PrivacyHeroCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Shield,
+                        imageVector = Icons.Default.Security,
                         contentDescription = null,
-                        tint = ButtonTextDark,
+                        tint = Color.White,
                         modifier = Modifier.size(32.dp)
                     )
                 }
