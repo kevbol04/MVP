@@ -10,6 +10,7 @@ sealed class Route(val route: String) {
     data object Settings : Route("settings")
     data object Account : Route("account")
     object About : Route("about")
+    object Privacy : Route("privacy")
 
     // Stats
     data object Stats : Route("stats")

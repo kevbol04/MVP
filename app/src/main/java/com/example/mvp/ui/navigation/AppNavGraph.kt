@@ -26,6 +26,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.mvp.ui.screens.settings.PrivacyScreen
 import com.example.mvp.ui.components.AppSnackbarHost
 import com.example.mvp.ui.screens.dashboard.DashboardScreen
 import com.example.mvp.ui.screens.dashboard.RecentItem
@@ -226,7 +227,9 @@ fun AppNavGraph(
                     onOpenAccount = {
                         navController.navigate(Route.Account.route)
                     },
-                    onOpenPrivacy = { },
+                    onOpenPrivacy = {
+                        navController.navigate(Route.Privacy.route)
+                    },
                     onOpenAbout = {
                         navController.navigate(Route.About.route)
                     },
@@ -287,6 +290,15 @@ fun AppNavGraph(
             // ---------------- ABOUT ----------------
             composable(Route.About.route) {
                 AboutScreen(
+                    onBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            // ---------------- PRIVACY ----------------
+            composable(Route.Privacy.route) {
+                PrivacyScreen(
                     onBack = {
                         navController.popBackStack()
                     }
