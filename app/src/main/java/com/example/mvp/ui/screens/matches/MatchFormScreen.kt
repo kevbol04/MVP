@@ -54,6 +54,7 @@ fun MatchFormScreen(
 
     var showExitDialog by remember { mutableStateOf(false) }
 
+    var touchedRival by remember { mutableStateOf(false) }
     var touchedDate by remember { mutableStateOf(false) }
 
     val goalsFor = goalsForText.toIntOrNull() ?: 0
@@ -67,9 +68,10 @@ fun MatchFormScreen(
         }
     }
 
+    val rivalError = remember(rival) { validateMatchRival(rival) }
     val dateError = remember(dateText) { validateDateStrict(dateText) }
-    val isValid = remember(rival, dateText, dateError) {
-        rival.trim().isNotBlank() && dateError == null
+    val isValid = remember(rivalError, dateError) {
+        rivalError == null && dateError == null
     }
 
     val dirty = remember(rival, dateText, competition, goalsForText, goalsAgainstText, initial) {
@@ -161,20 +163,34 @@ fun MatchFormScreen(
 
                     OutlinedTextField(
                         value = rival,
-                        onValueChange = { rival = it },
+                        onValueChange = {
+                            rival = it.take(40)
+                            touchedRival = true
+                        },
                         singleLine = true,
                         label = { Text("Rival") },
                         leadingIcon = { Icon(Icons.Default.SportsSoccer, null) },
+                        isError = touchedRival && rivalError != null,
+                        supportingText = {
+                            if (touchedRival) {
+                                Text(rivalError ?: "Nombre del rival correcto")
+                            }
+                        },
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = onBg.copy(alpha = 0.18f),
                             focusedBorderColor = accent,
+                            errorBorderColor = MaterialTheme.colorScheme.error,
                             unfocusedLabelColor = onBg.copy(alpha = 0.65f),
                             focusedLabelColor = accent,
+                            errorLabelColor = MaterialTheme.colorScheme.error,
                             unfocusedTextColor = onBg,
                             focusedTextColor = onBg,
+                            errorTextColor = onBg,
                             unfocusedLeadingIconColor = onBg.copy(alpha = 0.6f),
                             focusedLeadingIconColor = accent,
-                            cursorColor = accent
+                            errorLeadingIconColor = MaterialTheme.colorScheme.error,
+                            cursorColor = accent,
+                            errorCursorColor = MaterialTheme.colorScheme.error
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -298,6 +314,7 @@ fun MatchFormScreen(
 
                     Button(
                         onClick = {
+                            touchedRival = true
                             touchedDate = true
                             if (!isValid) return@Button
 
@@ -493,6 +510,17 @@ private fun ScoreBox(
 private fun String.onlyScoreDigits(): String {
     val cleaned = this.filter { it.isDigit() }.take(2)
     return if (cleaned.isBlank()) "0" else cleaned
+}
+
+private fun validateMatchRival(raw: String): String? {
+    val txt = raw.trim()
+
+    if (txt.isBlank()) return "El rival es obligatorio."
+    if (txt.length < 3) return "El rival debe tener al menos 3 caracteres."
+    if (txt.length > 40) return "El rival no puede superar los 40 caracteres."
+    if (txt.contains(Regex("\\s{2,}"))) return "Evita usar espacios dobles."
+
+    return null
 }
 
 @RequiresApi(Build.VERSION_CODES.O)

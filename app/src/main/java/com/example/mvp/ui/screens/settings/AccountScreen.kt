@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -23,6 +25,8 @@ import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
 
 private const val MIN_PASS_LEN = 4
+private const val MIN_ACCOUNT_NAME_LEN = 3
+private val ACCOUNT_EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
 
 @Composable
 fun AccountScreen(
@@ -58,11 +62,17 @@ fun AccountScreen(
     var draftName by remember(name) { mutableStateOf(name) }
     var draftEmail by remember(email) { mutableStateOf(email) }
 
+    var touchedName by remember { mutableStateOf(false) }
+    var touchedEmail by remember { mutableStateOf(false) }
+
     var showChangePass by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
     var showConfirmSave by remember { mutableStateOf(false) }
 
+    val nameError = remember(draftName) { validateAccountName(draftName) }
+    val emailError = remember(draftEmail) { validateAccountEmail(draftEmail) }
     val hasChanges = draftName.trim() != savedName.trim() || draftEmail.trim() != savedEmail.trim()
+    val canSaveProfile = hasChanges && nameError == null && emailError == null
 
     LaunchedEffect(passwordChanged) {
         if (passwordChanged) {
@@ -155,10 +165,19 @@ fun AccountScreen(
                 ) {
                     OutlinedTextField(
                         value = draftName,
-                        onValueChange = { draftName = it },
+                        onValueChange = {
+                            draftName = it.take(40)
+                            touchedName = true
+                        },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        isError = touchedName && nameError != null,
+                        supportingText = {
+                            if (touchedName) {
+                                Text(nameError ?: "Nombre correcto")
+                            }
+                        }
                     )
                 }
 
@@ -173,10 +192,20 @@ fun AccountScreen(
                 ) {
                     OutlinedTextField(
                         value = draftEmail,
-                        onValueChange = { draftEmail = it },
+                        onValueChange = {
+                            draftEmail = it.take(60)
+                            touchedEmail = true
+                        },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        isError = touchedEmail && emailError != null,
+                        supportingText = {
+                            if (touchedEmail) {
+                                Text(emailError ?: "Email correcto")
+                            }
+                        }
                     )
                 }
 
@@ -189,9 +218,9 @@ fun AccountScreen(
                     horizontalArrangement = Arrangement.End
                 ) {
                     Surface(
-                        modifier = Modifier.clickable(enabled = hasChanges) { showConfirmSave = true },
+                        modifier = Modifier.clickable(enabled = canSaveProfile) { showConfirmSave = true },
                         shape = RoundedCornerShape(16.dp),
-                        color = if (hasChanges) accent.copy(alpha = 0.18f) else GlassBase.copy(alpha = 0.06f)
+                        color = if (canSaveProfile) accent.copy(alpha = 0.18f) else GlassBase.copy(alpha = 0.06f)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -201,11 +230,11 @@ fun AccountScreen(
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                tint = if (hasChanges) accent else onBg.copy(alpha = 0.35f)
+                                tint = if (canSaveProfile) accent else onBg.copy(alpha = 0.35f)
                             )
                             Text(
                                 text = "Guardar cambios",
-                                color = if (hasChanges) accent else onBg.copy(alpha = 0.35f),
+                                color = if (canSaveProfile) accent else onBg.copy(alpha = 0.35f),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -839,6 +868,30 @@ private fun ConfirmProfileChangesDialog(
             }
         }
     }
+}
+
+
+private fun validateAccountName(raw: String): String? {
+    val txt = raw.trim()
+
+    if (txt.isBlank()) return "El nombre es obligatorio."
+    if (txt.length < MIN_ACCOUNT_NAME_LEN) return "El nombre debe tener al menos $MIN_ACCOUNT_NAME_LEN caracteres."
+    if (txt.length > 40) return "El nombre no puede superar los 40 caracteres."
+    if (txt.contains(Regex("\\s{2,}"))) return "Evita usar espacios dobles."
+    if (!Regex("^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$").matches(txt)) {
+        return "Usa solo letras, espacios, guiones o apóstrofes."
+    }
+
+    return null
+}
+
+private fun validateAccountEmail(raw: String): String? {
+    val txt = raw.trim()
+
+    if (txt.isBlank()) return "El email es obligatorio."
+    if (!ACCOUNT_EMAIL_REGEX.matches(txt)) return "Introduce un email válido."
+
+    return null
 }
 
 @Composable
