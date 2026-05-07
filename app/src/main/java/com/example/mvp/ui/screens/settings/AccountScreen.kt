@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,7 +15,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -25,8 +23,10 @@ import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
 
 private const val MIN_PASS_LEN = 4
-private const val MIN_ACCOUNT_NAME_LEN = 3
-private val ACCOUNT_EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+private const val MIN_NAME_LEN = 3
+private const val MAX_NAME_LEN = 40
+private val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+private val NAME_REGEX = Regex("^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$")
 
 @Composable
 fun AccountScreen(
@@ -62,17 +62,21 @@ fun AccountScreen(
     var draftName by remember(name) { mutableStateOf(name) }
     var draftEmail by remember(email) { mutableStateOf(email) }
 
-    var touchedName by remember { mutableStateOf(false) }
-    var touchedEmail by remember { mutableStateOf(false) }
-
     var showChangePass by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
     var showConfirmSave by remember { mutableStateOf(false) }
 
-    val nameError = remember(draftName) { validateAccountName(draftName) }
-    val emailError = remember(draftEmail) { validateAccountEmail(draftEmail) }
-    val hasChanges = draftName.trim() != savedName.trim() || draftEmail.trim() != savedEmail.trim()
-    val canSaveProfile = hasChanges && nameError == null && emailError == null
+    val nameError = validateAccountName(draftName)
+    val emailError = validateAccountEmail(draftEmail)
+
+    val hasChanges =
+        draftName.trim() != savedName.trim() ||
+                draftEmail.trim().lowercase() != savedEmail.trim().lowercase()
+
+    val canSave =
+        hasChanges &&
+                nameError == null &&
+                emailError == null
 
     LaunchedEffect(passwordChanged) {
         if (passwordChanged) {
@@ -165,19 +169,10 @@ fun AccountScreen(
                 ) {
                     OutlinedTextField(
                         value = draftName,
-                        onValueChange = {
-                            draftName = it.take(40)
-                            touchedName = true
-                        },
+                        onValueChange = { draftName = it },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        isError = touchedName && nameError != null,
-                        supportingText = {
-                            if (touchedName) {
-                                Text(nameError ?: "Nombre correcto")
-                            }
-                        }
+                        shape = RoundedCornerShape(16.dp)
                     )
                 }
 
@@ -192,20 +187,10 @@ fun AccountScreen(
                 ) {
                     OutlinedTextField(
                         value = draftEmail,
-                        onValueChange = {
-                            draftEmail = it.take(60)
-                            touchedEmail = true
-                        },
+                        onValueChange = { draftEmail = it },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        isError = touchedEmail && emailError != null,
-                        supportingText = {
-                            if (touchedEmail) {
-                                Text(emailError ?: "Email correcto")
-                            }
-                        }
+                        shape = RoundedCornerShape(16.dp)
                     )
                 }
 
@@ -218,9 +203,9 @@ fun AccountScreen(
                     horizontalArrangement = Arrangement.End
                 ) {
                     Surface(
-                        modifier = Modifier.clickable(enabled = canSaveProfile) { showConfirmSave = true },
+                        modifier = Modifier.clickable(enabled = canSave) { showConfirmSave = true },
                         shape = RoundedCornerShape(16.dp),
-                        color = if (canSaveProfile) accent.copy(alpha = 0.18f) else GlassBase.copy(alpha = 0.06f)
+                        color = if (canSave) accent.copy(alpha = 0.18f) else GlassBase.copy(alpha = 0.06f)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -230,11 +215,11 @@ fun AccountScreen(
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                tint = if (canSaveProfile) accent else onBg.copy(alpha = 0.35f)
+                                tint = if (canSave) accent else onBg.copy(alpha = 0.35f)
                             )
                             Text(
                                 text = "Guardar cambios",
-                                color = if (canSaveProfile) accent else onBg.copy(alpha = 0.35f),
+                                color = if (canSave) accent else onBg.copy(alpha = 0.35f),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -870,30 +855,6 @@ private fun ConfirmProfileChangesDialog(
     }
 }
 
-
-private fun validateAccountName(raw: String): String? {
-    val txt = raw.trim()
-
-    if (txt.isBlank()) return "El nombre es obligatorio."
-    if (txt.length < MIN_ACCOUNT_NAME_LEN) return "El nombre debe tener al menos $MIN_ACCOUNT_NAME_LEN caracteres."
-    if (txt.length > 40) return "El nombre no puede superar los 40 caracteres."
-    if (txt.contains(Regex("\\s{2,}"))) return "Evita usar espacios dobles."
-    if (!Regex("^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$").matches(txt)) {
-        return "Usa solo letras, espacios, guiones o apóstrofes."
-    }
-
-    return null
-}
-
-private fun validateAccountEmail(raw: String): String? {
-    val txt = raw.trim()
-
-    if (txt.isBlank()) return "El email es obligatorio."
-    if (!ACCOUNT_EMAIL_REGEX.matches(txt)) return "Introduce un email válido."
-
-    return null
-}
-
 @Composable
 private fun ChangeRow(label: String, oldValue: String, newValue: String, onText: Color) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1002,42 +963,96 @@ private fun ProfileHeroSimple(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = GlassBase.copy(alpha = 0.09f)
+        shape = RoundedCornerShape(26.dp),
+        color = GlassBase.copy(alpha = 0.08f)
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            accent.copy(alpha = 0.16f),
+                            accent2.copy(alpha = 0.10f),
+                            GlassBase.copy(alpha = 0.04f)
+                        )
+                    )
+                )
+                .padding(16.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .background(
-                        Brush.radialGradient(
-                            listOf(accent.copy(alpha = 0.45f), accent2.copy(alpha = 0.18f))
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    ),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Person, contentDescription = null, tint = ButtonTextDark)
-            }
+                Box(
+                    modifier = Modifier
+                        .size(62.dp)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                listOf(
+                                    accent.copy(alpha = 0.42f),
+                                    accent2.copy(alpha = 0.30f)
+                                )
+                            ),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = accountInitial(name),
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = name,
-                    color = onText,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = email,
-                    color = onText.copy(alpha = 0.78f),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = name.ifBlank { "Usuario" },
+                        color = onText,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
+                    )
+
+                    Text(
+                        text = email.ifBlank { "Sin correo" },
+                        color = onText.copy(alpha = 0.72f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1
+                    )
+
+                    Surface(
+                        modifier = Modifier.padding(top = 4.dp),
+                        shape = RoundedCornerShape(999.dp),
+                        color = accent.copy(alpha = 0.13f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Security,
+                                contentDescription = null,
+                                tint = accent,
+                                modifier = Modifier.size(15.dp)
+                            )
+
+                            Text(
+                                text = "Cuenta local protegida",
+                                color = onText.copy(alpha = 0.86f),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -1234,3 +1249,50 @@ private fun DangerBanner(
         }
     }
 }
+
+private fun accountInitial(name: String): String {
+    return name
+        .trim()
+        .firstOrNull()
+        ?.uppercaseChar()
+        ?.toString()
+        ?: "U"
+}
+
+private fun validateAccountName(value: String): String? {
+    val trimmed = value.trim()
+
+    return when {
+        trimmed.isBlank() ->
+            "El nombre es obligatorio."
+
+        trimmed.length < MIN_NAME_LEN ->
+            "El nombre debe tener al menos $MIN_NAME_LEN caracteres."
+
+        trimmed.length > MAX_NAME_LEN ->
+            "El nombre no puede superar los $MAX_NAME_LEN caracteres."
+
+        "  " in trimmed ->
+            "Evita usar espacios dobles."
+
+        !NAME_REGEX.matches(trimmed) ->
+            "Usa solo letras, espacios, guiones o apóstrofes."
+
+        else -> null
+    }
+}
+
+private fun validateAccountEmail(value: String): String? {
+    val trimmed = value.trim()
+
+    return when {
+        trimmed.isBlank() ->
+            "El email es obligatorio."
+
+        !EMAIL_REGEX.matches(trimmed) ->
+            "Introduce un email válido."
+
+        else -> null
+    }
+}
+
