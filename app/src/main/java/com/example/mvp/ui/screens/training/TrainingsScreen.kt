@@ -45,6 +45,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 
 enum class TrainingType(val label: String) {
@@ -97,6 +98,8 @@ fun TrainingsScreen(
     var selectedTab by remember { mutableStateOf(TrainingTab.PENDING) }
     var selectedMonth by remember { mutableStateOf(YearMonth.now()) }
     var toDelete by remember { mutableStateOf<Training?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     val pending = remember(trainings) { trainings.filter { !it.isDone }.sortedPendingSmart() }
     val history = remember(trainings) { trainings.filter { it.isDone }.sortedByDate(desc = true) }
@@ -107,6 +110,18 @@ fun TrainingsScreen(
     val filteredHistory = remember(history, query) { history.filterByQuery(query) }
 
     val bottomBarHeight = 96.dp
+
+    val handleToggleDone: (Training) -> Unit = { training ->
+        if (!training.isDone && training.isFuturePending()) {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "No puedes completar un entrenamiento futuro"
+                )
+            }
+        } else {
+            onToggleDone(training)
+        }
+    }
 
     Box(
         modifier = modifier
@@ -192,7 +207,7 @@ fun TrainingsScreen(
                     onText = onBg,
                     onEdit = onEditTraining,
                     onDelete = { toDelete = it },
-                    onToggleDone = onToggleDone,
+                    onToggleDone = handleToggleDone,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -205,7 +220,7 @@ fun TrainingsScreen(
                     onText = onBg,
                     onEdit = onEditTraining,
                     onDelete = { toDelete = it },
-                    onToggleDone = onToggleDone,
+                    onToggleDone = handleToggleDone,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -251,6 +266,14 @@ fun TrainingsScreen(
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 20.dp)
+                .padding(bottom = bottomBarHeight + 18.dp)
+        )
 
         ProFootballBottomBar(
             selected = BottomBarDestination.Training,
@@ -426,6 +449,10 @@ private fun TrainingRow(
         training.isOverdue()
     }
 
+    val futurePending = remember(training.dateText, training.isDone) {
+        training.isFuturePending()
+    }
+
     val leadingIcon = when {
         training.isDone -> Icons.Default.CheckCircle
         overdue -> Icons.Default.Schedule
@@ -435,18 +462,21 @@ private fun TrainingRow(
     val leadingIconDescription = when {
         training.isDone -> "Entrenamiento hecho. Pulsar para marcar como pendiente"
         overdue -> "Entrenamiento atrasado. Pulsar para marcar como hecho"
+        futurePending -> "Entrenamiento futuro. No se puede marcar como hecho todavía"
         else -> "Entrenamiento pendiente. Pulsar para marcar como hecho"
     }
 
     val leadingIconTint = when {
         training.isDone -> accent
         overdue -> danger
+        futurePending -> onText.copy(alpha = 0.45f)
         else -> onText.copy(alpha = 0.75f)
     }
 
     val leadingCircleColor = when {
         training.isDone -> accent.copy(alpha = 0.18f)
         overdue -> danger.copy(alpha = 0.12f)
+        futurePending -> onText.copy(alpha = 0.04f)
         else -> onText.copy(alpha = 0.06f)
     }
 
@@ -933,6 +963,13 @@ private fun List<Training>.sortedByDate(desc: Boolean = false): List<Training> {
 private fun Training.isOverdue(): Boolean {
     val date = parseTrainingDate(dateText) ?: return false
     return !isDone && date.isBefore(LocalDate.now())
+}
+
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun Training.isFuturePending(): Boolean {
+    val date = parseTrainingDate(dateText) ?: return false
+    return !isDone && date.isAfter(LocalDate.now())
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
