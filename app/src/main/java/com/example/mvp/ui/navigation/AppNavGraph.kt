@@ -28,7 +28,6 @@ import androidx.navigation.compose.rememberNavController
 import com.example.mvp.ui.components.AppLoadingScreen
 import com.example.mvp.ui.components.AppSnackbarHost
 import com.example.mvp.ui.screens.dashboard.DashboardScreen
-import com.example.mvp.ui.screens.dashboard.RecentItem
 import com.example.mvp.ui.screens.login.AuthRoute
 import com.example.mvp.ui.screens.matches.MatchDetailScreen
 import com.example.mvp.ui.screens.matches.MatchFormScreen
@@ -159,43 +158,11 @@ fun AppNavGraph(
                 val matches by matchesVm.matches.collectAsState()
                 val trainings by trainingsVm.trainings.collectAsState()
 
-                val sessionsToComplete = trainings.count { !it.isDone }
-
-                val lastTraining = trainings.maxByOrNull { it.id }?.let {
-                    val status = when {
-                        it.isDone -> "Hecho"
-                        isTrainingOverdue(it.dateText) -> "Atrasado"
-                        else -> "Pendiente"
-                    }
-                    RecentItem.Training(
-                        title = it.name,
-                        subtitle = "${it.dateText} · ${it.durationMin} min · ${it.type.label} · $status",
-                        trainingId = it.id.toLong()
-                    )
-                }
-
-                val lastMatch = matches.maxByOrNull { it.id }?.let {
-                    RecentItem.Match(
-                        title = "Partido: ${it.rival}",
-                        subtitle = "${it.competition.label} · ${it.result.label}",
-                        matchId = it.id.toLong()
-                    )
-                }
-
-                val lastPlayer = players.maxByOrNull { it.id }?.let {
-                    RecentItem.Player(
-                        title = "Jugador: ${it.name}",
-                        subtitle = "${it.position.label} · #${it.number} · OVR ${it.rating}",
-                        playerId = it.id.toLong()
-                    )
-                }
-
                 DashboardScreen(
                     username = currentUsername,
-                    sessionsToComplete = sessionsToComplete,
-                    lastTraining = lastTraining,
-                    lastMatch = lastMatch,
-                    lastPlayer = lastPlayer,
+                    trainings = trainings,
+                    matches = matches,
+                    players = players,
 
                     onGoTraining = {
                         navController.navigateToTab(Route.Trainings.route)
@@ -211,6 +178,15 @@ fun AppNavGraph(
                     },
                     onGoSettings = {
                         navController.navigate(Route.Settings.route)
+                    },
+                    onCreateTraining = {
+                        navController.navigate(Route.TrainingForm.route)
+                    },
+                    onCreateMatch = {
+                        navController.navigate(Route.MatchForm.route)
+                    },
+                    onCreatePlayer = {
+                        navController.navigate(Route.PlayerForm.route)
                     },
 
                     onOpenTraining = { id ->
