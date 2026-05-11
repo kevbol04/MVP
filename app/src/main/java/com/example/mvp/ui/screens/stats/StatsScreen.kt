@@ -1,8 +1,24 @@
 package com.example.mvp.ui.screens.stats
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.SportsSoccer
@@ -30,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mvp.ui.components.BottomBarDestination
 import com.example.mvp.ui.components.ProFootballBottomBar
@@ -37,6 +55,7 @@ import com.example.mvp.ui.screens.matches.Competition
 import com.example.mvp.ui.screens.matches.Match
 import com.example.mvp.ui.screens.matches.MatchResult
 import com.example.mvp.ui.screens.players.Player
+import com.example.mvp.ui.screens.players.PlayerPosition
 import com.example.mvp.ui.screens.players.PlayerStatus
 import com.example.mvp.ui.screens.training.Training
 import com.example.mvp.ui.screens.training.TrainingType
@@ -45,10 +64,20 @@ import com.example.mvp.ui.theme.Draw
 import com.example.mvp.ui.theme.GlassBase
 import com.example.mvp.ui.theme.Loss
 import com.example.mvp.ui.theme.Win
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.roundToInt
 
-private enum class BottomTab { Training, Matches, Players, Stats }
+private enum class StatsSection(val label: String) {
+    OVERVIEW("Resumen"),
+    TRAINING("Entrenos"),
+    MATCHES("Partidos"),
+    PLAYERS("Plantilla")
+}
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun StatsScreen(
     players: List<Player>,
@@ -66,95 +95,89 @@ fun StatsScreen(
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.secondary
     val onBg = MaterialTheme.colorScheme.onBackground
+    val danger = MaterialTheme.colorScheme.error
 
     val scroll = rememberScrollState()
+    var selectedSection by remember { mutableStateOf(StatsSection.OVERVIEW) }
+
+    val today = LocalDate.now()
+    val currentMonth = YearMonth.from(today)
 
     val totalPlayers = players.size
     val titulares = players.count { it.status == PlayerStatus.TITULAR }
     val suplentes = players.count { it.status == PlayerStatus.SUPLENTE }
     val lesionados = players.count { it.status == PlayerStatus.LESIONADO }
-
-    val avgRating = if (players.isNotEmpty()) {
-        players.map { it.rating }.average()
-    } else {
-        0.0
-    }
-
+    val availablePlayers = totalPlayers - lesionados
+    val availabilityRate = if (totalPlayers == 0) 0f else availablePlayers.toFloat() / totalPlayers.toFloat()
+    val avgRating = if (players.isNotEmpty()) players.map { it.rating }.average() else 0.0
     val bestPlayer = players.maxByOrNull { it.rating }
 
     val totalMatches = matches.size
     val wins = matches.count { it.result == MatchResult.VICTORIA }
     val draws = matches.count { it.result == MatchResult.EMPATE }
     val losses = matches.count { it.result == MatchResult.DERROTA }
-
-    val winRate = if (totalMatches > 0) {
-        wins.toFloat() / totalMatches.toFloat()
-    } else {
-        0f
-    }
-
-    val winRateText = if (totalMatches == 0) {
-        "--"
-    } else {
-        "${(winRate * 100).toInt()}%"
-    }
-
+    val winRate = if (totalMatches == 0) 0f else wins.toFloat() / totalMatches.toFloat()
     val goalsFor = matches.sumOf { it.goalsFor }
     val goalsAgainst = matches.sumOf { it.goalsAgainst }
     val goalDifference = goalsFor - goalsAgainst
-
+    val avgGoalsFor = if (totalMatches == 0) 0.0 else goalsFor.toDouble() / totalMatches.toDouble()
+    val avgGoalsAgainst = if (totalMatches == 0) 0.0 else goalsAgainst.toDouble() / totalMatches.toDouble()
     val ligaMatches = matches.count { it.competition == Competition.LIGA }
     val copaMatches = matches.count { it.competition == Competition.COPA }
     val amistosos = matches.count { it.competition == Competition.AMISTOSO }
-
-    val lastMatch = matches.maxByOrNull { it.id }
+    val lastMatch = matches.maxByOrNull { parseDateOrNull(it.dateText) ?: LocalDate.MIN }
 
     val completedTrainings = trainings.filter { it.isDone }
-    val pendingTrainings = trainings.count { !it.isDone }
-    val totalTrainings = completedTrainings.size
+    val pendingTrainings = trainings.filter { !it.isDone && !it.isOverdue() }
+    val overdueTrainings = trainings.filter { !it.isDone && it.isOverdue() }
+    val completedCount = completedTrainings.size
+    val pendingCount = pendingTrainings.size
+    val overdueCount = overdueTrainings.size
+    val totalTrainingRecords = trainings.size
+    val completionRate = if (totalTrainingRecords == 0) 0f else completedCount.toFloat() / totalTrainingRecords.toFloat()
     val totalMinutes = completedTrainings.sumOf { it.durationMin }
-    val avgMinutes = if (completedTrainings.isNotEmpty()) {
-        totalMinutes.toDouble() / completedTrainings.size
-    } else {
-        0.0
+    val avgMinutes = if (completedTrainings.isEmpty()) 0.0 else totalMinutes.toDouble() / completedTrainings.size.toDouble()
+    val minutesThisMonth = completedTrainings
+        .filter { parseDateOrNull(it.dateText)?.let { date -> YearMonth.from(date) == currentMonth } == true }
+        .sumOf { it.durationMin }
+    val completedThisMonth = completedTrainings.count {
+        parseDateOrNull(it.dateText)?.let { date -> YearMonth.from(date) == currentMonth } == true
     }
-
-    val lastTraining = completedTrainings.maxByOrNull { it.id }
-
+    val lastTraining = completedTrainings.maxByOrNull { parseDateOrNull(it.dateText) ?: LocalDate.MIN }
+    val nextTraining = pendingTrainings.minByOrNull { parseDateOrNull(it.dateText) ?: LocalDate.MAX }
     val favoriteTrainingType = completedTrainings
         .groupingBy { it.type }
         .eachCount()
-        .maxByOrNull { it.value }
+        .maxWithOrNull(compareBy<Map.Entry<TrainingType, Int>> { it.value }.thenBy { it.key.ordinal })
         ?.key
 
-    val totalRecords = totalPlayers + totalMatches + trainings.size
+    val totalRecords = totalPlayers + totalMatches + totalTrainingRecords
+    val globalScore = calculateGlobalScore(
+        hasData = totalRecords > 0,
+        winRate = winRate,
+        completionRate = completionRate,
+        availabilityRate = availabilityRate,
+        hasMatches = totalMatches > 0,
+        hasTrainings = totalTrainingRecords > 0,
+        hasPlayers = totalPlayers > 0
+    )
 
-    val performanceTitle = when {
-        totalMatches == 0 -> "Sin partidos registrados"
-        winRate >= 0.70f -> "Rendimiento excelente"
-        winRate >= 0.50f -> "Buen rendimiento"
-        winRate >= 0.30f -> "Rendimiento mejorable"
-        else -> "Necesitas reaccionar"
+    val heroTitle = when {
+        totalRecords == 0 -> "Sin datos todavía"
+        globalScore >= 80 -> "Proyecto muy bien encaminado"
+        globalScore >= 60 -> "Base sólida"
+        globalScore >= 40 -> "Hay margen de mejora"
+        else -> "Necesita más actividad"
     }
 
-    val performanceMessage = when {
-        totalRecords == 0 ->
-            "Aún no hay datos suficientes. Añade jugadores, partidos y entrenamientos para generar estadísticas reales."
-
-        totalMatches == 0 ->
-            "Ya tienes datos de plantilla o entrenamientos. Registra partidos para medir el rendimiento competitivo."
-
-        winRate >= 0.70f ->
-            "El equipo está compitiendo a gran nivel. Mantén la carga de entrenamientos y sigue registrando resultados."
-
-        winRate >= 0.50f ->
-            "El equipo está en una línea positiva. Hay margen para mejorar, pero la base es buena."
-
-        winRate >= 0.30f ->
-            "Hay resultados positivos, pero necesitas más regularidad. Revisa entrenamientos y rendimiento defensivo."
-
-        else ->
-            "Los resultados no acompañan. Prioriza entrenamientos, ajustes tácticos y control de goles encajados."
+    val heroMessage = when {
+        totalRecords == 0 -> "Registra jugadores, partidos y entrenamientos para que las estadísticas empiecen a tener valor real."
+        overdueCount > 0 -> "Tienes $overdueCount entrenamiento${if (overdueCount == 1) "" else "s"} atrasado${if (overdueCount == 1) "" else "s"}. La prioridad ahora es cerrar esa carga pendiente."
+        totalMatches == 0 -> "La parte de entrenamientos y plantilla puede estar bien, pero faltan partidos para medir el rendimiento competitivo."
+        completedCount == 0 -> "Ya hay datos, pero todavía no hay entrenamientos completados. Las estadísticas de carga aún no reflejan trabajo real."
+        globalScore >= 80 -> "El equipo está equilibrado: buenos resultados, carga completada y plantilla disponible. Mantén esta dinámica."
+        globalScore >= 60 -> "La lectura general es buena, pero todavía puedes mejorar la regularidad en partidos o entrenamientos."
+        else -> "Hay datos suficientes para detectar problemas. Revisa resultados, entrenamientos pendientes y estado de la plantilla."
     }
 
     val bottomBarHeight = 96.dp
@@ -188,329 +211,99 @@ fun StatsScreen(
                 .padding(top = 16.dp, bottom = bottomBarHeight + 14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Header(
-                onBack = onBack,
-                onText = onBg
-            )
+            Header(onBack = onBack, onText = onBg)
 
-            PerformanceHeroCard(
-                title = performanceTitle,
-                message = performanceMessage,
-                winRateText = winRateText,
-                winRate = winRate,
-                record = "$wins V · $draws E · $losses D",
-                goalDifference = goalDifference,
-                totalMatches = totalMatches,
+            GlobalHeroCard(
+                title = heroTitle,
+                message = heroMessage,
+                score = globalScore,
+                record = if (totalMatches == 0) "Sin partidos" else "$wins V · $draws E · $losses D",
+                completion = if (totalTrainingRecords == 0) "Sin entrenos" else "${(completionRate * 100).roundToInt()}% entrenos",
                 accent = accent,
                 accent2 = accent2,
                 onText = onBg
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                KpiCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Jugadores",
-                    value = totalPlayers.toString(),
-                    subtitle = "$titulares titulares",
-                    accent = accent,
-                    accent2 = accent2,
-                    onText = onBg
-                )
-
-                KpiCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Partidos",
-                    value = totalMatches.toString(),
-                    subtitle = "$wins victorias",
-                    accent = accent,
-                    accent2 = accent2,
-                    onText = onBg
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                KpiCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Entrenos hechos",
-                    value = totalTrainings.toString(),
-                    subtitle = "$pendingTrainings por hacer",
-                    accent = accent,
-                    accent2 = accent2,
-                    onText = onBg
-                )
-
-                KpiCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Media OVR",
-                    value = if (totalPlayers == 0) "--" else formatDecimal(avgRating),
-                    subtitle = "Plantilla",
-                    accent = accent,
-                    accent2 = accent2,
-                    onText = onBg
-                )
-            }
-
-            GlassCard(
-                title = "Resumen competitivo",
+            SectionSelector(
+                selected = selectedSection,
+                onSelected = { selectedSection = it },
+                accent = accent,
+                accent2 = accent2,
                 onText = onBg
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    ResultPill(
-                        modifier = Modifier.weight(1f),
-                        title = "Victorias",
-                        value = wins,
-                        color = Win,
-                        onText = onBg
-                    )
+            )
 
-                    ResultPill(
-                        modifier = Modifier.weight(1f),
-                        title = "Empates",
-                        value = draws,
-                        color = Draw,
-                        onText = onBg
-                    )
-
-                    ResultPill(
-                        modifier = Modifier.weight(1f),
-                        title = "Derrotas",
-                        value = losses,
-                        color = Loss,
-                        onText = onBg
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                StatBarRow(
-                    label = "Victorias",
-                    value = wins,
-                    total = totalMatches,
-                    color = Win,
-                    onText = onBg
-                )
-
-                StatBarRow(
-                    label = "Empates",
-                    value = draws,
-                    total = totalMatches,
-                    color = Draw,
-                    onText = onBg
-                )
-
-                StatBarRow(
-                    label = "Derrotas",
-                    value = losses,
-                    total = totalMatches,
-                    color = Loss,
-                    onText = onBg
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                StatRow(
-                    label = "Goles a favor",
-                    value = goalsFor.toString(),
-                    onText = onBg
-                )
-
-                StatRow(
-                    label = "Goles en contra",
-                    value = goalsAgainst.toString(),
-                    onText = onBg
-                )
-
-                StatRow(
-                    label = "Diferencia de goles",
-                    value = if (goalDifference > 0) "+$goalDifference" else goalDifference.toString(),
-                    valueColor = when {
-                        goalDifference > 0 -> Win
-                        goalDifference < 0 -> Loss
-                        else -> Draw
-                    },
-                    onText = onBg
-                )
-            }
-
-            GlassCard(
-                title = "Partidos por competición",
-                onText = onBg
-            ) {
-                StatBarRow(
-                    label = "Liga",
-                    value = ligaMatches,
-                    total = totalMatches,
-                    color = Win,
-                    onText = onBg
-                )
-
-                StatBarRow(
-                    label = "Copa",
-                    value = copaMatches,
-                    total = totalMatches,
-                    color = accent,
-                    onText = onBg
-                )
-
-                StatBarRow(
-                    label = "Amistosos",
-                    value = amistosos,
-                    total = totalMatches,
-                    color = accent2,
-                    onText = onBg
-                )
-            }
-
-            GlassCard(
-                title = "Estado de la plantilla",
-                onText = onBg
-            ) {
-                StatBarRow(
-                    label = "Titulares",
-                    value = titulares,
-                    total = totalPlayers,
-                    color = Win,
-                    onText = onBg
-                )
-
-                StatBarRow(
-                    label = "Suplentes",
-                    value = suplentes,
-                    total = totalPlayers,
-                    color = accent,
-                    onText = onBg
-                )
-
-                StatBarRow(
-                    label = "Lesionados",
-                    value = lesionados,
-                    total = totalPlayers,
-                    color = Loss,
-                    onText = onBg
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                BestPlayerBlock(
+            when (selectedSection) {
+                StatsSection.OVERVIEW -> OverviewSection(
+                    totalPlayers = totalPlayers,
+                    totalMatches = totalMatches,
+                    completedCount = completedCount,
+                    totalMinutes = totalMinutes,
+                    winRate = winRate,
+                    goalDifference = goalDifference,
+                    completionRate = completionRate,
+                    overdueCount = overdueCount,
+                    avgRating = avgRating,
                     bestPlayer = bestPlayer,
+                    lastMatch = lastMatch,
+                    lastTraining = lastTraining,
+                    nextTraining = nextTraining,
+                    accent = accent,
+                    accent2 = accent2,
+                    onText = onBg,
+                    danger = danger
+                )
+
+                StatsSection.TRAINING -> TrainingStatsSection(
+                    trainings = trainings,
+                    completedTrainings = completedTrainings,
+                    pendingCount = pendingCount,
+                    overdueCount = overdueCount,
+                    completedCount = completedCount,
+                    totalMinutes = totalMinutes,
+                    avgMinutes = avgMinutes,
+                    completedThisMonth = completedThisMonth,
+                    minutesThisMonth = minutesThisMonth,
+                    favoriteTrainingType = favoriteTrainingType,
+                    completionRate = completionRate,
+                    accent = accent,
+                    accent2 = accent2,
+                    onText = onBg,
+                    danger = danger
+                )
+
+                StatsSection.MATCHES -> MatchStatsSection(
+                    totalMatches = totalMatches,
+                    wins = wins,
+                    draws = draws,
+                    losses = losses,
+                    winRate = winRate,
+                    goalsFor = goalsFor,
+                    goalsAgainst = goalsAgainst,
+                    goalDifference = goalDifference,
+                    avgGoalsFor = avgGoalsFor,
+                    avgGoalsAgainst = avgGoalsAgainst,
+                    ligaMatches = ligaMatches,
+                    copaMatches = copaMatches,
+                    amistosos = amistosos,
+                    matches = matches,
                     accent = accent,
                     accent2 = accent2,
                     onText = onBg
                 )
-            }
 
-            GlassCard(
-                title = "Carga de entrenamiento",
-                onText = onBg
-            ) {
-                StatRow(
-                    label = "Sesiones hechas",
-                    value = totalTrainings.toString(),
-                    onText = onBg
-                )
-
-                StatRow(
-                    label = "Minutos totales",
-                    value = totalMinutes.toString(),
-                    onText = onBg
-                )
-
-                StatRow(
-                    label = "Media por sesión",
-                    value = if (totalTrainings == 0) "--" else "${formatWhole(avgMinutes)} min",
-                    onText = onBg
-                )
-
-                StatRow(
-                    label = "Tipo más trabajado",
-                    value = favoriteTrainingType?.label ?: "--",
-                    onText = onBg
-                )
-
-                TrainingTypeDistribution(
-                    trainings = completedTrainings,
+                StatsSection.PLAYERS -> PlayerStatsSection(
+                    players = players,
+                    totalPlayers = totalPlayers,
+                    titulares = titulares,
+                    suplentes = suplentes,
+                    lesionados = lesionados,
+                    avgRating = avgRating,
+                    bestPlayer = bestPlayer,
+                    availabilityRate = availabilityRate,
                     accent = accent,
                     accent2 = accent2,
                     onText = onBg
                 )
-            }
-
-            GlassCard(
-                title = "Últimos registros",
-                onText = onBg
-            ) {
-                RecentBlock(
-                    title = "Último partido",
-                    accent = accent,
-                    accent2 = accent2,
-                    onText = onBg
-                ) {
-                    if (lastMatch == null) {
-                        EmptyLine(
-                            text = "Aún no hay partidos registrados.",
-                            onText = onBg
-                        )
-                    } else {
-                        Text(
-                            text = "${lastMatch.competition.label} · vs ${lastMatch.rival}",
-                            color = onBg,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-
-                        Text(
-                            text = lastMatch.dateText,
-                            color = onBg.copy(alpha = 0.65f),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-
-                        ScorePill(
-                            text = "${lastMatch.goalsFor} - ${lastMatch.goalsAgainst} · ${lastMatch.result.label}",
-                            color = resultColor(lastMatch.result)
-                        )
-                    }
-                }
-
-                RecentBlock(
-                    title = "Último entrenamiento",
-                    accent = accent,
-                    accent2 = accent2,
-                    onText = onBg
-                ) {
-                    if (lastTraining == null) {
-                        EmptyLine(
-                            text = "Aún no hay entrenamientos registrados.",
-                            onText = onBg
-                        )
-                    } else {
-                        Text(
-                            text = "${lastTraining.type.label} · ${lastTraining.name}",
-                            color = onBg,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-
-                        Text(
-                            text = lastTraining.dateText,
-                            color = onBg.copy(alpha = 0.65f),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-
-                        ScorePill(
-                            text = "${lastTraining.durationMin} min",
-                            color = accent
-                        )
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -563,7 +356,7 @@ private fun Header(
             )
 
             Text(
-                text = "Análisis completo del equipo",
+                text = "Análisis real del equipo",
                 color = onText.copy(alpha = 0.65f),
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -572,14 +365,12 @@ private fun Header(
 }
 
 @Composable
-private fun PerformanceHeroCard(
+private fun GlobalHeroCard(
     title: String,
     message: String,
-    winRateText: String,
-    winRate: Float,
+    score: Int,
     record: String,
-    goalDifference: Int,
-    totalMatches: Int,
+    completion: String,
     accent: Color,
     accent2: Color,
     onText: Color
@@ -633,7 +424,7 @@ private fun PerformanceHeroCard(
                         color = GlassBase.copy(alpha = 0.08f)
                     ) {
                         Text(
-                            text = "Resumen del equipo",
+                            text = "Índice general",
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                             color = onText.copy(alpha = 0.82f),
                             style = MaterialTheme.typography.labelLarge,
@@ -654,41 +445,566 @@ private fun PerformanceHeroCard(
                         style = MaterialTheme.typography.bodyMedium
                     )
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        HeroInfoChip(
-                            text = record,
-                            accent = accent,
-                            onText = onText
-                        )
-
-                        HeroInfoChip(
-                            text = if (totalMatches == 0) {
-                                "Sin partidos"
-                            } else {
-                                "DG ${if (goalDifference > 0) "+$goalDifference" else goalDifference}"
-                            },
-                            accent = when {
-                                goalDifference > 0 -> Win
-                                goalDifference < 0 -> Loss
-                                else -> Draw
-                            },
-                            onText = onText
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        HeroInfoChip(text = record, accent = accent, onText = onText)
+                        HeroInfoChip(text = completion, accent = accent2, onText = onText)
                     }
                 }
 
                 Spacer(modifier = Modifier.width(14.dp))
 
                 PerformanceScoreRing(
-                    text = winRateText,
-                    progress = winRate,
+                    text = if (score == 0) "--" else "$score",
+                    subtitle = "score",
+                    progress = score.toFloat() / 100f,
                     accent = accent,
                     accent2 = accent2,
                     onText = onText
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun SectionSelector(
+    selected: StatsSection,
+    onSelected: (StatsSection) -> Unit,
+    accent: Color,
+    accent2: Color,
+    onText: Color
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = GlassBase.copy(alpha = 0.06f),
+        shape = RoundedCornerShape(22.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            StatsSection.entries.forEach { section ->
+                SectionChip(
+                    modifier = Modifier.weight(1f),
+                    text = section.label,
+                    selected = selected == section,
+                    accent = accent,
+                    accent2 = accent2,
+                    onText = onText,
+                    onClick = { onSelected(section) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionChip(
+    modifier: Modifier,
+    text: String,
+    selected: Boolean,
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier
+            .height(42.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) GlassBase.copy(alpha = 0.10f) else Color.Transparent
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    if (selected) {
+                        Brush.horizontalGradient(listOf(accent.copy(alpha = 0.30f), accent2.copy(alpha = 0.22f)))
+                    } else {
+                        Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+                    }
+                )
+                .padding(horizontal = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                color = if (selected) ButtonTextDark else onText.copy(alpha = 0.72f),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun OverviewSection(
+    totalPlayers: Int,
+    totalMatches: Int,
+    completedCount: Int,
+    totalMinutes: Int,
+    winRate: Float,
+    goalDifference: Int,
+    completionRate: Float,
+    overdueCount: Int,
+    avgRating: Double,
+    bestPlayer: Player?,
+    lastMatch: Match?,
+    lastTraining: Training?,
+    nextTraining: Training?,
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    danger: Color
+) {
+    KpiGrid(
+        first = KpiData("Jugadores", totalPlayers.toString(), if (totalPlayers == 0) "Sin plantilla" else "Plantilla"),
+        second = KpiData("Partidos", totalMatches.toString(), "${(winRate * 100).roundToInt()}% victorias"),
+        third = KpiData("Entrenos", completedCount.toString(), "$totalMinutes min hechos"),
+        fourth = KpiData("Media OVR", if (totalPlayers == 0) "--" else formatDecimal(avgRating), bestPlayer?.name ?: "Sin datos"),
+        accent = accent,
+        accent2 = accent2,
+        onText = onText
+    )
+
+    GlassCard(title = "Partidos & entrenamientos", onText = onText) {
+        StatBarRow(
+            label = "Rendimiento competitivo",
+            value = (winRate * 100).roundToInt(),
+            total = 100,
+            color = when {
+                winRate >= 0.60f -> Win
+                winRate >= 0.35f -> Draw
+                else -> Loss
+            },
+            onText = onText,
+            suffix = "%"
+        )
+
+        StatBarRow(
+            label = "Cumplimiento de entrenos",
+            value = (completionRate * 100).roundToInt(),
+            total = 100,
+            color = if (overdueCount > 0) danger else accent,
+            onText = onText,
+            suffix = "%"
+        )
+
+        StatRow(
+            label = "Diferencia de goles",
+            value = if (goalDifference > 0) "+$goalDifference" else goalDifference.toString(),
+            valueColor = when {
+                goalDifference > 0 -> Win
+                goalDifference < 0 -> Loss
+                else -> Draw
+            },
+            onText = onText
+        )
+
+        StatRow(
+            label = "Entrenos atrasados",
+            value = overdueCount.toString(),
+            valueColor = if (overdueCount > 0) danger else Win,
+            onText = onText
+        )
+    }
+
+    GlassCard(title = "Últimos movimientos", onText = onText) {
+        RecentBlock(title = "Último partido", accent = accent, accent2 = accent2, onText = onText) {
+            if (lastMatch == null) {
+                EmptyLine(text = "Aún no hay partidos registrados.", onText = onText)
+            } else {
+                Text(
+                    text = "${lastMatch.competition.label} · vs ${lastMatch.rival}",
+                    color = onText,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = lastMatch.dateText,
+                    color = onText.copy(alpha = 0.65f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                ScorePill(
+                    text = "${lastMatch.goalsFor} - ${lastMatch.goalsAgainst} · ${lastMatch.result.label}",
+                    color = resultColor(lastMatch.result)
+                )
+            }
+        }
+
+        RecentBlock(title = "Último entrenamiento hecho", accent = accent, accent2 = accent2, onText = onText) {
+            if (lastTraining == null) {
+                EmptyLine(text = "Aún no hay entrenamientos completados.", onText = onText)
+            } else {
+                Text(
+                    text = "${lastTraining.type.label} · ${lastTraining.name}",
+                    color = onText,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "${lastTraining.dateText} · ${lastTraining.durationMin} min",
+                    color = onText.copy(alpha = 0.65f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
+        RecentBlock(title = "Próximo entrenamiento", accent = accent, accent2 = accent2, onText = onText) {
+            if (nextTraining == null) {
+                EmptyLine(text = "No tienes entrenamientos próximos pendientes.", onText = onText)
+            } else {
+                Text(
+                    text = nextTraining.name,
+                    color = onText,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "${nextTraining.dateText} · ${nextTraining.durationMin} min · ${nextTraining.type.label}",
+                    color = onText.copy(alpha = 0.65f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrainingStatsSection(
+    trainings: List<Training>,
+    completedTrainings: List<Training>,
+    pendingCount: Int,
+    overdueCount: Int,
+    completedCount: Int,
+    totalMinutes: Int,
+    avgMinutes: Double,
+    completedThisMonth: Int,
+    minutesThisMonth: Int,
+    favoriteTrainingType: TrainingType?,
+    completionRate: Float,
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    danger: Color
+) {
+    KpiGrid(
+        first = KpiData("Hechos", completedCount.toString(), "Completados"),
+        second = KpiData("Pendientes", pendingCount.toString(), "Por hacer"),
+        third = KpiData("Atrasados", overdueCount.toString(), "Revisar"),
+        fourth = KpiData("Minutos", totalMinutes.toString(), "Acumulados"),
+        accent = accent,
+        accent2 = accent2,
+        onText = onText
+    )
+
+    GlassCard(title = "Carga y cumplimiento", onText = onText) {
+        StatBarRow(
+            label = "Cumplimiento total",
+            value = (completionRate * 100).roundToInt(),
+            total = 100,
+            color = if (overdueCount > 0) danger else accent,
+            onText = onText,
+            suffix = "%"
+        )
+
+        StatRow(label = "Sesiones hechas", value = completedCount.toString(), onText = onText)
+        StatRow(label = "Sesiones pendientes", value = pendingCount.toString(), onText = onText)
+        StatRow(
+            label = "Sesiones atrasadas",
+            value = overdueCount.toString(),
+            valueColor = if (overdueCount > 0) danger else Win,
+            onText = onText
+        )
+        StatRow(label = "Media por sesión", value = if (completedCount == 0) "--" else "${formatWhole(avgMinutes)} min", onText = onText)
+        StatRow(label = "Tipo más trabajado", value = favoriteTrainingType?.label ?: "--", onText = onText)
+    }
+
+    GlassCard(title = "Este mes", onText = onText) {
+        StatRow(label = "Entrenos completados", value = completedThisMonth.toString(), onText = onText)
+        StatRow(label = "Minutos completados", value = "$minutesThisMonth min", onText = onText)
+        val monthlyMessage = when {
+            completedThisMonth == 0 -> "Todavía no hay entrenamientos completados este mes."
+            completedThisMonth < 4 -> "Hay actividad, pero aún es una carga baja."
+            completedThisMonth < 8 -> "Buen ritmo mensual."
+            else -> "Carga mensual alta y constante."
+        }
+        EmptyLine(text = monthlyMessage, onText = onText)
+    }
+
+    GlassCard(title = "Distribución por tipo", onText = onText) {
+        TrainingTypeDistribution(
+            trainings = completedTrainings,
+            accent = accent,
+            accent2 = accent2,
+            onText = onText
+        )
+    }
+
+    GlassCard(title = "Estado de entrenamientos", onText = onText) {
+        StatBarRow(label = "Hechos", value = completedCount, total = trainings.size, color = Win, onText = onText)
+        StatBarRow(label = "Pendientes", value = pendingCount, total = trainings.size, color = accent, onText = onText)
+        StatBarRow(label = "Atrasados", value = overdueCount, total = trainings.size, color = danger, onText = onText)
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun MatchStatsSection(
+    totalMatches: Int,
+    wins: Int,
+    draws: Int,
+    losses: Int,
+    winRate: Float,
+    goalsFor: Int,
+    goalsAgainst: Int,
+    goalDifference: Int,
+    avgGoalsFor: Double,
+    avgGoalsAgainst: Double,
+    ligaMatches: Int,
+    copaMatches: Int,
+    amistosos: Int,
+    matches: List<Match>,
+    accent: Color,
+    accent2: Color,
+    onText: Color
+) {
+    KpiGrid(
+        first = KpiData("Partidos", totalMatches.toString(), "Jugados"),
+        second = KpiData("Victorias", wins.toString(), "${(winRate * 100).roundToInt()}%"),
+        third = KpiData("Goles +", goalsFor.toString(), "A favor"),
+        fourth = KpiData("DG", if (goalDifference > 0) "+$goalDifference" else goalDifference.toString(), "Diferencia"),
+        accent = accent,
+        accent2 = accent2,
+        onText = onText
+    )
+
+    GlassCard(title = "Balance competitivo", onText = onText) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            ResultPill(modifier = Modifier.weight(1f), title = "Victorias", value = wins, color = Win, onText = onText)
+            ResultPill(modifier = Modifier.weight(1f), title = "Empates", value = draws, color = Draw, onText = onText)
+            ResultPill(modifier = Modifier.weight(1f), title = "Derrotas", value = losses, color = Loss, onText = onText)
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        StatBarRow(label = "Victorias", value = wins, total = totalMatches, color = Win, onText = onText)
+        StatBarRow(label = "Empates", value = draws, total = totalMatches, color = Draw, onText = onText)
+        StatBarRow(label = "Derrotas", value = losses, total = totalMatches, color = Loss, onText = onText)
+    }
+
+    GlassCard(title = "Goles", onText = onText) {
+        StatRow(label = "Goles a favor", value = goalsFor.toString(), onText = onText)
+        StatRow(label = "Goles en contra", value = goalsAgainst.toString(), onText = onText)
+        StatRow(
+            label = "Diferencia de goles",
+            value = if (goalDifference > 0) "+$goalDifference" else goalDifference.toString(),
+            valueColor = when {
+                goalDifference > 0 -> Win
+                goalDifference < 0 -> Loss
+                else -> Draw
+            },
+            onText = onText
+        )
+        StatRow(label = "Media goles a favor", value = if (totalMatches == 0) "--" else formatDecimal(avgGoalsFor), onText = onText)
+        StatRow(label = "Media goles en contra", value = if (totalMatches == 0) "--" else formatDecimal(avgGoalsAgainst), onText = onText)
+    }
+
+    GlassCard(title = "Competiciones", onText = onText) {
+        StatBarRow(label = "Liga", value = ligaMatches, total = totalMatches, color = Win, onText = onText)
+        StatBarRow(label = "Copa", value = copaMatches, total = totalMatches, color = accent, onText = onText)
+        StatBarRow(label = "Amistosos", value = amistosos, total = totalMatches, color = accent2, onText = onText)
+    }
+
+    GlassCard(title = "Forma reciente", onText = onText) {
+        val recent = matches
+            .sortedByDescending { parseDateOrNull(it.dateText) ?: LocalDate.MIN }
+            .take(5)
+
+        if (recent.isEmpty()) {
+            EmptyLine(text = "Aún no hay partidos para analizar la forma reciente.", onText = onText)
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                recent.forEach { match ->
+                    ResultLetterPill(result = match.result)
+                }
+            }
+            EmptyLine(text = "Últimos ${recent.size} partidos registrados.", onText = onText)
+        }
+    }
+}
+
+@Composable
+private fun PlayerStatsSection(
+    players: List<Player>,
+    totalPlayers: Int,
+    titulares: Int,
+    suplentes: Int,
+    lesionados: Int,
+    avgRating: Double,
+    bestPlayer: Player?,
+    availabilityRate: Float,
+    accent: Color,
+    accent2: Color,
+    onText: Color
+) {
+    KpiGrid(
+        first = KpiData("Plantilla", totalPlayers.toString(), "Jugadores"),
+        second = KpiData("Disponibles", (totalPlayers - lesionados).toString(), "${(availabilityRate * 100).roundToInt()}%"),
+        third = KpiData("Media OVR", if (totalPlayers == 0) "--" else formatDecimal(avgRating), "Nivel"),
+        fourth = KpiData("Lesionados", lesionados.toString(), "Bajas"),
+        accent = accent,
+        accent2 = accent2,
+        onText = onText
+    )
+
+    GlassCard(title = "Estado de la plantilla", onText = onText) {
+        StatBarRow(label = "Titulares", value = titulares, total = totalPlayers, color = Win, onText = onText)
+        StatBarRow(label = "Suplentes", value = suplentes, total = totalPlayers, color = accent, onText = onText)
+        StatBarRow(label = "Lesionados", value = lesionados, total = totalPlayers, color = Loss, onText = onText)
+        Spacer(modifier = Modifier.height(6.dp))
+        BestPlayerBlock(bestPlayer = bestPlayer, accent = accent, accent2 = accent2, onText = onText)
+    }
+
+    GlassCard(title = "Distribución por posición", onText = onText) {
+        PlayerPosition.entries.forEach { position ->
+            StatBarRow(
+                label = position.label,
+                value = players.count { it.position == position },
+                total = totalPlayers,
+                color = when (position) {
+                    PlayerPosition.POR -> accent2
+                    PlayerPosition.DEF -> Win
+                    PlayerPosition.MED -> accent
+                    PlayerPosition.DEL -> Draw
+                },
+                onText = onText
+            )
+        }
+    }
+}
+
+private data class KpiData(
+    val title: String,
+    val value: String,
+    val subtitle: String
+)
+
+@Composable
+private fun KpiGrid(
+    first: KpiData,
+    second: KpiData,
+    third: KpiData,
+    fourth: KpiData,
+    accent: Color,
+    accent2: Color,
+    onText: Color
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        KpiCard(modifier = Modifier.weight(1f), data = first, accent = accent, accent2 = accent2, onText = onText)
+        KpiCard(modifier = Modifier.weight(1f), data = second, accent = accent, accent2 = accent2, onText = onText)
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        KpiCard(modifier = Modifier.weight(1f), data = third, accent = accent, accent2 = accent2, onText = onText)
+        KpiCard(modifier = Modifier.weight(1f), data = fourth, accent = accent, accent2 = accent2, onText = onText)
+    }
+}
+
+@Composable
+private fun KpiCard(
+    modifier: Modifier = Modifier,
+    data: KpiData,
+    accent: Color,
+    accent2: Color,
+    onText: Color
+) {
+    Surface(
+        modifier = modifier,
+        color = GlassBase.copy(alpha = 0.06f),
+        shape = RoundedCornerShape(22.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = data.title,
+                color = onText.copy(alpha = 0.70f),
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Text(
+                text = data.value,
+                color = onText,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .height(6.dp)
+                        .width(28.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(Brush.horizontalGradient(listOf(accent, accent2)))
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = data.subtitle,
+                    color = onText.copy(alpha = 0.65f),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GlassCard(
+    title: String,
+    onText: Color,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = GlassBase.copy(alpha = 0.06f),
+        shape = RoundedCornerShape(22.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = title,
+                color = onText,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            content()
         }
     }
 }
@@ -708,7 +1024,8 @@ private fun HeroInfoChip(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             color = onText,
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
         )
     }
 }
@@ -716,6 +1033,7 @@ private fun HeroInfoChip(
 @Composable
 private fun PerformanceScoreRing(
     text: String,
+    subtitle: String,
     progress: Float,
     accent: Color,
     accent2: Color,
@@ -752,9 +1070,7 @@ private fun PerformanceScoreRing(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = text,
                         color = onText,
@@ -763,98 +1079,12 @@ private fun PerformanceScoreRing(
                     )
 
                     Text(
-                        text = "win rate",
+                        text = subtitle,
                         color = onText.copy(alpha = 0.62f),
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun KpiCard(
-    modifier: Modifier = Modifier,
-    title: String,
-    value: String,
-    subtitle: String,
-    accent: Color,
-    accent2: Color,
-    onText: Color
-) {
-    Surface(
-        modifier = modifier,
-        color = GlassBase.copy(alpha = 0.06f),
-        shape = RoundedCornerShape(22.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = title,
-                color = onText.copy(alpha = 0.70f),
-                style = MaterialTheme.typography.labelLarge
-            )
-
-            Text(
-                text = value,
-                color = onText,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .height(6.dp)
-                        .width(28.dp)
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(accent, accent2)
-                            )
-                        )
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = subtitle,
-                    color = onText.copy(alpha = 0.65f),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun GlassCard(
-    title: String,
-    onText: Color,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = GlassBase.copy(alpha = 0.06f),
-        shape = RoundedCornerShape(22.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = title,
-                color = onText,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            content()
         }
     }
 }
@@ -879,7 +1109,9 @@ private fun ResultPill(
             Text(
                 text = title,
                 color = onText.copy(alpha = 0.70f),
-                style = MaterialTheme.typography.labelMedium
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -900,14 +1132,13 @@ private fun StatBarRow(
     value: Int,
     total: Int,
     color: Color,
-    onText: Color
+    onText: Color,
+    suffix: String = ""
 ) {
     val safeTotal = total.coerceAtLeast(1)
     val pct = (value.toFloat() / safeTotal.toFloat()).coerceIn(0f, 1f)
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -916,11 +1147,13 @@ private fun StatBarRow(
                 text = label,
                 color = onText.copy(alpha = 0.75f),
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
 
             Text(
-                text = if (total == 0) "0" else "$value · ${(pct * 100).toInt()}%",
+                text = if (total == 0) "0$suffix" else "$value$suffix · ${(pct * 100).roundToInt()}%",
                 color = onText,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
@@ -960,14 +1193,17 @@ private fun StatRow(
             text = label,
             color = onText.copy(alpha = 0.72f),
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
 
         Text(
             text = value,
             color = valueColor,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
         )
     }
 }
@@ -1001,11 +1237,7 @@ private fun BestPlayerBlock(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(accent, accent2)
-                            )
-                        ),
+                        .background(Brush.horizontalGradient(listOf(accent, accent2))),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -1017,9 +1249,7 @@ private fun BestPlayerBlock(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Jugador mejor valorado",
                         color = onText.copy(alpha = 0.62f),
@@ -1030,13 +1260,17 @@ private fun BestPlayerBlock(
                         text = bestPlayer.name,
                         color = onText,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     Text(
                         text = "${bestPlayer.position.label} · #${bestPlayer.number} · ${bestPlayer.age} años",
                         color = onText.copy(alpha = 0.65f),
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -1065,14 +1299,9 @@ private fun TrainingTypeDistribution(
     onText: Color
 ) {
     if (trainings.isEmpty()) {
-        EmptyLine(
-            text = "Aún no hay datos para analizar la carga por tipo.",
-            onText = onText
-        )
+        EmptyLine(text = "Aún no hay datos para analizar la carga por tipo.", onText = onText)
         return
     }
-
-    Spacer(modifier = Modifier.height(4.dp))
 
     TrainingType.entries.forEach { type ->
         val count = trainings.count { it.type == type }
@@ -1084,13 +1313,7 @@ private fun TrainingTypeDistribution(
             TrainingType.RECUPERACION -> Loss
         }
 
-        StatBarRow(
-            label = type.label,
-            value = count,
-            total = trainings.size,
-            color = color,
-            onText = onText
-        )
+        StatBarRow(label = type.label, value = count, total = trainings.size, color = color, onText = onText)
     }
 }
 
@@ -1112,19 +1335,13 @@ private fun RecentBlock(
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
                         .height(8.dp)
                         .width(32.dp)
                         .clip(RoundedCornerShape(999.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(accent, accent2)
-                            )
-                        )
+                        .background(Brush.horizontalGradient(listOf(accent, accent2)))
                 )
 
                 Spacer(modifier = Modifier.width(10.dp))
@@ -1168,147 +1385,33 @@ private fun ScorePill(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             color = color,
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
 
 @Composable
-private fun BottomMenuBar(
-    modifier: Modifier = Modifier,
-    accent: Color,
-    accent2: Color,
-    onText: Color,
-    selected: BottomTab,
-    onSelect: (BottomTab) -> Unit
-) {
-    Surface(
-        modifier = modifier.height(64.dp),
-        shape = RoundedCornerShape(22.dp),
-        color = GlassBase.copy(alpha = 0.10f),
-        tonalElevation = 2.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            accent.copy(alpha = 0.10f),
-                            accent2.copy(alpha = 0.08f)
-                        )
-                    )
-                )
-                .padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomMenuItem(
-                label = "Entr",
-                icon = Icons.Default.FitnessCenter,
-                isSelected = selected == BottomTab.Training,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Training) }
-            )
-
-            BottomMenuItem(
-                label = "Part",
-                icon = Icons.Default.SportsSoccer,
-                isSelected = selected == BottomTab.Matches,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Matches) }
-            )
-
-            BottomMenuItem(
-                label = "Jug",
-                icon = Icons.Default.Groups,
-                isSelected = selected == BottomTab.Players,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Players) }
-            )
-
-            BottomMenuItem(
-                label = "Est",
-                icon = Icons.Default.BarChart,
-                isSelected = selected == BottomTab.Stats,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Stats) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun RowScope.BottomMenuItem(
-    label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    isSelected: Boolean,
-    accent: Color,
-    accent2: Color,
-    onText: Color,
-    onClick: () -> Unit
-) {
-    val bgBrush = if (isSelected) {
-        Brush.horizontalGradient(
-            listOf(
-                accent.copy(alpha = 0.30f),
-                accent2.copy(alpha = 0.24f)
-            )
-        )
-    } else {
-        Brush.horizontalGradient(
-            listOf(
-                Color.Transparent,
-                Color.Transparent
-            )
-        )
-    }
-
-    val tint = if (isSelected) {
-        ButtonTextDark
-    } else {
-        onText.copy(alpha = 0.78f)
+private fun ResultLetterPill(result: MatchResult) {
+    val color = resultColor(result)
+    val text = when (result) {
+        MatchResult.VICTORIA -> "V"
+        MatchResult.EMPATE -> "E"
+        MatchResult.DERROTA -> "D"
     }
 
     Surface(
-        modifier = Modifier
-            .height(46.dp)
-            .weight(1f)
-            .padding(horizontal = 4.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        color = GlassBase.copy(alpha = if (isSelected) 0.12f else 0.02f),
-        tonalElevation = 0.dp
+        modifier = Modifier.size(36.dp),
+        color = color.copy(alpha = 0.18f),
+        shape = CircleShape
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(bgBrush)
-                .padding(horizontal = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = tint
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
+        Box(contentAlignment = Alignment.Center) {
             Text(
-                text = label,
-                color = tint,
+                text = text,
+                color = color,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                maxLines = 1
+                fontWeight = FontWeight.Bold
             )
         }
     }
@@ -1320,6 +1423,57 @@ private fun resultColor(result: MatchResult): Color {
         MatchResult.EMPATE -> Draw
         MatchResult.DERROTA -> Loss
     }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun Training.isOverdue(): Boolean {
+    return try {
+        val date = LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
+        !isDone && date.isBefore(LocalDate.now())
+    } catch (_: Exception) {
+        false
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun parseDateOrNull(dateText: String): LocalDate? {
+    return try {
+        LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
+    } catch (_: Exception) {
+        null
+    }
+}
+
+private fun calculateGlobalScore(
+    hasData: Boolean,
+    winRate: Float,
+    completionRate: Float,
+    availabilityRate: Float,
+    hasMatches: Boolean,
+    hasTrainings: Boolean,
+    hasPlayers: Boolean
+): Int {
+    if (!hasData) return 0
+
+    var score = 0f
+    var weight = 0f
+
+    if (hasMatches) {
+        score += winRate.coerceIn(0f, 1f) * 45f
+        weight += 45f
+    }
+
+    if (hasTrainings) {
+        score += completionRate.coerceIn(0f, 1f) * 35f
+        weight += 35f
+    }
+
+    if (hasPlayers) {
+        score += availabilityRate.coerceIn(0f, 1f) * 20f
+        weight += 20f
+    }
+
+    return if (weight == 0f) 0 else ((score / weight) * 100f).roundToInt().coerceIn(0, 100)
 }
 
 private fun formatDecimal(value: Double): String {
