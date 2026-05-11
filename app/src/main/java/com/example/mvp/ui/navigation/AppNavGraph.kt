@@ -49,6 +49,8 @@ import com.example.mvp.ui.screens.training.TrainingsScreen
 import com.example.mvp.ui.screens.training.TrainingsViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -157,12 +159,17 @@ fun AppNavGraph(
                 val matches by matchesVm.matches.collectAsState()
                 val trainings by trainingsVm.trainings.collectAsState()
 
-                val sessionsToComplete = trainings.size
+                val sessionsToComplete = trainings.count { !it.isDone }
 
                 val lastTraining = trainings.maxByOrNull { it.id }?.let {
+                    val status = when {
+                        it.isDone -> "Hecho"
+                        isTrainingOverdue(it.dateText) -> "Atrasado"
+                        else -> "Pendiente"
+                    }
                     RecentItem.Training(
                         title = it.name,
-                        subtitle = "${it.dateText} · ${it.durationMin} min · ${it.type.label}",
+                        subtitle = "${it.dateText} · ${it.durationMin} min · ${it.type.label} · $status",
                         trainingId = it.id.toLong()
                     )
                 }
@@ -339,6 +346,10 @@ fun AppNavGraph(
                         vm.delete(training)
                         showSnackbar("Entrenamiento eliminado")
                     },
+                    onToggleDone = { training ->
+                        vm.toggleDone(training)
+                        showSnackbar(if (training.isDone) "Entrenamiento marcado como pendiente" else "Entrenamiento marcado como hecho")
+                    },
 
                     onGoDashboard = {
                         navController.navigateToTab(Route.Dashboard.route)
@@ -362,8 +373,11 @@ fun AppNavGraph(
                     vm.setUser(currentUserId)
                 }
 
+                val trainings by vm.trainings.collectAsState()
+
                 TrainingFormScreen(
                     initial = null,
+                    existingTrainings = trainings,
                     onBack = {
                         navController.popBackStack()
                     },
@@ -392,6 +406,7 @@ fun AppNavGraph(
 
                 TrainingFormScreen(
                     initial = current,
+                    existingTrainings = trainings,
                     onBack = {
                         navController.popBackStack()
                     },
@@ -754,5 +769,14 @@ private fun NavHostController.navigateToTab(route: String) {
         popUpTo(Route.Dashboard.route) {
             saveState = true
         }
+    }
+}
+
+private fun isTrainingOverdue(dateText: String): Boolean {
+    return try {
+        val date = LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
+        date.isBefore(LocalDate.now())
+    } catch (_: Exception) {
+        false
     }
 }

@@ -7,4 +7,5 @@ interface TrainingRepository {
     fun observeTrainings(userId: Long): Flow<List<Training>>
     suspend fun upsertTraining(userId: Long, training: Training)
     suspend fun deleteTraining(userId: Long, training: Training)
+    suspend fun toggleTrainingDone(userId: Long, training: Training)
 }

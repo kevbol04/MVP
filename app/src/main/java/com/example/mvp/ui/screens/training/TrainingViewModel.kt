@@ -32,4 +32,9 @@ class TrainingsViewModel @Inject constructor(
         val uid = userId.value ?: return
         viewModelScope.launch { repo.deleteTraining(uid, training) }
     }
+
+    fun toggleDone(training: Training) {
+        val uid = userId.value ?: return
+        viewModelScope.launch { repo.toggleTrainingDone(uid, training) }
+    }
 }

@@ -28,4 +28,8 @@ class TrainingRepositoryImpl @Inject constructor(
     override suspend fun deleteTraining(userId: Long, training: Training) {
         dao.delete(training.toEntity(userId))
     }
+
+    override suspend fun toggleTrainingDone(userId: Long, training: Training) {
+        dao.update(training.copy(isDone = !training.isDone).toEntity(userId))
+    }
 }

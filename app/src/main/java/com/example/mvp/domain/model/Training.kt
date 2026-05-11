@@ -6,5 +6,6 @@ data class Training(
     val name: String,
     val dateText: String,
     val durationMin: Int,
-    val type: TrainingType
+    val type: TrainingType,
+    val isDone: Boolean = false
 )

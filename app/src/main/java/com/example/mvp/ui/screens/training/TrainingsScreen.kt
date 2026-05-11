@@ -1,7 +1,11 @@
 package com.example.mvp.ui.screens.training
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,10 +15,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.*
@@ -25,12 +33,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mvp.ui.components.BottomBarDestination
 import com.example.mvp.ui.components.EmptyState
 import com.example.mvp.ui.components.ProFootballBottomBar
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
 
 enum class TrainingType(val label: String) {
     FUERZA("Fuerza"),
@@ -45,11 +60,17 @@ data class Training(
     val name: String,
     val dateText: String,
     val durationMin: Int,
-    val type: TrainingType
+    val type: TrainingType,
+    val isDone: Boolean = false
 )
 
-private enum class BottomTab { Training, Matches, Players, Stats }
+private enum class TrainingTab(val label: String) {
+    PENDING("Por hacer"),
+    HISTORY("Historial"),
+    CALENDAR("Calendario")
+}
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TrainingsScreen(
     modifier: Modifier = Modifier,
@@ -58,6 +79,7 @@ fun TrainingsScreen(
     onCreateTraining: () -> Unit = {},
     onEditTraining: (Training) -> Unit = {},
     onDeleteTraining: (Training) -> Unit = {},
+    onToggleDone: (Training) -> Unit = {},
 
     onGoDashboard: () -> Unit = {},
     onGoMatches: () -> Unit = {},
@@ -72,18 +94,19 @@ fun TrainingsScreen(
     val danger = MaterialTheme.colorScheme.error
 
     var query by remember { mutableStateOf("") }
+    var selectedTab by remember { mutableStateOf(TrainingTab.PENDING) }
+    var selectedMonth by remember { mutableStateOf(YearMonth.now()) }
+    var toDelete by remember { mutableStateOf<Training?>(null) }
 
-    val filtered = remember(trainings, query) {
-        trainings.filter { t ->
-            query.isBlank() ||
-                    t.name.contains(query, ignoreCase = true) ||
-                    t.type.label.contains(query, ignoreCase = true)
-        }
-    }
+    val pending = remember(trainings) { trainings.filter { !it.isDone }.sortedPendingSmart() }
+    val history = remember(trainings) { trainings.filter { it.isDone }.sortedByDate(desc = true) }
+    val overdueCount = remember(trainings) { trainings.count { it.isOverdue() } }
+    val activePendingCount = remember(trainings) { trainings.count { !it.isDone && !it.isOverdue() } }
+
+    val filteredPending = remember(pending, query) { pending.filterByQuery(query) }
+    val filteredHistory = remember(history, query) { history.filterByQuery(query) }
 
     val bottomBarHeight = 96.dp
-
-    var toDelete by remember { mutableStateOf<Training?>(null) }
 
     Box(
         modifier = modifier
@@ -110,82 +133,93 @@ fun TrainingsScreen(
                 .padding(top = 18.dp, bottom = bottomBarHeight + 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            Header(onBack = onBack, onBg = onBg)
+
+            TrainingSummary(
+                pending = activePendingCount,
+                overdue = overdueCount,
+                done = history.size,
+                minutesDone = history.sumOf { it.durationMin },
+                accent = accent,
+                accent2 = accent2,
+                danger = danger,
+                onBg = onBg
+            )
+
+            TabRow(
+                selectedTabIndex = selectedTab.ordinal,
+                containerColor = Color.Transparent,
+                contentColor = accent
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Volver",
-                        tint = onBg
+                TrainingTab.entries.forEach { tab ->
+                    Tab(
+                        selected = selectedTab == tab,
+                        onClick = { selectedTab = tab },
+                        text = { Text(tab.label, fontWeight = FontWeight.SemiBold) }
                     )
                 }
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    text = "Entrenamientos",
-                    color = onBg,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold
+            }
+
+            if (selectedTab != TrainingTab.CALENDAR) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    singleLine = true,
+                    leadingIcon = { Icon(Icons.Default.Search, null) },
+                    placeholder = { Text("Buscar por nombre o tipo") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = onBg.copy(alpha = 0.18f),
+                        focusedBorderColor = accent,
+                        unfocusedTextColor = onBg,
+                        focusedTextColor = onBg,
+                        unfocusedLeadingIconColor = onBg.copy(alpha = 0.6f),
+                        focusedLeadingIconColor = accent,
+                        cursorColor = accent,
+                        unfocusedPlaceholderColor = onBg.copy(alpha = 0.45f),
+                        focusedPlaceholderColor = onBg.copy(alpha = 0.45f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                singleLine = true,
-                leadingIcon = { Icon(Icons.Default.Search, null) },
-                placeholder = { Text("Buscar") },
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = onBg.copy(alpha = 0.18f),
-                    focusedBorderColor = accent,
-                    unfocusedTextColor = onBg,
-                    focusedTextColor = onBg,
-                    unfocusedLeadingIconColor = onBg.copy(alpha = 0.6f),
-                    focusedLeadingIconColor = accent,
-                    cursorColor = accent,
-                    unfocusedPlaceholderColor = onBg.copy(alpha = 0.45f),
-                    focusedPlaceholderColor = onBg.copy(alpha = 0.45f)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
+            when (selectedTab) {
+                TrainingTab.PENDING -> TrainingList(
+                    trainings = filteredPending,
+                    emptyTitle = if (trainings.isEmpty()) "Todavía no tienes entrenamientos" else "No hay entrenamientos pendientes",
+                    emptyMessage = if (trainings.isEmpty()) "Crea tu primer entrenamiento para empezar a planificar el trabajo del equipo." else "Los entrenamientos completados se mueven al historial.",
+                    accent = accent,
+                    danger = danger,
+                    onText = onBg,
+                    onEdit = onEditTraining,
+                    onDelete = { toDelete = it },
+                    onToggleDone = onToggleDone,
+                    modifier = Modifier.weight(1f)
+                )
 
-            when {
-                trainings.isEmpty() -> {
-                    EmptyState(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.FitnessCenter,
-                        title = "Todavía no tienes entrenamientos",
-                        message = "Crea tu primer entrenamiento para empezar a registrar el progreso del equipo."
-                    )
-                }
+                TrainingTab.HISTORY -> TrainingList(
+                    trainings = filteredHistory,
+                    emptyTitle = "Historial vacío",
+                    emptyMessage = "Cuando marques un entrenamiento como hecho, aparecerá aquí.",
+                    accent = accent,
+                    danger = danger,
+                    onText = onBg,
+                    onEdit = onEditTraining,
+                    onDelete = { toDelete = it },
+                    onToggleDone = onToggleDone,
+                    modifier = Modifier.weight(1f)
+                )
 
-                filtered.isEmpty() -> {
-                    EmptyState(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Search,
-                        title = "No hay entrenamientos con ese filtro",
-                        message = "Prueba con otro nombre o tipo de entrenamiento."
-                    )
-                }
-
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(filtered) { t ->
-                            TrainingRow(
-                                training = t,
-                                accent = accent,
-                                danger = danger,
-                                onText = onBg,
-                                onEdit = { onEditTraining(t) },
-                                onDelete = { toDelete = t }
-                            )
-                        }
-                    }
-                }
+                TrainingTab.CALENDAR -> TrainingCalendar(
+                    month = selectedMonth,
+                    trainings = trainings,
+                    onPreviousMonth = { selectedMonth = selectedMonth.minusMonths(1) },
+                    onNextMonth = { selectedMonth = selectedMonth.plusMonths(1) },
+                    accent = accent,
+                    accent2 = accent2,
+                    danger = danger,
+                    onText = onBg,
+                    modifier = Modifier.weight(1f)
+                )
             }
 
             Button(
@@ -208,7 +242,7 @@ fun TrainingsScreen(
                         Icon(Icons.Default.Add, contentDescription = null, tint = ButtonTextDark)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = "Crear Entrenamiento",
+                            text = "Crear entrenamiento",
                             color = ButtonTextDark,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
@@ -249,20 +283,16 @@ fun TrainingsScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onDeleteTraining(toDelete!!)
+                        toDelete?.let(onDeleteTraining)
                         toDelete = null
                     }
                 ) {
-                    Text(
-                        "Eliminar",
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Text("Eliminar", color = danger, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { toDelete = null }) {
-                    Text("Cancelar", color = MaterialTheme.colorScheme.primary)
+                    Text("Cancelar")
                 }
             }
         )
@@ -270,128 +300,118 @@ fun TrainingsScreen(
 }
 
 @Composable
-private fun BottomMenuBar(
-    modifier: Modifier = Modifier,
-    accent: Color,
-    accent2: Color,
-    onText: Color,
-    selected: BottomTab,
-    onSelect: (BottomTab) -> Unit
-) {
-    Surface(
-        modifier = modifier.height(64.dp),
-        shape = RoundedCornerShape(22.dp),
-        color = GlassBase.copy(alpha = 0.10f),
-        tonalElevation = 2.dp
+private fun Header(onBack: () -> Unit, onBg: Color) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            accent.copy(alpha = 0.10f),
-                            accent2.copy(alpha = 0.08f)
-                        )
-                    )
-                )
-                .padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomMenuItem(
-                label = "Entr",
-                icon = Icons.Default.FitnessCenter,
-                isSelected = selected == BottomTab.Training,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Training) }
+        IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = onBg)
+        }
+        Spacer(Modifier.width(4.dp))
+        Column {
+            Text(
+                text = "Entrenamientos",
+                color = onBg,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
             )
-            BottomMenuItem(
-                label = "Part",
-                icon = Icons.Default.SportsSoccer,
-                isSelected = selected == BottomTab.Matches,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Matches) }
-            )
-            BottomMenuItem(
-                label = "Jug",
-                icon = Icons.Default.Groups,
-                isSelected = selected == BottomTab.Players,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Players) }
-            )
-            BottomMenuItem(
-                label = "Est",
-                icon = Icons.Default.BarChart,
-                isSelected = selected == BottomTab.Stats,
-                accent = accent,
-                accent2 = accent2,
-                onText = onText,
-                onClick = { onSelect(BottomTab.Stats) }
+            Text(
+                text = "Planifica, completa y revisa el trabajo del equipo",
+                color = onBg.copy(alpha = 0.65f),
+                style = MaterialTheme.typography.bodySmall
             )
         }
     }
 }
 
 @Composable
-private fun RowScope.BottomMenuItem(
-    label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    isSelected: Boolean,
+private fun TrainingSummary(
+    pending: Int,
+    overdue: Int,
+    done: Int,
+    minutesDone: Int,
     accent: Color,
     accent2: Color,
-    onText: Color,
-    onClick: () -> Unit
+    danger: Color,
+    onBg: Color
 ) {
-    val bgBrush = if (isSelected) {
-        Brush.horizontalGradient(
-            listOf(
-                accent.copy(alpha = 0.30f),
-                accent2.copy(alpha = 0.24f)
-            )
-        )
-    } else {
-        Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
-    }
-
-    val tint = if (isSelected) ButtonTextDark else onText.copy(alpha = 0.78f)
-
     Surface(
-        modifier = Modifier
-            .height(46.dp)
-            .weight(1f)
-            .padding(horizontal = 4.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        color = GlassBase.copy(alpha = if (isSelected) 0.12f else 0.02f),
-        tonalElevation = 0.dp
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = GlassBase.copy(alpha = 0.08f)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(bgBrush)
-                .padding(horizontal = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            modifier = Modifier.padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(icon, contentDescription = label, tint = tint)
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = label,
-                color = tint,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                maxLines = 1
-            )
+            SummaryChip("Pend.", pending.toString(), accent2, onBg, Modifier.weight(1f))
+            SummaryChip("Atras.", overdue.toString(), danger, onBg, Modifier.weight(1f))
+            SummaryChip("Hechos", done.toString(), accent, onBg, Modifier.weight(1f))
+            SummaryChip("Min", minutesDone.toString(), accent2, onBg, Modifier.weight(1f))
         }
     }
 }
 
+@Composable
+private fun SummaryChip(label: String, value: String, accent: Color, onBg: Color, modifier: Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = accent.copy(alpha = 0.12f)
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(value, color = onBg, fontWeight = FontWeight.Bold)
+            Text(label, color = onBg.copy(alpha = 0.65f), style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun TrainingList(
+    trainings: List<Training>,
+    emptyTitle: String,
+    emptyMessage: String,
+    accent: Color,
+    danger: Color,
+    onText: Color,
+    onEdit: (Training) -> Unit,
+    onDelete: (Training) -> Unit,
+    onToggleDone: (Training) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (trainings.isEmpty()) {
+        EmptyState(
+            modifier = modifier,
+            icon = Icons.Default.FitnessCenter,
+            title = emptyTitle,
+            message = emptyMessage
+        )
+    } else {
+        LazyColumn(
+            modifier = modifier,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(trainings, key = { it.id }) { training ->
+                TrainingRow(
+                    training = training,
+                    accent = accent,
+                    danger = danger,
+                    onText = onText,
+                    onEdit = { onEdit(training) },
+                    onDelete = { onDelete(training) },
+                    onToggleDone = { onToggleDone(training) }
+                )
+            }
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun TrainingRow(
     training: Training,
@@ -399,8 +419,37 @@ private fun TrainingRow(
     danger: Color,
     onText: Color,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onToggleDone: () -> Unit
 ) {
+    val overdue = remember(training.dateText, training.isDone) {
+        training.isOverdue()
+    }
+
+    val leadingIcon = when {
+        training.isDone -> Icons.Default.CheckCircle
+        overdue -> Icons.Default.Schedule
+        else -> Icons.Default.RadioButtonUnchecked
+    }
+
+    val leadingIconDescription = when {
+        training.isDone -> "Entrenamiento hecho. Pulsar para marcar como pendiente"
+        overdue -> "Entrenamiento atrasado. Pulsar para marcar como hecho"
+        else -> "Entrenamiento pendiente. Pulsar para marcar como hecho"
+    }
+
+    val leadingIconTint = when {
+        training.isDone -> accent
+        overdue -> danger
+        else -> onText.copy(alpha = 0.75f)
+    }
+
+    val leadingCircleColor = when {
+        training.isDone -> accent.copy(alpha = 0.18f)
+        overdue -> danger.copy(alpha = 0.12f)
+        else -> onText.copy(alpha = 0.06f)
+    }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
@@ -409,30 +458,488 @@ private fun TrainingRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(Modifier.weight(1f)) {
+            IconButton(
+                onClick = onToggleDone,
+                modifier = Modifier.size(44.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = leadingCircleColor,
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = leadingIcon,
+                            contentDescription = leadingIconDescription,
+                            tint = leadingIconTint,
+                            modifier = Modifier.size(
+                                when {
+                                    training.isDone -> 22.dp
+                                    overdue -> 20.dp
+                                    else -> 21.dp
+                                }
+                            )
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.width(8.dp))
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
                 Text(
                     text = training.name,
                     color = onText,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+
                 Text(
                     text = "${training.dateText} · ${training.durationMin} min · ${training.type.label}",
-                    color = onText.copy(alpha = 0.70f),
-                    style = MaterialTheme.typography.bodySmall
+                    color = onText.copy(alpha = 0.68f),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                StatusPill(
+                    isDone = training.isDone,
+                    isOverdue = overdue,
+                    accent = accent,
+                    danger = danger,
+                    onText = onText
                 )
             }
 
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Default.Edit, contentDescription = "Editar", tint = accent)
-            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onEdit,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Editar",
+                        tint = onText.copy(alpha = 0.7f)
+                    )
+                }
 
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.DeleteOutline, contentDescription = "Eliminar", tint = danger.copy(alpha = 0.90f))
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = "Eliminar",
+                        tint = danger.copy(alpha = 0.9f)
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun StatusPill(
+    isDone: Boolean,
+    isOverdue: Boolean,
+    accent: Color,
+    danger: Color,
+    onText: Color
+) {
+    val label = when {
+        isDone -> "Hecho"
+        isOverdue -> "Atrasado"
+        else -> "Pendiente"
+    }
+
+    val pillColor = when {
+        isDone -> accent.copy(alpha = 0.18f)
+        isOverdue -> danger.copy(alpha = 0.16f)
+        else -> onText.copy(alpha = 0.08f)
+    }
+
+    val textColor = when {
+        isDone -> accent
+        isOverdue -> danger.copy(alpha = 0.95f)
+        else -> onText.copy(alpha = 0.65f)
+    }
+
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = pillColor,
+        modifier = Modifier.wrapContentWidth()
+    ) {
+        Text(
+            text = label,
+            color = textColor,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+        )
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun TrainingCalendar(
+    month: YearMonth,
+    trainings: List<Training>,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
+    accent: Color,
+    accent2: Color,
+    danger: Color,
+    onText: Color,
+    modifier: Modifier = Modifier
+) {
+    val formatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es", "ES")) }
+    val dayFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/uuuu") }
+    val scroll = rememberScrollState()
+    var selectedDate by remember(month) { mutableStateOf<LocalDate?>(null) }
+
+    val byDate = remember(trainings) {
+        trainings.groupBy { parseTrainingDate(it.dateText) }
+    }
+
+    val monthTrainings = remember(trainings, month) {
+        trainings
+            .filter { parseTrainingDate(it.dateText)?.let { date -> YearMonth.from(date) == month } == true }
+            .sortedByDate()
+    }
+
+    val selectedDayTrainings = remember(selectedDate, byDate) {
+        selectedDate?.let { byDate[it].orEmpty().sortedByDate() }.orEmpty()
+    }
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = GlassBase.copy(alpha = 0.08f)
+    ) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(scroll)
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = accent)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = month.format(formatter).replaceFirstChar { it.titlecase(Locale("es", "ES")) },
+                    color = onText,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onPreviousMonth) { Text("<") }
+                TextButton(onClick = onNextMonth) { Text(">") }
+            }
+
+            CalendarLegend(accent = accent, accent2 = accent2, danger = danger, onText = onText)
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                listOf("L", "M", "X", "J", "V", "S", "D").forEach { day ->
+                    Text(
+                        text = day,
+                        color = onText.copy(alpha = 0.65f),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            CalendarGrid(
+                month = month,
+                trainingsByDate = byDate,
+                selectedDate = selectedDate,
+                onSelectDate = { selectedDate = it },
+                accent = accent,
+                accent2 = accent2,
+                danger = danger,
+                onText = onText
+            )
+
+            if (selectedDate != null) {
+                Text(
+                    text = "Entrenamientos del ${selectedDate!!.format(dayFormatter)}",
+                    color = onText,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                if (selectedDayTrainings.isEmpty()) {
+                    Text(
+                        text = "No hay entrenamientos en este día.",
+                        color = onText.copy(alpha = 0.65f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                } else {
+                    selectedDayTrainings.forEach { training ->
+                        CalendarTrainingLine(
+                            training = training,
+                            accent = accent,
+                            accent2 = accent2,
+                            danger = danger,
+                            onText = onText
+                        )
+                    }
+                }
+            } else if (monthTrainings.isEmpty()) {
+                Text(
+                    text = "No hay entrenamientos en este mes.",
+                    color = onText.copy(alpha = 0.65f),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            } else {
+                Text(
+                    text = "Entrenamientos del mes",
+                    color = onText,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                monthTrainings.take(6).forEach { training ->
+                    CalendarTrainingLine(
+                        training = training,
+                        accent = accent,
+                        accent2 = accent2,
+                        danger = danger,
+                        onText = onText
+                    )
+                }
+
+                if (monthTrainings.size > 6) {
+                    Text(
+                        text = "+${monthTrainings.size - 6} entrenamientos más. Pulsa un día del calendario para ver sus entrenamientos.",
+                        color = onText.copy(alpha = 0.62f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarLegend(
+    accent: Color,
+    accent2: Color,
+    danger: Color,
+    onText: Color
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        LegendItem(label = "Hecho", color = accent, onText = onText)
+        LegendItem(label = "Pendiente", color = accent2, onText = onText)
+        LegendItem(label = "Atrasado", color = danger, onText = onText)
+    }
+}
+
+@Composable
+private fun LegendItem(label: String, color: Color, onText: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text = label,
+            color = onText.copy(alpha = 0.68f),
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1
+        )
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun CalendarTrainingLine(
+    training: Training,
+    accent: Color,
+    accent2: Color,
+    danger: Color,
+    onText: Color
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(9.dp)
+                .clip(CircleShape)
+                .background(trainingStatusColor(training, accent, accent2, danger))
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "${training.dateText} · ${training.name} · ${training.statusLabel()}",
+            color = onText.copy(alpha = 0.78f),
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun CalendarGrid(
+    month: YearMonth,
+    trainingsByDate: Map<LocalDate?, List<Training>>,
+    selectedDate: LocalDate?,
+    onSelectDate: (LocalDate) -> Unit,
+    accent: Color,
+    accent2: Color,
+    danger: Color,
+    onText: Color
+) {
+    val firstDay = month.atDay(1)
+    val leadingEmptyDays = firstDay.dayOfWeek.value - 1
+    val totalCells = leadingEmptyDays + month.lengthOfMonth()
+    val rows = (totalCells + 6) / 7
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        repeat(rows) { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                repeat(7) { col ->
+                    val cellIndex = row * 7 + col
+                    val day = cellIndex - leadingEmptyDays + 1
+                    if (day !in 1..month.lengthOfMonth()) {
+                        Spacer(modifier = Modifier.weight(1f).height(42.dp))
+                    } else {
+                        val date = month.atDay(day)
+                        val dayTrainings = trainingsByDate[date].orEmpty()
+                        val isSelected = selectedDate == date
+                        val hasOverdue = dayTrainings.any { it.isOverdue() }
+                        val hasDone = dayTrainings.any { it.isDone }
+                        val hasPending = dayTrainings.any { !it.isDone && !it.isOverdue() }
+                        val dayAccent = when {
+                            hasOverdue -> danger
+                            hasPending -> accent2
+                            hasDone -> accent
+                            else -> onText
+                        }
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp)
+                                .clickable { onSelectDate(date) },
+                            shape = RoundedCornerShape(12.dp),
+                            color = when {
+                                isSelected -> dayAccent.copy(alpha = 0.34f)
+                                dayTrainings.isNotEmpty() -> dayAccent.copy(alpha = 0.18f)
+                                else -> onText.copy(alpha = 0.05f)
+                            }
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(day.toString(), color = onText, style = MaterialTheme.typography.labelMedium)
+                                if (dayTrainings.isNotEmpty()) {
+                                    Text(
+                                        text = dayTrainings.size.toString(),
+                                        color = dayAccent,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun Training.statusLabel(): String {
+    return when {
+        isDone -> "Hecho"
+        isOverdue() -> "Atrasado"
+        else -> "Pendiente"
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun trainingStatusColor(
+    training: Training,
+    accent: Color,
+    accent2: Color,
+    danger: Color
+): Color {
+    return when {
+        training.isDone -> accent
+        training.isOverdue() -> danger
+        else -> accent2
+    }
+}
+
+private fun List<Training>.filterByQuery(query: String): List<Training> {
+    return filter { training ->
+        query.isBlank() ||
+                training.name.contains(query, ignoreCase = true) ||
+                training.type.label.contains(query, ignoreCase = true) ||
+                training.dateText.contains(query, ignoreCase = true)
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun List<Training>.sortedPendingSmart(): List<Training> {
+    val today = LocalDate.now()
+    return sortedWith(
+        compareBy<Training> { training ->
+            val date = parseTrainingDate(training.dateText)
+            when {
+                date == null -> 3
+                date.isBefore(today) -> 0
+                date.isEqual(today) -> 1
+                else -> 2
+            }
+        }.thenBy { parseTrainingDate(it.dateText) }
+            .thenBy { it.name.lowercase(Locale.getDefault()) }
+            .thenBy { it.id }
+    )
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun List<Training>.sortedByDate(desc: Boolean = false): List<Training> {
+    return if (desc) {
+        sortedWith(compareByDescending<Training> { parseTrainingDate(it.dateText) }.thenByDescending { it.id })
+    } else {
+        sortedWith(compareBy<Training> { parseTrainingDate(it.dateText) }.thenBy { it.id })
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun Training.isOverdue(): Boolean {
+    val date = parseTrainingDate(dateText) ?: return false
+    return !isDone && date.isBefore(LocalDate.now())
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun parseTrainingDate(text: String): LocalDate? {
+    return try {
+        LocalDate.parse(text, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
+    } catch (_: Exception) {
+        null
     }
 }

@@ -109,23 +109,25 @@ fun StatsScreen(
 
     val lastMatch = matches.maxByOrNull { it.id }
 
-    val totalTrainings = trainings.size
-    val totalMinutes = trainings.sumOf { it.durationMin }
-    val avgMinutes = if (trainings.isNotEmpty()) {
-        totalMinutes.toDouble() / trainings.size
+    val completedTrainings = trainings.filter { it.isDone }
+    val pendingTrainings = trainings.count { !it.isDone }
+    val totalTrainings = completedTrainings.size
+    val totalMinutes = completedTrainings.sumOf { it.durationMin }
+    val avgMinutes = if (completedTrainings.isNotEmpty()) {
+        totalMinutes.toDouble() / completedTrainings.size
     } else {
         0.0
     }
 
-    val lastTraining = trainings.maxByOrNull { it.id }
+    val lastTraining = completedTrainings.maxByOrNull { it.id }
 
-    val favoriteTrainingType = trainings
+    val favoriteTrainingType = completedTrainings
         .groupingBy { it.type }
         .eachCount()
         .maxByOrNull { it.value }
         ?.key
 
-    val totalRecords = totalPlayers + totalMatches + totalTrainings
+    val totalRecords = totalPlayers + totalMatches + trainings.size
 
     val performanceTitle = when {
         totalMatches == 0 -> "Sin partidos registrados"
@@ -235,9 +237,9 @@ fun StatsScreen(
             ) {
                 KpiCard(
                     modifier = Modifier.weight(1f),
-                    title = "Entrenos",
+                    title = "Entrenos hechos",
                     value = totalTrainings.toString(),
-                    subtitle = "$totalMinutes min",
+                    subtitle = "$pendingTrainings por hacer",
                     accent = accent,
                     accent2 = accent2,
                     onText = onBg
@@ -411,7 +413,7 @@ fun StatsScreen(
                 onText = onBg
             ) {
                 StatRow(
-                    label = "Sesiones registradas",
+                    label = "Sesiones hechas",
                     value = totalTrainings.toString(),
                     onText = onBg
                 )
@@ -435,7 +437,7 @@ fun StatsScreen(
                 )
 
                 TrainingTypeDistribution(
-                    trainings = trainings,
+                    trainings = completedTrainings,
                     accent = accent,
                     accent2 = accent2,
                     onText = onBg

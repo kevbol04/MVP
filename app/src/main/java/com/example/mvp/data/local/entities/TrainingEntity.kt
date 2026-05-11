@@ -33,5 +33,8 @@ data class TrainingEntity(
     @ColumnInfo(name = "duration_min")
     val durationMin: Int,
 
-    val type: String
+    val type: String,
+
+    @ColumnInfo(name = "is_done")
+    val isDone: Boolean = false
 )

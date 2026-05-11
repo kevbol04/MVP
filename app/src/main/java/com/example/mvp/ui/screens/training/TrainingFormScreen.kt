@@ -3,12 +3,15 @@ package com.example.mvp.ui.screens.training
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +26,7 @@ import com.example.mvp.ui.theme.GlassBase
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
+import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,6 +34,7 @@ import java.time.format.ResolverStyle
 fun TrainingFormScreen(
     modifier: Modifier = Modifier,
     initial: Training? = null,
+    existingTrainings: List<Training> = emptyList(),
     onBack: () -> Unit = {},
     onSave: (Training) -> Unit = {}
 ) {
@@ -42,6 +47,7 @@ fun TrainingFormScreen(
     var dateText by remember { mutableStateOf("") }
     var durationText by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(TrainingType.FUERZA) }
+    var isDone by remember { mutableStateOf(false) }
 
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -54,28 +60,73 @@ fun TrainingFormScreen(
         dateText = initial?.dateText ?: ""
         durationText = initial?.durationMin?.toString() ?: ""
         type = initial?.type ?: TrainingType.FUERZA
+        isDone = initial?.isDone ?: false
 
         touchedName = false
         touchedDate = false
         touchedDuration = false
     }
 
-    val isEditing = initial != null
-
-    val nameError = remember(name) { validateName(name) }
-    val dateError = remember(dateText, isEditing) { validateDateStrict(dateText, allowPast = isEditing) }
+    val dateError = remember(dateText) { validateDateStrict(dateText) }
+    val nameError = remember(name, dateText, initial?.id, existingTrainings) {
+        validateName(name) ?: validateDuplicateTrainingName(
+            raw = name,
+            dateText = dateText,
+            currentId = initial?.id ?: 0,
+            trainings = existingTrainings
+        )
+    }
     val durationError = remember(durationText) { validateDuration(durationText) }
+
+    val selectedDate = remember(dateText, dateError) {
+        if (dateError == null) parseDateOrNull(dateText) else null
+    }
+
+    val today = remember { LocalDate.now() }
+
+    val automaticStateText = remember(selectedDate, isDone, initial?.id) {
+        when {
+            selectedDate == null -> "Introduce una fecha válida para calcular el estado."
+            selectedDate.isBefore(today) && initial == null -> "Hecho automáticamente: estás registrando un entrenamiento pasado."
+            selectedDate.isBefore(today) && isDone -> "Hecho: forma parte del historial."
+            selectedDate.isBefore(today) -> "Atrasado: la fecha ya pasó y sigue sin marcar como hecho."
+            selectedDate.isAfter(today) -> "Pendiente automáticamente: es un entrenamiento futuro."
+            isDone -> "Hecho: aparecerá en el historial."
+            else -> "Pendiente: aparecerá en Por hacer."
+        }
+    }
+
+    val effectiveIsDone = remember(selectedDate, isDone, initial?.id) {
+        when {
+            selectedDate == null -> isDone
+            selectedDate.isBefore(today) -> if (initial == null) true else isDone
+            selectedDate.isAfter(today) -> false
+            else -> isDone
+        }
+    }
+
+    LaunchedEffect(selectedDate, initial?.id) {
+        selectedDate?.let {
+            when {
+                it.isBefore(today) && initial == null -> isDone = true
+                it.isAfter(today) -> isDone = false
+            }
+        }
+    }
+
+    val canChangeState = selectedDate != null && selectedDate.isEqual(today)
 
     val isValid = remember(nameError, dateError, durationError) {
         nameError == null && dateError == null && durationError == null
     }
 
-    val dirty = remember(name, dateText, durationText, type, initial) {
+    val dirty = remember(name, dateText, durationText, type, isDone, initial) {
         val initName = initial?.name ?: ""
         val initDate = initial?.dateText ?: ""
         val initDur = initial?.durationMin?.toString() ?: ""
         val initType = initial?.type ?: TrainingType.FUERZA
-        name != initName || dateText != initDate || durationText != initDur || type != initType
+        val initDone = initial?.isDone ?: false
+        name != initName || dateText != initDate || durationText != initDur || type != initType || isDone != initDone
     }
 
     fun requestBack() {
@@ -104,7 +155,9 @@ fun TrainingFormScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 18.dp, bottom = 14.dp),
+                .verticalScroll(rememberScrollState())
+                .imePadding()
+                .padding(top = 18.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
@@ -188,6 +241,15 @@ fun TrainingFormScreen(
                         onText = onBg
                     )
 
+                    TrainingStateCard(
+                        isDone = effectiveIsDone,
+                        canChangeState = canChangeState,
+                        text = automaticStateText,
+                        accent = accent,
+                        onText = onBg,
+                        onCheckedChange = { isDone = it }
+                    )
+
                     Button(
                         onClick = {
                             touchedName = true
@@ -195,14 +257,22 @@ fun TrainingFormScreen(
                             touchedDuration = true
                             if (!isValid) return@Button
 
-                            val dur = durationText.toInt()
+                            val finalDate = parseDateOrNull(dateText)
+                            val finalIsDone = when {
+                                finalDate == null -> isDone
+                                finalDate.isBefore(today) -> if (initial == null) true else isDone
+                                finalDate.isAfter(today) -> false
+                                else -> isDone
+                            }
+
                             onSave(
                                 Training(
                                     id = initial?.id ?: 0,
                                     name = name.trim(),
                                     dateText = dateText.trim(),
-                                    durationMin = dur,
-                                    type = type
+                                    durationMin = durationText.toInt(),
+                                    type = type,
+                                    isDone = finalIsDone
                                 )
                             )
                         },
@@ -235,6 +305,53 @@ fun TrainingFormScreen(
                     onBack()
                 },
                 onDismiss = { showExitDialog = false }
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrainingStateCard(
+    isDone: Boolean,
+    canChangeState: Boolean,
+    text: String,
+    accent: Color,
+    onText: Color,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = if (isDone) accent.copy(alpha = 0.16f) else GlassBase.copy(alpha = 0.08f)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = if (isDone) accent else onText.copy(alpha = 0.55f)
+            )
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (canChangeState) "Crear como completado" else "Estado automático",
+                    color = onText,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = text,
+                    color = onText.copy(alpha = 0.65f),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Switch(
+                checked = isDone,
+                enabled = canChangeState,
+                onCheckedChange = onCheckedChange
             )
         }
     }
@@ -396,27 +513,54 @@ private fun validateName(raw: String): String? {
     return null
 }
 
+private fun validateDuplicateTrainingName(
+    raw: String,
+    dateText: String,
+    currentId: Int,
+    trainings: List<Training>
+): String? {
+    val normalizedName = normalizeTrainingName(raw)
+    val normalizedDate = dateText.trim()
+    if (normalizedName.isBlank() || normalizedDate.isBlank()) return null
+
+    val exists = trainings.any { training ->
+        training.id != currentId &&
+                normalizeTrainingName(training.name) == normalizedName &&
+                training.dateText.trim() == normalizedDate
+    }
+
+    return if (exists) "Ya existe un entrenamiento con ese nombre en esa fecha." else null
+}
+
+private fun normalizeTrainingName(raw: String): String {
+    return raw.trim()
+        .replace(Regex("\\s+"), " ")
+        .lowercase(Locale.getDefault())
+}
+
 @RequiresApi(Build.VERSION_CODES.O)
-private fun validateDateStrict(raw: String, allowPast: Boolean = false): String? {
+private fun validateDateStrict(raw: String): String? {
     val txt = raw.trim()
     if (txt.isBlank()) return "La fecha es obligatoria."
     if (!Regex("""^\d{2}/\d{2}/\d{4}$""").matches(txt)) {
         return "Formato inválido. Usa dd/MM/aaaa."
     }
     return try {
-        val formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu")
-            .withResolverStyle(ResolverStyle.STRICT)
-        val selectedDate = LocalDate.parse(txt, formatter)
-
-        if (!allowPast) {
-            val today = LocalDate.now()
-            if (selectedDate.isBefore(today)) {
-                return "La fecha no puede ser anterior a hoy."
-            }
-        }
+        parseDateOrNull(txt) ?: return "Fecha no válida. Revisa día/mes."
         null
     } catch (_: Exception) {
         "Fecha no válida. Revisa día/mes."
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun parseDateOrNull(raw: String): LocalDate? {
+    return try {
+        val formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu")
+            .withResolverStyle(ResolverStyle.STRICT)
+        LocalDate.parse(raw.trim(), formatter)
+    } catch (_: Exception) {
+        null
     }
 }
 

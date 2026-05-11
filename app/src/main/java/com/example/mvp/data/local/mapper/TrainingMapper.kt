@@ -10,7 +10,8 @@ fun TrainingEntity.toModel(): Training {
         name = name,
         dateText = dateText,
         durationMin = durationMin,
-        type = type.toTrainingType()
+        type = type.toTrainingType(),
+        isDone = isDone
     )
 }
 
@@ -21,7 +22,8 @@ fun Training.toEntity(userId: Long): TrainingEntity {
         name = name,
         dateText = dateText,
         durationMin = durationMin,
-        type = type.name
+        type = type.name,
+        isDone = isDone
     )
 }
 
