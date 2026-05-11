@@ -772,6 +772,7 @@ private fun NavHostController.navigateToTab(route: String) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun isTrainingOverdue(dateText: String): Boolean {
     return try {
         val date = LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
