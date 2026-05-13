@@ -18,7 +18,7 @@ import com.example.mvp.data.local.entities.TrainingEntity
         MatchEntity::class,
         PlayerEntity::class
     ],
-    version = 2,
+    version = 1,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
