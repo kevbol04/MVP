@@ -43,7 +43,7 @@ fun PlayerFormScreen(
     var number by remember { mutableIntStateOf(initial?.number ?: 10) }
     var position by remember { mutableStateOf(initial?.position ?: PlayerPosition.MED) }
     var rating by remember { mutableFloatStateOf((initial?.rating ?: 78).toFloat()) }
-    var status by remember { mutableStateOf(initial?.status ?: PlayerStatus.TITULAR) }
+    var status by remember { mutableStateOf(if (initial?.status == PlayerStatus.LESIONADO) PlayerStatus.LESIONADO else PlayerStatus.SUPLENTE) }
 
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -84,7 +84,7 @@ fun PlayerFormScreen(
         val initNumber = initial?.number ?: 10
         val initPos = initial?.position ?: PlayerPosition.MED
         val initRating = (initial?.rating ?: 78).toFloat()
-        val initStatus = initial?.status ?: PlayerStatus.TITULAR
+        val initStatus = if (initial?.status == PlayerStatus.LESIONADO) PlayerStatus.LESIONADO else PlayerStatus.SUPLENTE
 
         name != initName ||
                 ageText != initAge ||
@@ -391,13 +391,15 @@ fun PlayerFormScreen(
                             fontWeight = FontWeight.SemiBold
                         )
 
+                        val availabilityOptions = listOf(PlayerStatus.SUPLENTE, PlayerStatus.LESIONADO)
+
                         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                            PlayerStatus.entries.forEachIndexed { index, s ->
+                            availabilityOptions.forEachIndexed { index, s ->
                                 SegmentedButton(
                                     selected = status == s,
                                     onClick = { status = s },
-                                    shape = SegmentedButtonDefaults.itemShape(index, PlayerStatus.entries.size)
-                                ) { Text(s.label) }
+                                    shape = SegmentedButtonDefaults.itemShape(index, availabilityOptions.size)
+                                ) { Text(if (s == PlayerStatus.SUPLENTE) "Disponible" else s.label) }
                             }
                         }
 
@@ -416,7 +418,12 @@ fun PlayerFormScreen(
                                         age = age.coerceIn(16, 40),
                                         number = number.coerceIn(1, 99),
                                         rating = ratingInt,
-                                        status = status
+                                        status = status,
+                                        lineupSlot = when {
+                                            status == PlayerStatus.LESIONADO -> null
+                                            initial?.position != null && initial.position != position -> null
+                                            else -> initial?.lineupSlot
+                                        }
                                     )
                                 )
                             },

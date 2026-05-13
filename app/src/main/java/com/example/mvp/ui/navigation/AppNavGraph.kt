@@ -581,6 +581,9 @@ fun AppNavGraph(
                         vm.delete(player)
                         showSnackbar("Jugador eliminado")
                     },
+                    onSavePlayer = { player ->
+                        vm.save(player)
+                    },
 
                     onGoDashboard = {
                         navController.navigateToTab(Route.Dashboard.route)
@@ -604,8 +607,11 @@ fun AppNavGraph(
                     vm.setUser(currentUserId)
                 }
 
+                val players by vm.players.collectAsState()
+
                 PlayerFormScreen(
                     initial = null,
+                    existingPlayers = players,
                     onBack = {
                         navController.popBackStack()
                     },
@@ -630,7 +636,24 @@ fun AppNavGraph(
                     ?.getString(Route.PlayerFormWithId.ARG_ID)
                     ?.toIntOrNull()
 
+                if (id == null) {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack()
+                    }
+                    return@composable
+                }
+
                 val current = players.firstOrNull { it.id == id }
+
+                if (current == null) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                    return@composable
+                }
 
                 PlayerFormScreen(
                     initial = current,

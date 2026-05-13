@@ -35,10 +35,17 @@ fun PlayerDetailScreen(
     val accent2 = MaterialTheme.colorScheme.secondary
     val onBg = MaterialTheme.colorScheme.onBackground
 
+    val availabilityLabel = if (player.status == PlayerStatus.LESIONADO) {
+        "Lesionado"
+    } else {
+        "Disponible"
+    }
+
+    val lineupLabel = player.lineupSlot?.let { "En once" } ?: "Fuera del once"
+
     val (statusBg, statusFg) = when (player.status) {
-        PlayerStatus.TITULAR -> Win.copy(alpha = 0.16f) to Win
-        PlayerStatus.SUPLENTE -> accent.copy(alpha = 0.16f) to accent
         PlayerStatus.LESIONADO -> Loss.copy(alpha = 0.16f) to Loss
+        else -> accent.copy(alpha = 0.16f) to accent
     }
 
     Box(
@@ -162,7 +169,7 @@ fun PlayerDetailScreen(
                             color = statusBg
                         ) {
                             Text(
-                                text = player.status.label,
+                                text = availabilityLabel,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                 color = statusFg,
                                 style = MaterialTheme.typography.labelLarge,

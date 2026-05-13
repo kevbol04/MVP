@@ -9,7 +9,11 @@ private fun safePosition(value: String): PlayerPosition =
     runCatching { PlayerPosition.valueOf(value) }.getOrElse { PlayerPosition.MED }
 
 private fun safeStatus(value: String): PlayerStatus =
-    runCatching { PlayerStatus.valueOf(value) }.getOrElse { PlayerStatus.TITULAR }
+    when (value) {
+        "TITULAR" -> PlayerStatus.SUPLENTE
+        "DISPONIBLE" -> PlayerStatus.SUPLENTE
+        else -> runCatching { PlayerStatus.valueOf(value) }.getOrElse { PlayerStatus.SUPLENTE }
+    }
 
 fun PlayerEntity.toModel(): Player = Player(
     id = id,
@@ -18,7 +22,8 @@ fun PlayerEntity.toModel(): Player = Player(
     age = age,
     number = number,
     rating = rating,
-    status = safeStatus(status)
+    status = safeStatus(status),
+    lineupSlot = lineupSlot
 )
 
 fun Player.toEntity(userId: Long): PlayerEntity = PlayerEntity(
@@ -29,5 +34,6 @@ fun Player.toEntity(userId: Long): PlayerEntity = PlayerEntity(
     age = age,
     number = number,
     rating = rating,
-    status = status.name
+    status = if (status == PlayerStatus.TITULAR) PlayerStatus.SUPLENTE.name else status.name,
+    lineupSlot = lineupSlot
 )

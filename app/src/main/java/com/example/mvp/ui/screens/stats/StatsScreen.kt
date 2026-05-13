@@ -104,8 +104,14 @@ fun StatsScreen(
     val currentMonth = YearMonth.from(today)
 
     val totalPlayers = players.size
-    val titulares = players.count { it.status == PlayerStatus.TITULAR }
-    val suplentes = players.count { it.status == PlayerStatus.SUPLENTE }
+    val titulares = players.count {
+        it.lineupSlot?.substringBefore("_") in listOf("POR", "DEF", "MED", "DEL") &&
+                it.status != PlayerStatus.LESIONADO
+    }
+    val suplentes = players.count {
+        it.lineupSlot?.startsWith("BENCH_") == true &&
+                it.status != PlayerStatus.LESIONADO
+    }
     val lesionados = players.count { it.status == PlayerStatus.LESIONADO }
     val availablePlayers = totalPlayers - lesionados
     val availabilityRate = if (totalPlayers == 0) 0f else availablePlayers.toFloat() / totalPlayers.toFloat()
@@ -162,22 +168,74 @@ fun StatsScreen(
         hasPlayers = totalPlayers > 0
     )
 
+    val recentMatches = matches
+        .sortedByDescending { parseDateOrNull(it.dateText) ?: LocalDate.MIN }
+        .take(5)
+
+    val recentLosses = recentMatches.count { it.result == MatchResult.DERROTA }
+    val recentWins = recentMatches.count { it.result == MatchResult.VICTORIA }
+    val hasBadForm = totalMatches >= 3 && recentMatches.size >= 3 && recentLosses >= 2 && recentLosses > recentWins
+    val hasGoodForm = totalMatches >= 3 && winRate >= 0.60f && recentWins >= recentLosses
+
     val heroTitle = when {
         totalRecords == 0 -> "Sin datos todavía"
-        globalScore >= 80 -> "Proyecto muy bien encaminado"
-        globalScore >= 60 -> "Base sólida"
-        globalScore >= 40 -> "Hay margen de mejora"
-        else -> "Necesita más actividad"
+        totalPlayers < 11 -> "Plantilla insuficiente"
+        totalPlayers > 0 && (lesionados >= 3 || availabilityRate < 0.75f) -> "Revisar estado físico"
+        titulares < 11 -> "Once incompleto"
+        suplentes < 7 -> "Banquillo incompleto"
+        overdueCount > 0 -> "Cerrar carga pendiente"
+        hasBadForm -> "Mala dinámica reciente"
+        hasGoodForm -> "Buen rendimiento competitivo"
+        else -> "Seguimiento activo"
     }
 
     val heroMessage = when {
-        totalRecords == 0 -> "Registra jugadores, partidos y entrenamientos para que las estadísticas empiecen a tener valor real."
-        overdueCount > 0 -> "Tienes $overdueCount entrenamiento${if (overdueCount == 1) "" else "s"} atrasado${if (overdueCount == 1) "" else "s"}. La prioridad ahora es cerrar esa carga pendiente."
-        totalMatches == 0 -> "La parte de entrenamientos y plantilla puede estar bien, pero faltan partidos para medir el rendimiento competitivo."
-        completedCount == 0 -> "Ya hay datos, pero todavía no hay entrenamientos completados. Las estadísticas de carga aún no reflejan trabajo real."
-        globalScore >= 80 -> "El equipo está equilibrado: buenos resultados, carga completada y plantilla disponible. Mantén esta dinámica."
-        globalScore >= 60 -> "La lectura general es buena, pero todavía puedes mejorar la regularidad en partidos o entrenamientos."
-        else -> "Hay datos suficientes para detectar problemas. Revisa resultados, entrenamientos pendientes y estado de la plantilla."
+        totalRecords == 0 ->
+            "Registra jugadores, partidos y entrenamientos para empezar a ver estadísticas útiles."
+
+        totalPlayers < 11 ->
+            "Tienes $totalPlayers jugador${if (totalPlayers == 1) "" else "es"}. Necesitas al menos 11 para formar un once completo."
+
+        totalPlayers > 0 && (lesionados >= 3 || availabilityRate < 0.75f) ->
+            "Hay $lesionados jugador${if (lesionados == 1) "" else "es"} lesionado${if (lesionados == 1) "" else "s"}. La prioridad es recuperar disponibilidad en la plantilla."
+
+        titulares < 11 ->
+            "El once tiene $titulares/11 jugadores colocados. Completa la alineación antes de analizar el rendimiento del equipo."
+
+        suplentes < 7 ->
+            "El banquillo tiene $suplentes/7 jugadores. Puedes completar la convocatoria para tener más alternativas."
+
+        overdueCount > 0 ->
+            "Tienes $overdueCount entrenamiento${if (overdueCount == 1) "" else "s"} atrasado${if (overdueCount == 1) "" else "s"}. La prioridad ahora es cerrar la carga pendiente."
+
+        hasBadForm ->
+            "En los últimos partidos hay más derrotas que victorias. Revisa resultados, goles encajados y carga de entrenamientos."
+
+        hasGoodForm ->
+            "El rendimiento competitivo es positivo: $wins victoria${if (wins == 1) "" else "s"}, $draws empate${if (draws == 1) "" else "s"} y $losses derrota${if (losses == 1) "" else "s"}."
+
+        else ->
+            "Balance actual: $wins victorias, $draws empates y $losses derrotas, con ${(completionRate * 100).roundToInt()}% de cumplimiento en entrenos."
+    }
+
+    val heroPrimaryChip = when {
+        totalPlayers < 11 -> "$totalPlayers jugadores"
+        titulares < 11 -> "Once $titulares/11"
+        totalMatches == 0 -> "Sin partidos"
+        else -> "${(winRate * 100).roundToInt()}% victorias"
+    }
+
+    val heroSecondaryChip = when {
+        totalPlayers > 0 && lesionados > 0 -> "$lesionados lesionado${if (lesionados == 1) "" else "s"}"
+        suplentes < 7 -> "Banquillo $suplentes/7"
+        totalTrainingRecords == 0 -> "Sin entrenos"
+        else -> "${(completionRate * 100).roundToInt()}% entrenos"
+    }
+
+    val heroThirdChip = when {
+        overdueCount > 0 -> "$overdueCount atrasado${if (overdueCount == 1) "" else "s"}"
+        totalPlayers > 0 -> "$availablePlayers disponible${if (availablePlayers == 1) "" else "s"}"
+        else -> "Sin datos"
     }
 
     val bottomBarHeight = 96.dp
@@ -216,11 +274,12 @@ fun StatsScreen(
             GlobalHeroCard(
                 title = heroTitle,
                 message = heroMessage,
-                score = globalScore,
-                record = if (totalMatches == 0) "Sin partidos" else "$wins V · $draws E · $losses D",
-                completion = if (totalTrainingRecords == 0) "Sin entrenos" else "${(completionRate * 100).roundToInt()}% entrenos",
+                primaryChip = heroPrimaryChip,
+                secondaryChip = heroSecondaryChip,
+                thirdChip = heroThirdChip,
                 accent = accent,
                 accent2 = accent2,
+                danger = danger,
                 onText = onBg
             )
 
@@ -368,13 +427,16 @@ private fun Header(
 private fun GlobalHeroCard(
     title: String,
     message: String,
-    score: Int,
-    record: String,
-    completion: String,
+    primaryChip: String,
+    secondaryChip: String,
+    thirdChip: String,
     accent: Color,
     accent2: Color,
+    danger: Color,
     onText: Color
 ) {
+    val thirdIsWarning = thirdChip.contains("atrasado", ignoreCase = true)
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = GlassBase.copy(alpha = 0.08f),
@@ -387,8 +449,8 @@ private fun GlobalHeroCard(
                 .background(
                     Brush.linearGradient(
                         listOf(
-                            accent.copy(alpha = 0.22f),
-                            accent2.copy(alpha = 0.14f),
+                            accent.copy(alpha = 0.20f),
+                            accent2.copy(alpha = 0.12f),
                             GlassBase.copy(alpha = 0.08f)
                         )
                     )
@@ -399,11 +461,11 @@ private fun GlobalHeroCard(
                 modifier = Modifier
                     .size(170.dp)
                     .align(Alignment.TopEnd)
-                    .offset(x = 40.dp, y = (-30).dp)
+                    .offset(x = 42.dp, y = (-42).dp)
                     .background(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                accent.copy(alpha = 0.18f),
+                                accent.copy(alpha = 0.16f),
                                 Color.Transparent
                             )
                         ),
@@ -411,56 +473,59 @@ private fun GlobalHeroCard(
                     )
             )
 
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = GlassBase.copy(alpha = 0.08f)
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(999.dp),
-                        color = GlassBase.copy(alpha = 0.08f)
-                    ) {
-                        Text(
-                            text = "Índice general",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                            color = onText.copy(alpha = 0.82f),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
                     Text(
-                        text = title,
-                        color = onText,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                        text = "Prioridad actual",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        color = onText.copy(alpha = 0.82f),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium
                     )
-
-                    Text(
-                        text = message,
-                        color = onText.copy(alpha = 0.76f),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        HeroInfoChip(text = record, accent = accent, onText = onText)
-                        HeroInfoChip(text = completion, accent = accent2, onText = onText)
-                    }
                 }
 
-                Spacer(modifier = Modifier.width(14.dp))
-
-                PerformanceScoreRing(
-                    text = if (score == 0) "--" else "$score",
-                    subtitle = "score",
-                    progress = score.toFloat() / 100f,
-                    accent = accent,
-                    accent2 = accent2,
-                    onText = onText
+                Text(
+                    text = title,
+                    color = onText,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
                 )
+
+                Text(
+                    text = message,
+                    color = onText.copy(alpha = 0.76f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    HeroInfoChip(
+                        text = primaryChip,
+                        accent = accent,
+                        onText = onText,
+                        modifier = Modifier.weight(1f)
+                    )
+                    HeroInfoChip(
+                        text = secondaryChip,
+                        accent = accent2,
+                        onText = onText,
+                        modifier = Modifier.weight(1f)
+                    )
+                    HeroInfoChip(
+                        text = thirdChip,
+                        accent = if (thirdIsWarning) danger else accent,
+                        onText = onText,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
     }
@@ -745,12 +810,6 @@ private fun TrainingStatsSection(
             onText = onText
         )
     }
-
-    GlassCard(title = "Estado de entrenamientos", onText = onText) {
-        StatBarRow(label = "Hechos", value = completedCount, total = trainings.size, color = Win, onText = onText)
-        StatBarRow(label = "Pendientes", value = pendingCount, total = trainings.size, color = accent, onText = onText)
-        StatBarRow(label = "Atrasados", value = overdueCount, total = trainings.size, color = danger, onText = onText)
-    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -814,8 +873,8 @@ private fun MatchStatsSection(
             },
             onText = onText
         )
-        StatRow(label = "Media goles a favor", value = if (totalMatches == 0) "--" else formatDecimal(avgGoalsFor), onText = onText)
-        StatRow(label = "Media goles en contra", value = if (totalMatches == 0) "--" else formatDecimal(avgGoalsAgainst), onText = onText)
+        StatRow(label = "Goles a favor por partido", value = if (totalMatches == 0) "--" else formatDecimal(avgGoalsFor), onText = onText)
+        StatRow(label = "Goles en contra por partido", value = if (totalMatches == 0) "--" else formatDecimal(avgGoalsAgainst), onText = onText)
     }
 
     GlassCard(title = "Competiciones", onText = onText) {
@@ -837,7 +896,7 @@ private fun MatchStatsSection(
                     ResultLetterPill(result = match.result)
                 }
             }
-            EmptyLine(text = "Últimos ${recent.size} partidos registrados.", onText = onText)
+            EmptyLine(text = "Últimos ${recent.size} partidos.", onText = onText)
         }
     }
 }
@@ -866,11 +925,7 @@ private fun PlayerStatsSection(
         onText = onText
     )
 
-    GlassCard(title = "Estado de la plantilla", onText = onText) {
-        StatBarRow(label = "Titulares", value = titulares, total = totalPlayers, color = Win, onText = onText)
-        StatBarRow(label = "Suplentes", value = suplentes, total = totalPlayers, color = accent, onText = onText)
-        StatBarRow(label = "Lesionados", value = lesionados, total = totalPlayers, color = Loss, onText = onText)
-        Spacer(modifier = Modifier.height(6.dp))
+    GlassCard(title = "Jugador destacado", onText = onText) {
         BestPlayerBlock(bestPlayer = bestPlayer, accent = accent, accent2 = accent2, onText = onText)
     }
 
@@ -1013,20 +1068,29 @@ private fun GlassCard(
 private fun HeroInfoChip(
     text: String,
     accent: Color,
-    onText: Color
+    onText: Color,
+    modifier: Modifier = Modifier
 ) {
     Surface(
+        modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         color = accent.copy(alpha = 0.14f)
     ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            color = onText,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                color = onText,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
@@ -1152,8 +1216,14 @@ private fun StatBarRow(
                 overflow = TextOverflow.Ellipsis
             )
 
+            val displayValue = when {
+                total == 0 -> "0$suffix"
+                suffix.isNotBlank() -> "$value$suffix"
+                else -> "$value · ${(pct * 100).roundToInt()}%"
+            }
+
             Text(
-                text = if (total == 0) "0$suffix" else "$value$suffix · ${(pct * 100).roundToInt()}%",
+                text = displayValue,
                 color = onText,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
