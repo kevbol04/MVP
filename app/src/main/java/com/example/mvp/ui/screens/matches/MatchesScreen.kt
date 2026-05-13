@@ -1,5 +1,7 @@
 package com.example.mvp.ui.screens.matches
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -34,6 +36,8 @@ import com.example.mvp.ui.theme.Draw
 import com.example.mvp.ui.theme.GlassBase
 import com.example.mvp.ui.theme.Loss
 import com.example.mvp.ui.theme.Win
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 enum class MatchResult(val label: String) {
     VICTORIA("Victoria"),
@@ -86,16 +90,21 @@ fun MatchesScreen(
     var selectedCompetition by remember { mutableStateOf<Competition?>(null) }
 
     val filtered = remember(matches, query, selectedCompetition) {
-        matches.filter { m ->
-            val matchesQuery =
-                query.isBlank() ||
-                        m.rival.contains(query, ignoreCase = true) ||
-                        m.competition.label.contains(query, ignoreCase = true) ||
-                        m.result.label.contains(query, ignoreCase = true)
+        matches
+            .filter { m ->
+                val matchesQuery =
+                    query.isBlank() ||
+                            m.rival.contains(query, ignoreCase = true) ||
+                            m.competition.label.contains(query, ignoreCase = true) ||
+                            m.result.label.contains(query, ignoreCase = true)
 
-            val matchesCompetition = selectedCompetition == null || m.competition == selectedCompetition
-            matchesQuery && matchesCompetition
-        }
+                val matchesCompetition = selectedCompetition == null || m.competition == selectedCompetition
+                matchesQuery && matchesCompetition
+            }
+            .sortedWith(
+                compareByDescending<Match> { parseMatchDateOrNull(it.dateText) ?: LocalDate.MIN }
+                    .thenByDescending { it.id }
+            )
     }
 
     val bottomBarHeight = 96.dp
@@ -597,4 +606,11 @@ private fun MatchScoreCard(
             }
         }
     }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun parseMatchDateOrNull(dateText: String): LocalDate? {
+    return runCatching {
+        LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
+    }.getOrNull()
 }
