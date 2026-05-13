@@ -36,11 +36,9 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(
-        @ApplicationContext context: Context,
-        callback: AppDatabaseCallback
+        @ApplicationContext context: Context
     ): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, DB_NAME)
-            .addCallback(callback)
             .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
     }
