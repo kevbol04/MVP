@@ -935,19 +935,41 @@ private fun List<Training>.filterByQuery(query: String): List<Training> {
 @RequiresApi(Build.VERSION_CODES.O)
 private fun List<Training>.sortedPendingSmart(): List<Training> {
     val today = LocalDate.now()
-    return sortedWith(
-        compareBy<Training> { training ->
-            val date = parseTrainingDate(training.dateText)
-            when {
-                date == null -> 3
-                date.isBefore(today) -> 0
-                date.isEqual(today) -> 1
-                else -> 2
-            }
-        }.thenBy { parseTrainingDate(it.dateText) }
-            .thenBy { it.name.lowercase(Locale.getDefault()) }
-            .thenBy { it.id }
-    )
+
+    return sortedWith { a, b ->
+        val dateA = parseTrainingDate(a.dateText)
+        val dateB = parseTrainingDate(b.dateText)
+
+        val groupA = pendingSortGroup(dateA, today)
+        val groupB = pendingSortGroup(dateB, today)
+
+        if (groupA != groupB) {
+            return@sortedWith groupA.compareTo(groupB)
+        }
+
+        val dateCompare = when (groupA) {
+            0 -> compareValues(dateB ?: LocalDate.MIN, dateA ?: LocalDate.MIN) // Atrasados: más reciente primero
+            1 -> compareValues(a.name.lowercase(Locale.getDefault()), b.name.lowercase(Locale.getDefault())) // Hoy
+            2 -> compareValues(dateA ?: LocalDate.MAX, dateB ?: LocalDate.MAX) // Próximos: más cercano primero
+            else -> compareValues(a.name.lowercase(Locale.getDefault()), b.name.lowercase(Locale.getDefault()))
+        }
+
+        if (dateCompare != 0) {
+            dateCompare
+        } else {
+            b.id.compareTo(a.id)
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun pendingSortGroup(date: LocalDate?, today: LocalDate): Int {
+    return when {
+        date == null -> 3
+        date.isBefore(today) -> 0
+        date.isEqual(today) -> 1
+        else -> 2
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
