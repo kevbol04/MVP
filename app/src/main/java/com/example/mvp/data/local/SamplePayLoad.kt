@@ -8,11 +8,12 @@ import com.example.mvp.data.local.entities.AuthUserEntity
 import com.example.mvp.data.local.entities.MatchEntity
 import com.example.mvp.data.local.entities.PlayerEntity
 import com.example.mvp.data.local.entities.TrainingEntity
+import com.example.mvp.data.security.AuthPasswordHasher
 import com.example.mvp.ui.screens.matches.Competition
+import com.example.mvp.ui.screens.matches.MatchResult
 import com.example.mvp.ui.screens.players.PlayerPosition
 import com.example.mvp.ui.screens.players.PlayerStatus
 import com.example.mvp.ui.screens.training.TrainingType
-import com.example.mvp.data.security.AuthPasswordHasher
 
 object SamplePayLoad {
 
@@ -40,336 +41,136 @@ object SamplePayLoad {
         )
 
         buildPlayers(userId).forEach { playerDao.insert(it) }
-
         buildMatches(userId).forEach { matchDao.insert(it) }
-
         buildTrainings(userId).forEach { trainingDao.insert(it) }
     }
 
-    private fun buildPlayers(userId: Long): List<PlayerEntity> {
-        var dorsal = 1
+    private fun buildPlayers(userId: Long): List<PlayerEntity> = listOf(
+        // Porteros
+        player(userId, "Thibaut Courtois", PlayerPosition.POR, 31, 1, 89),
+        player(userId, "Andriy Lunin", PlayerPosition.POR, 25, 13, 78),
+        player(userId, "Fran González", PlayerPosition.POR, 19, 26, 69),
 
-        return listOf(
+        // Defensas
+        player(userId, "Dani Carvajal", PlayerPosition.DEF, 34, 2, 84),
+        player(userId, "Éder Militão", PlayerPosition.DEF, 28, 3, 86),
+        player(userId, "David Alaba", PlayerPosition.DEF, 33, 4, 85, PlayerStatus.LESIONADO),
+        player(userId, "Trent Alexander-Arnold", PlayerPosition.DEF, 27, 12, 87),
+        player(userId, "Raúl Asencio", PlayerPosition.DEF, 23, 17, 81),
+        player(userId, "Álvaro Carreras", PlayerPosition.DEF, 23, 18, 80),
+        player(userId, "Fran García", PlayerPosition.DEF, 26, 20, 79),
+        player(userId, "Antonio Rüdiger", PlayerPosition.DEF, 33, 22, 86),
+        player(userId, "Ferland Mendy", PlayerPosition.DEF, 30, 23, 83, PlayerStatus.LESIONADO),
+        player(userId, "Dean Huijsen", PlayerPosition.DEF, 21, 24, 84),
+        player(userId, "David Jiménez", PlayerPosition.DEF, 22, 35, 72),
+        player(userId, "Jacobo Ramón", PlayerPosition.DEF, 21, 31, 73),
 
-            PlayerEntity(
-                userId = userId,
-                name = "Thibaut Courtois",
-                position = PlayerPosition.POR.name,
-                age = 31,
-                number = dorsal++,
-                rating = 89,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
-            PlayerEntity(
-                userId = userId,
-                name = "Dani Carvajal",
-                position = PlayerPosition.DEF.name,
-                age = 32,
-                number = dorsal++,
-                rating = 84,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
-            PlayerEntity(
-                userId = userId,
-                name = "Antonio Rüdiger",
-                position = PlayerPosition.DEF.name,
-                age = 31,
-                number = dorsal++,
-                rating = 86,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
-            PlayerEntity(
-                userId = userId,
-                name = "David Alaba",
-                position = PlayerPosition.DEF.name,
-                age = 32,
-                number = dorsal++,
-                rating = 85,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
-            PlayerEntity(
-                userId = userId,
-                name = "Ferland Mendy",
-                position = PlayerPosition.DEF.name,
-                age = 28,
-                number = dorsal++,
-                rating = 83,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
-            PlayerEntity(
-                userId = userId,
-                name = "Luka Modrić",
-                position = PlayerPosition.MED.name,
-                age = 38,
-                number = dorsal++,
-                rating = 87,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
-            PlayerEntity(
-                userId = userId,
-                name = "Jude Bellingham",
-                position = PlayerPosition.MED.name,
-                age = 21,
-                number = dorsal++,
-                rating = 88,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
-            PlayerEntity(
-                userId = userId,
-                name = "Vinícius Jr.",
-                position = PlayerPosition.DEL.name,
-                age = 24,
-                number = dorsal++,
-                rating = 90,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
+        // Mediocentros
+        player(userId, "Jude Bellingham", PlayerPosition.MED, 22, 5, 88),
+        player(userId, "Eduardo Camavinga", PlayerPosition.MED, 23, 6, 84),
+        player(userId, "Federico Valverde", PlayerPosition.MED, 27, 8, 86),
+        player(userId, "Aurélien Tchouaméni", PlayerPosition.MED, 26, 14, 84),
+        player(userId, "Arda Güler", PlayerPosition.MED, 21, 15, 82),
+        player(userId, "Dan", PlayerPosition.MED, 29, 19, 80),
+        player(userId, "Brahim Díaz", PlayerPosition.MED, 26, 21, 82),
+        player(userId, "Thiago Pitarch", PlayerPosition.MED, 19, 28, 70),
+        player(userId, "Jaime Cestero", PlayerPosition.MED, 18, 27, 68),
 
-            PlayerEntity(
-                userId = userId,
-                name = "Andriy Lunin",
-                position = PlayerPosition.POR.name,
-                age = 25,
-                number = dorsal++,
-                rating = 78,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
-            PlayerEntity(
-                userId = userId,
-                name = "Nacho Fernández",
-                position = PlayerPosition.DEF.name,
-                age = 34,
-                number = dorsal++,
-                rating = 80,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
-            PlayerEntity(
-                userId = userId,
-                name = "Federico Valverde",
-                position = PlayerPosition.MED.name,
-                age = 26,
-                number = dorsal++,
-                rating = 86,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
-            PlayerEntity(
-                userId = userId,
-                name = "Aurélien Tchouaméni",
-                position = PlayerPosition.MED.name,
-                age = 24,
-                number = dorsal++,
-                rating = 84,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
-            PlayerEntity(
-                userId = userId,
-                name = "Rodrygo Goes",
-                position = PlayerPosition.DEL.name,
-                age = 23,
-                number = dorsal++,
-                rating = 85,
-                status = PlayerStatus.DISPONIBLE.name
-            ),
+        // Delanteros
+        player(userId, "Vinícius Jr.", PlayerPosition.DEL, 25, 7, 90),
+        player(userId, "Kylian Mbappé", PlayerPosition.DEL, 27, 10, 91),
+        player(userId, "Rodrygo Goes", PlayerPosition.DEL, 25, 11, 85),
+        player(userId, "Gonzalo García", PlayerPosition.DEL, 22, 16, 76),
+        player(userId, "Endrick", PlayerPosition.DEL, 19, 9, 79),
+        player(userId, "Franco Mastantuono", PlayerPosition.DEL, 18, 30, 78)
+    )
 
-            PlayerEntity(
-                userId = userId,
-                name = "Éder Militão",
-                position = PlayerPosition.DEF.name,
-                age = 26,
-                number = dorsal++,
-                rating = 86,
-                status = PlayerStatus.LESIONADO.name
-            ),
-            PlayerEntity(
-                userId = userId,
-                name = "Brahim Díaz",
-                position = PlayerPosition.DEL.name,
-                age = 25,
-                number = dorsal++,
-                rating = 82,
-                status = PlayerStatus.LESIONADO.name
-            )
-        )
-    }
+    private fun player(
+        userId: Long,
+        name: String,
+        position: PlayerPosition,
+        age: Int,
+        number: Int,
+        rating: Int,
+        status: PlayerStatus = PlayerStatus.DISPONIBLE
+    ): PlayerEntity = PlayerEntity(
+        userId = userId,
+        name = name,
+        position = position.name,
+        age = age,
+        number = number,
+        rating = rating,
+        status = status.name,
+        lineupSlot = null
+    )
 
-    private fun buildMatches(userId: Long): List<MatchEntity> =
-        listOf(
-            MatchEntity(
-                userId = userId,
-                rival = "Atlético de Madrid",
-                dateText = "05/04/2026",
-                competition = com.example.mvp.ui.screens.matches.Competition.LIGA.name,
-                result = com.example.mvp.ui.screens.matches.MatchResult.VICTORIA.name,
-                goalsFor = 3,
-                goalsAgainst = 1
-            ),
-            MatchEntity(
-                userId = userId,
-                rival = "FC Barcelona",
-                dateText = "29/03/2026",
-                competition = com.example.mvp.ui.screens.matches.Competition.COPA.name,
-                result = com.example.mvp.ui.screens.matches.MatchResult.EMPATE.name,
-                goalsFor = 2,
-                goalsAgainst = 2
-            ),
-            MatchEntity(
-                userId = userId,
-                rival = "Valencia CF",
-                dateText = "22/03/2026",
-                competition = com.example.mvp.ui.screens.matches.Competition.LIGA.name,
-                result = com.example.mvp.ui.screens.matches.MatchResult.VICTORIA.name,
-                goalsFor = 2,
-                goalsAgainst = 0
-            ),
-            MatchEntity(
-                userId = userId,
-                rival = "Sevilla FC",
-                dateText = "15/03/2026",
-                competition = com.example.mvp.ui.screens.matches.Competition.LIGA.name,
-                result = com.example.mvp.ui.screens.matches.MatchResult.DERROTA.name,
-                goalsFor = 1,
-                goalsAgainst = 2
-            ),
-            MatchEntity(
-                userId = userId,
-                rival = "Real Sociedad",
-                dateText = "08/03/2026",
-                competition = com.example.mvp.ui.screens.matches.Competition.COPA.name,
-                result = com.example.mvp.ui.screens.matches.MatchResult.VICTORIA.name,
-                goalsFor = 4,
-                goalsAgainst = 2
-            ),
-            MatchEntity(
-                userId = userId,
-                rival = "Villarreal CF",
-                dateText = "01/03/2026",
-                competition = com.example.mvp.ui.screens.matches.Competition.AMISTOSO.name,
-                result = com.example.mvp.ui.screens.matches.MatchResult.EMPATE.name,
-                goalsFor = 1,
-                goalsAgainst = 1
-            ),
-            MatchEntity(
-                userId = userId,
-                rival = "Real Betis",
-                dateText = "22/02/2026",
-                competition = com.example.mvp.ui.screens.matches.Competition.LIGA.name,
-                result = com.example.mvp.ui.screens.matches.MatchResult.VICTORIA.name,
-                goalsFor = 3,
-                goalsAgainst = 0
-            ),
-            MatchEntity(
-                userId = userId,
-                rival = "Athletic Club",
-                dateText = "15/02/2026",
-                competition = com.example.mvp.ui.screens.matches.Competition.LIGA.name,
-                result = com.example.mvp.ui.screens.matches.MatchResult.DERROTA.name,
-                goalsFor = 0,
-                goalsAgainst = 1
-            ),
-            MatchEntity(
-                userId = userId,
-                rival = "Getafe CF",
-                dateText = "08/02/2026",
-                competition = com.example.mvp.ui.screens.matches.Competition.AMISTOSO.name,
-                result = com.example.mvp.ui.screens.matches.MatchResult.VICTORIA.name,
-                goalsFor = 2,
-                goalsAgainst = 1
-            ),
-            MatchEntity(
-                userId = userId,
-                rival = "Girona FC",
-                dateText = "01/02/2026",
-                competition = com.example.mvp.ui.screens.matches.Competition.LIGA.name,
-                result = com.example.mvp.ui.screens.matches.MatchResult.VICTORIA.name,
-                goalsFor = 5,
-                goalsAgainst = 2
-            )
-        )
+    private fun buildMatches(userId: Long): List<MatchEntity> = listOf(
+        match(userId, "Atlético de Madrid", "05/04/2026", Competition.LIGA, MatchResult.VICTORIA, 3, 1),
+        match(userId, "FC Barcelona", "29/03/2026", Competition.COPA, MatchResult.EMPATE, 2, 2),
+        match(userId, "Valencia CF", "22/03/2026", Competition.LIGA, MatchResult.VICTORIA, 2, 0),
+        match(userId, "Sevilla FC", "15/03/2026", Competition.LIGA, MatchResult.DERROTA, 1, 2),
+        match(userId, "Real Sociedad", "08/03/2026", Competition.COPA, MatchResult.VICTORIA, 4, 2),
+        match(userId, "Villarreal CF", "01/03/2026", Competition.AMISTOSO, MatchResult.EMPATE, 1, 1),
+        match(userId, "Real Betis", "22/02/2026", Competition.LIGA, MatchResult.VICTORIA, 3, 0),
+        match(userId, "Athletic Club", "15/02/2026", Competition.LIGA, MatchResult.DERROTA, 0, 1),
+        match(userId, "Getafe CF", "08/02/2026", Competition.AMISTOSO, MatchResult.VICTORIA, 2, 1),
+        match(userId, "Girona FC", "01/02/2026", Competition.LIGA, MatchResult.VICTORIA, 5, 2)
+    )
 
-    private fun buildTrainings(userId: Long): List<TrainingEntity> =
-        listOf(
-            TrainingEntity(
-                userId = userId,
-                name = "Sesión de fuerza tren inferior",
-                dateText = "07/04/2026",
-                durationMin = 75,
-                type = TrainingType.FUERZA.name
-            ),
-            TrainingEntity(
-                userId = userId,
-                name = "Trabajo táctico ofensivo",
-                dateText = "06/04/2026",
-                durationMin = 90,
-                type = TrainingType.TECNICA.name
-            ),
-            TrainingEntity(
-                userId = userId,
-                name = "Resistencia con balón",
-                dateText = "04/04/2026",
-                durationMin = 80,
-                type = TrainingType.RESISTENCIA.name
-            ),
-            TrainingEntity(
-                userId = userId,
-                name = "Velocidad y reacción",
-                dateText = "02/04/2026",
-                durationMin = 60,
-                type = TrainingType.VELOCIDAD.name
-            ),
-            TrainingEntity(
-                userId = userId,
-                name = "Recuperación activa",
-                dateText = "31/03/2026",
-                durationMin = 45,
-                type = TrainingType.RECUPERACION.name
-            ),
-            TrainingEntity(
-                userId = userId,
-                name = "Finalización y centros",
-                dateText = "28/03/2026",
-                durationMin = 85,
-                type = TrainingType.TECNICA.name
-            ),
-            TrainingEntity(
-                userId = userId,
-                name = "Presión tras pérdida",
-                dateText = "26/03/2026",
-                durationMin = 90,
-                type = TrainingType.RESISTENCIA.name
-            ),
-            TrainingEntity(
-                userId = userId,
-                name = "Potencia y cambios de ritmo",
-                dateText = "24/03/2026",
-                durationMin = 70,
-                type = TrainingType.VELOCIDAD.name
-            ),
-            TrainingEntity(
-                userId = userId,
-                name = "Fuerza preventiva",
-                dateText = "21/03/2026",
-                durationMin = 65,
-                type = TrainingType.FUERZA.name
-            ),
-            TrainingEntity(
-                userId = userId,
-                name = "Salida de balón",
-                dateText = "19/03/2026",
-                durationMin = 90,
-                type = TrainingType.TECNICA.name
-            ),
-            TrainingEntity(
-                userId = userId,
-                name = "Bloque defensivo",
-                dateText = "17/03/2026",
-                durationMin = 80,
-                type = TrainingType.TECNICA.name
-            ),
-            TrainingEntity(
-                userId = userId,
-                name = "Recuperación post partido",
-                dateText = "16/03/2026",
-                durationMin = 40,
-                type = TrainingType.RECUPERACION.name
-            )
-        )
+    private fun match(
+        userId: Long,
+        rival: String,
+        dateText: String,
+        competition: Competition,
+        result: MatchResult,
+        goalsFor: Int,
+        goalsAgainst: Int
+    ): MatchEntity = MatchEntity(
+        userId = userId,
+        rival = rival,
+        dateText = dateText,
+        competition = competition.name,
+        result = result.name,
+        goalsFor = goalsFor,
+        goalsAgainst = goalsAgainst
+    )
+
+    private fun buildTrainings(userId: Long): List<TrainingEntity> = listOf(
+        training(userId, "Recuperación post partido", "13/04/2026", 40, TrainingType.RECUPERACION, true),
+        training(userId, "Resistencia base", "16/04/2026", 75, TrainingType.RESISTENCIA, true),
+        training(userId, "Fuerza tren inferior", "20/04/2026", 70, TrainingType.FUERZA, false),
+        training(userId, "Trabajo táctico defensivo", "24/04/2026", 90, TrainingType.TECNICA, true),
+        training(userId, "Velocidad y reacción", "28/04/2026", 60, TrainingType.VELOCIDAD, false),
+        training(userId, "Salida de balón", "02/05/2026", 85, TrainingType.TECNICA, true),
+        training(userId, "Presión tras pérdida", "06/05/2026", 90, TrainingType.RESISTENCIA, false),
+        training(userId, "Finalización y centros", "10/05/2026", 80, TrainingType.TECNICA, true),
+        training(userId, "Bloque medio", "12/05/2026", 75, TrainingType.TECNICA, false),
+        training(userId, "Activación pre partido", "13/05/2026", 45, TrainingType.RECUPERACION, false),
+        training(userId, "Recuperación activa", "15/05/2026", 45, TrainingType.RECUPERACION, false),
+        training(userId, "Fuerza preventiva", "18/05/2026", 65, TrainingType.FUERZA, false),
+        training(userId, "Transiciones ofensivas", "22/05/2026", 90, TrainingType.TECNICA, false),
+        training(userId, "Resistencia con balón", "26/05/2026", 80, TrainingType.RESISTENCIA, false),
+        training(userId, "Técnica individual", "30/05/2026", 70, TrainingType.TECNICA, false),
+        training(userId, "Cambios de ritmo", "03/06/2026", 60, TrainingType.VELOCIDAD, false),
+        training(userId, "Partido reducido", "07/06/2026", 90, TrainingType.RESISTENCIA, false),
+        training(userId, "Estrategia balón parado", "11/06/2026", 75, TrainingType.TECNICA, false),
+        training(userId, "Sesión regenerativa", "12/06/2026", 40, TrainingType.RECUPERACION, false),
+        training(userId, "Potencia y cambios de ritmo", "14/06/2026", 70, TrainingType.VELOCIDAD, false)
+    )
+
+    private fun training(
+        userId: Long,
+        name: String,
+        dateText: String,
+        durationMin: Int,
+        type: TrainingType,
+        isDone: Boolean
+    ): TrainingEntity = TrainingEntity(
+        userId = userId,
+        name = name,
+        dateText = dateText,
+        durationMin = durationMin,
+        type = type.name,
+        isDone = isDone
+    )
 }
