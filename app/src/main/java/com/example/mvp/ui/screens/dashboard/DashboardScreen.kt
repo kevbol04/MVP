@@ -70,6 +70,7 @@ fun DashboardScreen(
     matches: List<Match> = emptyList(),
     players: List<Player> = emptyList(),
     onGoTraining: () -> Unit = {},
+    onGoTrainingHistory: () -> Unit = {},
     onGoMatches: () -> Unit = {},
     onGoPlayers: () -> Unit = {},
     onGoStats: () -> Unit = {},
@@ -156,6 +157,7 @@ fun DashboardScreen(
                 danger = danger,
                 onText = onBg,
                 onGoTraining = onGoTraining,
+                onGoTrainingHistory = onGoTrainingHistory,
                 onGoMatches = onGoMatches,
                 onGoPlayers = onGoPlayers
             )
@@ -260,8 +262,15 @@ private fun ObjectiveCard(
     onText: Color,
     onClick: () -> Unit
 ) {
-    val remaining = (12 - summary.doneTrainings).coerceAtLeast(0)
-    val objectiveText = if (remaining == 0) "Objetivo completado" else "Completar $remaining sesiones"
+    val pendingCount = (summary.totalTrainings - summary.doneTrainings).coerceAtLeast(0)
+    val overdueCount = summary.overdueTrainings.size
+
+    val objectiveText = when {
+        summary.totalTrainings == 0 -> "No hay objetivos definidos"
+        overdueCount > 0 -> "Cerrar $overdueCount entrenos atrasado${if (overdueCount == 1) "" else "s"}"
+        pendingCount > 0 -> "Completar $pendingCount entrenos pendiente${if (pendingCount == 1) "" else "s"}"
+        else -> "Planificar próxima sesión"
+    }
 
     Surface(
         modifier = Modifier
@@ -438,6 +447,7 @@ private fun StatsGrid(
     danger: Color,
     onText: Color,
     onGoTraining: () -> Unit,
+    onGoTrainingHistory: () -> Unit,
     onGoMatches: () -> Unit,
     onGoPlayers: () -> Unit
 ) {
@@ -451,7 +461,7 @@ private fun StatsGrid(
                 icon = Icons.Default.CheckCircle,
                 color = accent,
                 onText = onText,
-                onClick = onGoTraining
+                onClick = onGoTrainingHistory
             )
             SummaryCard(
                 modifier = Modifier.weight(1f),

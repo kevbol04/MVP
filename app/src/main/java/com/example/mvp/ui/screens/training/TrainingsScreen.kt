@@ -71,11 +71,20 @@ private enum class TrainingTab(val label: String) {
     CALENDAR("Calendario")
 }
 
+private fun String.toTrainingTab(): TrainingTab {
+    return when (lowercase()) {
+        "history", "historial" -> TrainingTab.HISTORY
+        "calendar", "calendario" -> TrainingTab.CALENDAR
+        else -> TrainingTab.PENDING
+    }
+}
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TrainingsScreen(
     modifier: Modifier = Modifier,
     trainings: List<Training> = emptyList(),
+    initialTab: String = "pending",
     onBack: () -> Unit = {},
     onCreateTraining: () -> Unit = {},
     onEditTraining: (Training) -> Unit = {},
@@ -95,7 +104,7 @@ fun TrainingsScreen(
     val danger = MaterialTheme.colorScheme.error
 
     var query by remember { mutableStateOf("") }
-    var selectedTab by remember { mutableStateOf(TrainingTab.PENDING) }
+    var selectedTab by remember(initialTab) { mutableStateOf(initialTab.toTrainingTab()) }
     var selectedMonth by remember { mutableStateOf(YearMonth.now()) }
     var toDelete by remember { mutableStateOf<Training?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -703,11 +712,21 @@ private fun TrainingCalendar(
             )
 
             if (selectedDate != null) {
-                Text(
-                    text = "Entrenamientos del ${selectedDate!!.format(dayFormatter)}",
-                    color = onText,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Entrenamientos del ${selectedDate!!.format(dayFormatter)}",
+                        color = onText,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    TextButton(onClick = { selectedDate = null }) {
+                        Text("Ver todos", color = accent)
+                    }
+                }
 
                 if (selectedDayTrainings.isEmpty()) {
                     Text(
@@ -831,7 +850,7 @@ private fun CalendarGrid(
     month: YearMonth,
     trainingsByDate: Map<LocalDate?, List<Training>>,
     selectedDate: LocalDate?,
-    onSelectDate: (LocalDate) -> Unit,
+    onSelectDate: (LocalDate?) -> Unit,
     accent: Color,
     accent2: Color,
     danger: Color,
@@ -870,7 +889,7 @@ private fun CalendarGrid(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(42.dp)
-                                .clickable { onSelectDate(date) },
+                                .clickable { onSelectDate(if (isSelected) null else date) },
                             shape = RoundedCornerShape(12.dp),
                             color = when {
                                 isSelected -> dayAccent.copy(alpha = 0.34f)
@@ -935,41 +954,19 @@ private fun List<Training>.filterByQuery(query: String): List<Training> {
 @RequiresApi(Build.VERSION_CODES.O)
 private fun List<Training>.sortedPendingSmart(): List<Training> {
     val today = LocalDate.now()
-
-    return sortedWith { a, b ->
-        val dateA = parseTrainingDate(a.dateText)
-        val dateB = parseTrainingDate(b.dateText)
-
-        val groupA = pendingSortGroup(dateA, today)
-        val groupB = pendingSortGroup(dateB, today)
-
-        if (groupA != groupB) {
-            return@sortedWith groupA.compareTo(groupB)
-        }
-
-        val dateCompare = when (groupA) {
-            0 -> compareValues(dateB ?: LocalDate.MIN, dateA ?: LocalDate.MIN) // Atrasados: más reciente primero
-            1 -> compareValues(a.name.lowercase(Locale.getDefault()), b.name.lowercase(Locale.getDefault())) // Hoy
-            2 -> compareValues(dateA ?: LocalDate.MAX, dateB ?: LocalDate.MAX) // Próximos: más cercano primero
-            else -> compareValues(a.name.lowercase(Locale.getDefault()), b.name.lowercase(Locale.getDefault()))
-        }
-
-        if (dateCompare != 0) {
-            dateCompare
-        } else {
-            b.id.compareTo(a.id)
-        }
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-private fun pendingSortGroup(date: LocalDate?, today: LocalDate): Int {
-    return when {
-        date == null -> 3
-        date.isBefore(today) -> 0
-        date.isEqual(today) -> 1
-        else -> 2
-    }
+    return sortedWith(
+        compareBy<Training> { training ->
+            val date = parseTrainingDate(training.dateText)
+            when {
+                date == null -> 3
+                date.isBefore(today) -> 0
+                date.isEqual(today) -> 1
+                else -> 2
+            }
+        }.thenBy { parseTrainingDate(it.dateText) }
+            .thenBy { it.name.lowercase(Locale.getDefault()) }
+            .thenBy { it.id }
+    )
 }
 
 @RequiresApi(Build.VERSION_CODES.O)

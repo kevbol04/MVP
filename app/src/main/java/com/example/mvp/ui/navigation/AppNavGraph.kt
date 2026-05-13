@@ -19,7 +19,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -58,7 +57,6 @@ fun AppNavGraph(
     startDestination: String = Route.Auth.route
 ) {
     val navController = rememberNavController()
-    val context = LocalContext.current
 
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarScope = rememberCoroutineScope()
@@ -71,14 +69,6 @@ fun AppNavGraph(
                 duration = SnackbarDuration.Short
             )
         }
-    }
-
-    fun clearUserLocalPreferences(userId: Long) {
-        context
-            .getSharedPreferences("profootball_lineup", 0)
-            .edit()
-            .remove("selected_formation_$userId")
-            .apply()
     }
 
     val sessionViewModel: SessionViewModel = hiltViewModel()
@@ -153,7 +143,6 @@ fun AppNavGraph(
 
             // ---------------- DASHBOARD ----------------
             composable(Route.Dashboard.route) {
-
                 val playersVm: PlayersViewModel = hiltViewModel()
                 val matchesVm: MatchesViewModel = hiltViewModel()
                 val trainingsVm: TrainingsViewModel = hiltViewModel()
@@ -177,6 +166,9 @@ fun AppNavGraph(
                     onGoTraining = {
                         navController.navigateToTab(Route.Trainings.route)
                     },
+                    onGoTrainingHistory = {
+                        navController.navigateToTab(Route.TrainingsHistory.route)
+                    },
                     onGoMatches = {
                         navController.navigateToTab(Route.Matches.route)
                     },
@@ -189,6 +181,7 @@ fun AppNavGraph(
                     onGoSettings = {
                         navController.navigate(Route.Settings.route)
                     },
+
                     onCreateTraining = {
                         navController.navigate(Route.TrainingForm.route)
                     },
@@ -270,8 +263,6 @@ fun AppNavGraph(
                         showSnackbar("Perfil actualizado correctamente")
                     },
                     onDeleteAccount = {
-                        clearUserLocalPreferences(currentUserId)
-
                         currentUserId = 0L
                         currentUsername = "Usuario"
                         currentEmail = ""
@@ -336,7 +327,66 @@ fun AppNavGraph(
                     },
                     onToggleDone = { training ->
                         vm.toggleDone(training)
-                        showSnackbar(if (training.isDone) "Entrenamiento marcado como pendiente" else "Entrenamiento marcado como hecho")
+                        showSnackbar(
+                            if (training.isDone) {
+                                "Entrenamiento marcado como pendiente"
+                            } else {
+                                "Entrenamiento marcado como hecho"
+                            }
+                        )
+                    },
+
+                    onGoDashboard = {
+                        navController.navigateToTab(Route.Dashboard.route)
+                    },
+                    onGoMatches = {
+                        navController.navigateToTab(Route.Matches.route)
+                    },
+                    onGoPlayers = {
+                        navController.navigateToTab(Route.Players.route)
+                    },
+                    onGoStats = {
+                        navController.navigateToTab(Route.Stats.route)
+                    }
+                )
+            }
+
+            composable(Route.TrainingsHistory.route) {
+                val vm: TrainingsViewModel = hiltViewModel()
+
+                LaunchedEffect(currentUserId) {
+                    vm.setUser(currentUserId)
+                }
+
+                val trainings by vm.trainings.collectAsState()
+
+                TrainingsScreen(
+                    trainings = trainings,
+                    initialTab = "history",
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onCreateTraining = {
+                        navController.navigate(Route.TrainingForm.route)
+                    },
+                    onEditTraining = { training ->
+                        navController.navigate(
+                            Route.TrainingFormWithId.createRoute(training.id)
+                        )
+                    },
+                    onDeleteTraining = { training ->
+                        vm.delete(training)
+                        showSnackbar("Entrenamiento eliminado")
+                    },
+                    onToggleDone = { training ->
+                        vm.toggleDone(training)
+                        showSnackbar(
+                            if (training.isDone) {
+                                "Entrenamiento marcado como pendiente"
+                            } else {
+                                "Entrenamiento marcado como hecho"
+                            }
+                        )
                     },
 
                     onGoDashboard = {
@@ -491,7 +541,6 @@ fun AppNavGraph(
                 )
             }
 
-            // ---------------- MATCH DETAIL ----------------
             composable(Route.MatchDetail.route) { backStackEntry ->
                 val vm: MatchesViewModel = hiltViewModel()
 
