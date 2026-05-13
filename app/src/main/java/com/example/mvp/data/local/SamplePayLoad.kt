@@ -58,7 +58,7 @@ object SamplePayLoad {
                 age = 31,
                 number = dorsal++,
                 rating = 89,
-                status = PlayerStatus.TITULAR.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
             PlayerEntity(
                 userId = userId,
@@ -67,7 +67,7 @@ object SamplePayLoad {
                 age = 32,
                 number = dorsal++,
                 rating = 84,
-                status = PlayerStatus.TITULAR.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
             PlayerEntity(
                 userId = userId,
@@ -76,7 +76,7 @@ object SamplePayLoad {
                 age = 31,
                 number = dorsal++,
                 rating = 86,
-                status = PlayerStatus.TITULAR.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
             PlayerEntity(
                 userId = userId,
@@ -85,7 +85,7 @@ object SamplePayLoad {
                 age = 32,
                 number = dorsal++,
                 rating = 85,
-                status = PlayerStatus.TITULAR.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
             PlayerEntity(
                 userId = userId,
@@ -94,7 +94,7 @@ object SamplePayLoad {
                 age = 28,
                 number = dorsal++,
                 rating = 83,
-                status = PlayerStatus.TITULAR.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
             PlayerEntity(
                 userId = userId,
@@ -103,7 +103,7 @@ object SamplePayLoad {
                 age = 38,
                 number = dorsal++,
                 rating = 87,
-                status = PlayerStatus.TITULAR.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
             PlayerEntity(
                 userId = userId,
@@ -112,7 +112,7 @@ object SamplePayLoad {
                 age = 21,
                 number = dorsal++,
                 rating = 88,
-                status = PlayerStatus.TITULAR.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
             PlayerEntity(
                 userId = userId,
@@ -121,7 +121,7 @@ object SamplePayLoad {
                 age = 24,
                 number = dorsal++,
                 rating = 90,
-                status = PlayerStatus.TITULAR.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
 
             PlayerEntity(
@@ -131,7 +131,7 @@ object SamplePayLoad {
                 age = 25,
                 number = dorsal++,
                 rating = 78,
-                status = PlayerStatus.SUPLENTE.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
             PlayerEntity(
                 userId = userId,
@@ -140,7 +140,7 @@ object SamplePayLoad {
                 age = 34,
                 number = dorsal++,
                 rating = 80,
-                status = PlayerStatus.SUPLENTE.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
             PlayerEntity(
                 userId = userId,
@@ -149,7 +149,7 @@ object SamplePayLoad {
                 age = 26,
                 number = dorsal++,
                 rating = 86,
-                status = PlayerStatus.SUPLENTE.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
             PlayerEntity(
                 userId = userId,
@@ -158,7 +158,7 @@ object SamplePayLoad {
                 age = 24,
                 number = dorsal++,
                 rating = 84,
-                status = PlayerStatus.SUPLENTE.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
             PlayerEntity(
                 userId = userId,
@@ -167,7 +167,7 @@ object SamplePayLoad {
                 age = 23,
                 number = dorsal++,
                 rating = 85,
-                status = PlayerStatus.SUPLENTE.name
+                status = PlayerStatus.DISPONIBLE.name
             ),
 
             PlayerEntity(

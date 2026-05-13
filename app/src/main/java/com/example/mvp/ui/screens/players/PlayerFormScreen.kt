@@ -43,7 +43,7 @@ fun PlayerFormScreen(
     var number by remember { mutableIntStateOf(initial?.number ?: 10) }
     var position by remember { mutableStateOf(initial?.position ?: PlayerPosition.MED) }
     var rating by remember { mutableFloatStateOf((initial?.rating ?: 78).toFloat()) }
-    var status by remember { mutableStateOf(if (initial?.status == PlayerStatus.LESIONADO) PlayerStatus.LESIONADO else PlayerStatus.SUPLENTE) }
+    var status by remember { mutableStateOf(if (initial?.status == PlayerStatus.LESIONADO) PlayerStatus.LESIONADO else PlayerStatus.DISPONIBLE) }
 
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -84,7 +84,7 @@ fun PlayerFormScreen(
         val initNumber = initial?.number ?: 10
         val initPos = initial?.position ?: PlayerPosition.MED
         val initRating = (initial?.rating ?: 78).toFloat()
-        val initStatus = if (initial?.status == PlayerStatus.LESIONADO) PlayerStatus.LESIONADO else PlayerStatus.SUPLENTE
+        val initStatus = if (initial?.status == PlayerStatus.LESIONADO) PlayerStatus.LESIONADO else PlayerStatus.DISPONIBLE
 
         name != initName ||
                 ageText != initAge ||
@@ -391,7 +391,7 @@ fun PlayerFormScreen(
                             fontWeight = FontWeight.SemiBold
                         )
 
-                        val availabilityOptions = listOf(PlayerStatus.SUPLENTE, PlayerStatus.LESIONADO)
+                        val availabilityOptions = listOf(PlayerStatus.DISPONIBLE, PlayerStatus.LESIONADO)
 
                         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                             availabilityOptions.forEachIndexed { index, s ->
@@ -399,7 +399,7 @@ fun PlayerFormScreen(
                                     selected = status == s,
                                     onClick = { status = s },
                                     shape = SegmentedButtonDefaults.itemShape(index, availabilityOptions.size)
-                                ) { Text(if (s == PlayerStatus.SUPLENTE) "Disponible" else s.label) }
+                                ) { Text(s.label) }
                             }
                         }
 

@@ -41,7 +41,11 @@ fun PlayerDetailScreen(
         "Disponible"
     }
 
-    val lineupLabel = player.lineupSlot?.let { "En once" } ?: "Fuera del once"
+    val lineupLabel = when {
+        player.lineupSlot?.startsWith("BENCH_") == true -> "En banquillo"
+        player.lineupSlot != null -> "En once"
+        else -> "No convocado"
+    }
 
     val (statusBg, statusFg) = when (player.status) {
         PlayerStatus.LESIONADO -> Loss.copy(alpha = 0.16f) to Loss

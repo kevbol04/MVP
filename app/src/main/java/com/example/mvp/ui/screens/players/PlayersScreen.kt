@@ -49,8 +49,7 @@ enum class PlayerPosition(val short: String, val label: String) {
 }
 
 enum class PlayerStatus(val label: String) {
-    TITULAR("Disponible"),
-    SUPLENTE("Disponible"),
+    DISPONIBLE("Disponible"),
     LESIONADO("Lesionado")
 }
 
@@ -196,8 +195,8 @@ fun PlayersScreen(
             return
         }
 
-        onSavePlayer(selected.copy(lineupSlot = targetSlot, status = PlayerStatus.SUPLENTE))
-        onSavePlayer(player.copy(lineupSlot = selectedSlot, status = PlayerStatus.SUPLENTE))
+        onSavePlayer(selected.copy(lineupSlot = targetSlot, status = PlayerStatus.DISPONIBLE))
+        onSavePlayer(player.copy(lineupSlot = selectedSlot, status = PlayerStatus.DISPONIBLE))
         selectedForSwap = null
     }
 
@@ -206,7 +205,7 @@ fun PlayersScreen(
 
         if (!canMoveToLineupSlot(selected, slot)) return
 
-        onSavePlayer(selected.copy(lineupSlot = slot.id, status = PlayerStatus.SUPLENTE))
+        onSavePlayer(selected.copy(lineupSlot = slot.id, status = PlayerStatus.DISPONIBLE))
         selectedForSwap = null
     }
 
@@ -237,8 +236,8 @@ fun PlayersScreen(
             return
         }
 
-        onSavePlayer(selected.copy(lineupSlot = benchTargetSlot, status = PlayerStatus.SUPLENTE))
-        onSavePlayer(player.copy(lineupSlot = selectedSlot, status = PlayerStatus.SUPLENTE))
+        onSavePlayer(selected.copy(lineupSlot = benchTargetSlot, status = PlayerStatus.DISPONIBLE))
+        onSavePlayer(player.copy(lineupSlot = selectedSlot, status = PlayerStatus.DISPONIBLE))
         selectedForSwap = null
     }
 
@@ -250,7 +249,7 @@ fun PlayersScreen(
             return
         }
 
-        onSavePlayer(selected.copy(lineupSlot = slotId, status = PlayerStatus.SUPLENTE))
+        onSavePlayer(selected.copy(lineupSlot = slotId, status = PlayerStatus.DISPONIBLE))
         selectedForSwap = null
     }
 

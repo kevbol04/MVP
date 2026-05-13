@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.SportsSoccer
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -158,15 +157,6 @@ fun StatsScreen(
         ?.key
 
     val totalRecords = totalPlayers + totalMatches + totalTrainingRecords
-    val globalScore = calculateGlobalScore(
-        hasData = totalRecords > 0,
-        winRate = winRate,
-        completionRate = completionRate,
-        availabilityRate = availabilityRate,
-        hasMatches = totalMatches > 0,
-        hasTrainings = totalTrainingRecords > 0,
-        hasPlayers = totalPlayers > 0
-    )
 
     val recentMatches = matches
         .sortedByDescending { parseDateOrNull(it.dateText) ?: LocalDate.MIN }
@@ -1095,65 +1085,6 @@ private fun HeroInfoChip(
 }
 
 @Composable
-private fun PerformanceScoreRing(
-    text: String,
-    subtitle: String,
-    progress: Float,
-    accent: Color,
-    accent2: Color,
-    onText: Color
-) {
-    Box(
-        modifier = Modifier.size(112.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            progress = { progress.coerceIn(0f, 1f) },
-            modifier = Modifier.fillMaxSize(),
-            color = accent,
-            trackColor = GlassBase.copy(alpha = 0.10f),
-            strokeWidth = 10.dp
-        )
-
-        Surface(
-            modifier = Modifier.size(86.dp),
-            shape = CircleShape,
-            color = Color.Transparent
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.radialGradient(
-                            listOf(
-                                accent.copy(alpha = 0.28f),
-                                accent2.copy(alpha = 0.18f),
-                                GlassBase.copy(alpha = 0.10f)
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = text,
-                        color = onText,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Text(
-                        text = subtitle,
-                        color = onText.copy(alpha = 0.62f),
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun ResultPill(
     modifier: Modifier = Modifier,
     title: String,
@@ -1514,37 +1445,6 @@ private fun parseDateOrNull(dateText: String): LocalDate? {
     }
 }
 
-private fun calculateGlobalScore(
-    hasData: Boolean,
-    winRate: Float,
-    completionRate: Float,
-    availabilityRate: Float,
-    hasMatches: Boolean,
-    hasTrainings: Boolean,
-    hasPlayers: Boolean
-): Int {
-    if (!hasData) return 0
-
-    var score = 0f
-    var weight = 0f
-
-    if (hasMatches) {
-        score += winRate.coerceIn(0f, 1f) * 45f
-        weight += 45f
-    }
-
-    if (hasTrainings) {
-        score += completionRate.coerceIn(0f, 1f) * 35f
-        weight += 35f
-    }
-
-    if (hasPlayers) {
-        score += availabilityRate.coerceIn(0f, 1f) * 20f
-        weight += 20f
-    }
-
-    return if (weight == 0f) 0 else ((score / weight) * 100f).roundToInt().coerceIn(0, 100)
-}
 
 private fun formatDecimal(value: Double): String {
     return String.format(Locale.getDefault(), "%.1f", value)
