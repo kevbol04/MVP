@@ -503,7 +503,7 @@ private fun validatePlayerName(raw: String): String? {
     if (name.length < 3) return "El nombre debe tener al menos 3 caracteres."
     if (name.length > 40) return "El nombre no puede superar 40 caracteres."
     if (name.contains(Regex("""\s{2,}"""))) return "Evita espacios dobles."
-    if (!Regex("""^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$""").matches(name)) {
+    if (!Regex("""^[\p{L}' -]+$""").matches(name)) {
         return "Solo letras y espacios (se permite ' y -)."
     }
     return null

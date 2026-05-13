@@ -53,7 +53,7 @@ object SamplePayLoad {
 
         // Defensas
         player(userId, "Dani Carvajal", PlayerPosition.DEF, 34, 2, 84),
-        player(userId, "Éder Militão", PlayerPosition.DEF, 28, 3, 86),
+        player(userId, "Éder Militão", PlayerPosition.DEF, 28, 3, 86, PlayerStatus.LESIONADO),
         player(userId, "David Alaba", PlayerPosition.DEF, 33, 4, 85, PlayerStatus.LESIONADO),
         player(userId, "Trent Alexander-Arnold", PlayerPosition.DEF, 27, 12, 87),
         player(userId, "Raúl Asencio", PlayerPosition.DEF, 23, 17, 81),
@@ -71,10 +71,10 @@ object SamplePayLoad {
         player(userId, "Federico Valverde", PlayerPosition.MED, 27, 8, 86),
         player(userId, "Aurélien Tchouaméni", PlayerPosition.MED, 26, 14, 84),
         player(userId, "Arda Güler", PlayerPosition.MED, 21, 15, 82),
-        player(userId, "Dan", PlayerPosition.MED, 29, 19, 80),
+        player(userId, "Dani Ceballos", PlayerPosition.MED, 29, 19, 80, PlayerStatus.LESIONADO),
         player(userId, "Brahim Díaz", PlayerPosition.MED, 26, 21, 82),
         player(userId, "Thiago Pitarch", PlayerPosition.MED, 19, 28, 70),
-        player(userId, "Jaime Cestero", PlayerPosition.MED, 18, 27, 68),
+        player(userId, "Jaime Cestero", PlayerPosition.MED, 18, 27, 68, PlayerStatus.LESIONADO),
 
         // Delanteros
         player(userId, "Vinícius Jr.", PlayerPosition.DEL, 25, 7, 90),
@@ -82,7 +82,7 @@ object SamplePayLoad {
         player(userId, "Rodrygo Goes", PlayerPosition.DEL, 25, 11, 85),
         player(userId, "Gonzalo García", PlayerPosition.DEL, 22, 16, 76),
         player(userId, "Endrick", PlayerPosition.DEL, 19, 9, 79),
-        player(userId, "Franco Mastantuono", PlayerPosition.DEL, 18, 30, 78)
+        player(userId, "Franco Mastantuono", PlayerPosition.DEL, 18, 30, 78, PlayerStatus.LESIONADO)
     )
 
     private fun player(
