@@ -1,7 +1,5 @@
 package com.example.mvp.ui.screens.training
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,7 +26,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
 import java.util.Locale
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrainingFormScreen(
@@ -538,7 +535,6 @@ private fun normalizeTrainingName(raw: String): String {
         .lowercase(Locale.getDefault())
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun validateDateStrict(raw: String): String? {
     val txt = raw.trim()
     if (txt.isBlank()) return "La fecha es obligatoria."
@@ -553,7 +549,6 @@ private fun validateDateStrict(raw: String): String? {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun parseDateOrNull(raw: String): LocalDate? {
     return try {
         val formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu")

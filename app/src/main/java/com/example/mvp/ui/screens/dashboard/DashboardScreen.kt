@@ -1,7 +1,5 @@
 package com.example.mvp.ui.screens.dashboard
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,15 +19,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Timeline
-import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,7 +56,6 @@ import com.example.mvp.ui.theme.Win
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun DashboardScreen(
     modifier: Modifier = Modifier,
@@ -425,7 +419,6 @@ private fun SectionTitle(title: String, onText: Color) {
     )
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun RecentActivityPanel(
     summary: DashboardSummary,
@@ -638,7 +631,6 @@ private data class DashboardSummary(
     }
 
     companion object {
-        @RequiresApi(Build.VERSION_CODES.O)
         fun from(
             trainings: List<Training>,
             matches: List<Match>,
@@ -681,7 +673,6 @@ private data class DashboardSummary(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun Training.parsedDate(): LocalDate? {
     return try {
         LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
@@ -690,13 +681,11 @@ private fun Training.parsedDate(): LocalDate? {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun Training.isOverdue(today: LocalDate = LocalDate.now()): Boolean {
     val date = parsedDate() ?: return false
     return !isDone && date.isBefore(today)
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun Training.dashboardStatus(): String {
     return when {
         isDone -> "Hecho"

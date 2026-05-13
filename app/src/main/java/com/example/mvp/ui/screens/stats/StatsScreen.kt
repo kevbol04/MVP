@@ -1,7 +1,5 @@
 package com.example.mvp.ui.screens.stats
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,11 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -76,7 +68,6 @@ private enum class StatsSection(val label: String) {
     PLAYERS("Plantilla")
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun StatsScreen(
     players: List<Player>,
@@ -802,7 +793,6 @@ private fun TrainingStatsSection(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun MatchStatsSection(
     totalMatches: Int,
@@ -1426,7 +1416,6 @@ private fun resultColor(result: MatchResult): Color {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun Training.isOverdue(): Boolean {
     return try {
         val date = LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
@@ -1436,7 +1425,6 @@ private fun Training.isOverdue(): Boolean {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun parseDateOrNull(dateText: String): LocalDate? {
     return try {
         LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))

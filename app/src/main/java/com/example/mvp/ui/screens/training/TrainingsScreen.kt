@@ -1,7 +1,5 @@
 package com.example.mvp.ui.screens.training
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -14,17 +12,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -46,7 +41,6 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.launch
-
 
 enum class TrainingType(val label: String) {
     FUERZA("Fuerza"),
@@ -79,7 +73,6 @@ private fun String.toTrainingTab(): TrainingTab {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TrainingsScreen(
     modifier: Modifier = Modifier,
@@ -402,7 +395,6 @@ private fun SummaryChip(label: String, value: String, accent: Color, onBg: Color
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun TrainingList(
     trainings: List<Training>,
@@ -443,7 +435,6 @@ private fun TrainingList(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun TrainingRow(
     training: Training,
@@ -629,7 +620,6 @@ private fun StatusPill(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun TrainingCalendar(
     month: YearMonth,
@@ -817,7 +807,6 @@ private fun LegendItem(label: String, color: Color, onText: Color) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun CalendarTrainingLine(
     training: Training,
@@ -844,7 +833,6 @@ private fun CalendarTrainingLine(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun CalendarGrid(
     month: YearMonth,
@@ -919,7 +907,6 @@ private fun CalendarGrid(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun Training.statusLabel(): String {
     return when {
         isDone -> "Hecho"
@@ -928,7 +915,6 @@ private fun Training.statusLabel(): String {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun trainingStatusColor(
     training: Training,
     accent: Color,
@@ -951,7 +937,6 @@ private fun List<Training>.filterByQuery(query: String): List<Training> {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun List<Training>.sortedPendingSmart(): List<Training> {
     val today = LocalDate.now()
     return sortedWith(
@@ -969,7 +954,6 @@ private fun List<Training>.sortedPendingSmart(): List<Training> {
     )
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun List<Training>.sortedByDate(desc: Boolean = false): List<Training> {
     return if (desc) {
         sortedWith(compareByDescending<Training> { parseTrainingDate(it.dateText) }.thenByDescending { it.id })
@@ -978,20 +962,17 @@ private fun List<Training>.sortedByDate(desc: Boolean = false): List<Training> {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun Training.isOverdue(): Boolean {
     val date = parseTrainingDate(dateText) ?: return false
     return !isDone && date.isBefore(LocalDate.now())
 }
 
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun Training.isFuturePending(): Boolean {
     val date = parseTrainingDate(dateText) ?: return false
     return !isDone && date.isAfter(LocalDate.now())
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun parseTrainingDate(text: String): LocalDate? {
     return try {
         LocalDate.parse(text, DateTimeFormatter.ofPattern("dd/MM/uuuu"))

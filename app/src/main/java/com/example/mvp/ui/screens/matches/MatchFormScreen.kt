@@ -1,7 +1,5 @@
 package com.example.mvp.ui.screens.matches
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -30,7 +28,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MatchFormScreen(
@@ -523,7 +520,6 @@ private fun validateMatchRival(raw: String): String? {
     return null
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun validateDateStrict(raw: String): String? {
     val txt = raw.trim()
     if (txt.isBlank()) return "La fecha es obligatoria."
