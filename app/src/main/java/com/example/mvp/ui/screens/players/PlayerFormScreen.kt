@@ -421,7 +421,9 @@ fun PlayerFormScreen(
                                         status = status,
                                         lineupSlot = when {
                                             status == PlayerStatus.LESIONADO -> null
-                                            initial?.position != null && initial.position != position -> null
+                                            initial?.lineupSlot != null &&
+                                                    !initial.lineupSlot.startsWith("BENCH_") &&
+                                                    initial.position != position -> null
                                             else -> initial?.lineupSlot
                                         }
                                     )

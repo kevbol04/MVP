@@ -19,6 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -57,6 +58,7 @@ fun AppNavGraph(
     startDestination: String = Route.Auth.route
 ) {
     val navController = rememberNavController()
+    val context = LocalContext.current
 
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarScope = rememberCoroutineScope()
@@ -69,6 +71,14 @@ fun AppNavGraph(
                 duration = SnackbarDuration.Short
             )
         }
+    }
+
+    fun clearUserLocalPreferences(userId: Long) {
+        context
+            .getSharedPreferences("profootball_lineup", 0)
+            .edit()
+            .remove("selected_formation_$userId")
+            .apply()
     }
 
     val sessionViewModel: SessionViewModel = hiltViewModel()
@@ -231,7 +241,7 @@ fun AppNavGraph(
                         sessionViewModel.clearSession()
 
                         navController.navigate(Route.Auth.route) {
-                            popUpTo(Route.Dashboard.route) {
+                            popUpTo(0) {
                                 inclusive = true
                             }
                         }
@@ -260,6 +270,8 @@ fun AppNavGraph(
                         showSnackbar("Perfil actualizado correctamente")
                     },
                     onDeleteAccount = {
+                        clearUserLocalPreferences(currentUserId)
+
                         currentUserId = 0L
                         currentUsername = "Usuario"
                         currentEmail = ""
@@ -378,7 +390,24 @@ fun AppNavGraph(
                     ?.getString(Route.TrainingFormWithId.ARG_ID)
                     ?.toIntOrNull()
 
+                if (id == null) {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack()
+                    }
+                    return@composable
+                }
+
                 val current = trainings.firstOrNull { it.id == id }
+
+                if (current == null) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                    return@composable
+                }
 
                 TrainingFormScreen(
                     initial = current,
@@ -561,6 +590,7 @@ fun AppNavGraph(
 
                 PlayersScreen(
                     players = players,
+                    userId = currentUserId,
                     onBack = {
                         navController.popBackStack()
                     },

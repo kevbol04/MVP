@@ -14,9 +14,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -38,7 +41,6 @@ import com.example.mvp.ui.components.ProFootballBottomBar
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
 import com.example.mvp.ui.theme.Loss
-import kotlinx.coroutines.launch
 import kotlin.math.min
 
 enum class PlayerPosition(val short: String, val label: String) {
@@ -78,12 +80,30 @@ private data class LineupSlot(
     val label: String
 )
 
-private val lineupRules = listOf(
-    LineupRule(PlayerPosition.DEL, "DEL", 2),
-    LineupRule(PlayerPosition.MED, "MED", 4),
-    LineupRule(PlayerPosition.DEF, "DEF", 4),
-    LineupRule(PlayerPosition.POR, "POR", 1)
+private data class TacticalFormation(
+    val id: String,
+    val label: String,
+    val defenders: Int,
+    val midfielders: Int,
+    val forwards: Int
+) {
+    fun rules(): List<LineupRule> = listOf(
+        LineupRule(PlayerPosition.DEL, "DEL", forwards),
+        LineupRule(PlayerPosition.MED, "MED", midfielders),
+        LineupRule(PlayerPosition.DEF, "DEF", defenders),
+        LineupRule(PlayerPosition.POR, "POR", 1)
+    )
+}
+
+private val availableFormations = listOf(
+    TacticalFormation(id = "442", label = "4-4-2", defenders = 4, midfielders = 4, forwards = 2),
+    TacticalFormation(id = "433", label = "4-3-3", defenders = 4, midfielders = 3, forwards = 3),
+    TacticalFormation(id = "343", label = "3-4-3", defenders = 3, midfielders = 4, forwards = 3),
+    TacticalFormation(id = "424", label = "4-2-4", defenders = 4, midfielders = 2, forwards = 4)
 )
+
+private fun formationById(id: String?): TacticalFormation =
+    availableFormations.firstOrNull { it.id == id } ?: availableFormations.first()
 
 private fun slotId(position: PlayerPosition, index: Int): String = "${position.name}_${index + 1}"
 
@@ -124,6 +144,7 @@ private val ShirtShape = GenericShape { size, _ ->
 fun PlayersScreen(
     modifier: Modifier = Modifier,
     players: List<Player> = emptyList(),
+    userId: Long = 0,
     onBack: () -> Unit = {},
     onCreatePlayer: () -> Unit = {},
     onEditPlayer: (Player) -> Unit = {},
@@ -148,11 +169,47 @@ fun PlayersScreen(
     var pendingDelete by remember { mutableStateOf<Player?>(null) }
     var selectedForSwap by remember { mutableStateOf<Player?>(null) }
 
+    val context = LocalContext.current
+    val lineupPrefs = remember(context) {
+        context.getSharedPreferences("profootball_lineup", 0)
+    }
+    val formationPreferenceKey = remember(userId) {
+        "selected_formation_$userId"
+    }
+    var selectedFormationId by remember(formationPreferenceKey) {
+        mutableStateOf(
+            lineupPrefs.getString(
+                formationPreferenceKey,
+                availableFormations.first().id
+            ) ?: availableFormations.first().id
+        )
+    }
+    val selectedFormation = remember(selectedFormationId) {
+        formationById(selectedFormationId)
+    }
+
+    var showFormationSheet by remember { mutableStateOf(false) }
+    var pendingFormation by remember { mutableStateOf<TacticalFormation?>(null) }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     fun showMessage(message: String) {
         // Mensajes visuales desactivados para que la gestión del once no moleste.
+    }
+
+    fun changeFormation(formation: TacticalFormation) {
+        if (formation.id == selectedFormationId) return
+
+        players
+            .filter { it.lineupSlot != null }
+            .forEach { player ->
+                onSavePlayer(player.copy(lineupSlot = null, status = PlayerStatus.DISPONIBLE))
+            }
+
+        selectedForSwap = null
+        selectedFormationId = formation.id
+        lineupPrefs.edit().putString(formationPreferenceKey, formation.id).apply()
     }
 
     fun canMoveToLineupSlot(player: Player, slot: LineupSlot): Boolean {
@@ -353,11 +410,15 @@ fun PlayersScreen(
                     PlayersTab.Lineup -> {
                         LineupContent(
                             players = players,
+                            selectedFormation = selectedFormation,
                             selectedForSwap = selectedForSwap,
                             accent = accent,
                             accent2 = accent2,
                             onText = onBg,
                             danger = danger,
+                            onFormationSelectorClick = {
+                                showFormationSheet = true
+                            },
                             onPlayerClick = { handleLineupClick(it) },
                             onEmptySlotClick = { handleEmptySlotClick(it) },
                             onBenchPlayerClick = { handleBenchPlayerClick(it) },
@@ -389,6 +450,74 @@ fun PlayersScreen(
                     .padding(horizontal = 18.dp, vertical = 12.dp)
             )
         }
+    }
+
+    if (showFormationSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showFormationSheet = false },
+            containerColor = Color.Transparent,
+            dragHandle = null
+        ) {
+            FormationPickerSheet(
+                selectedFormation = selectedFormation,
+                accent = accent,
+                accent2 = accent2,
+                onText = onBg,
+                onDismiss = { showFormationSheet = false },
+                onFormationClick = { formation ->
+                    if (formation.id == selectedFormationId) {
+                        showFormationSheet = false
+                    } else {
+                        pendingFormation = formation
+                        showFormationSheet = false
+                    }
+                }
+            )
+        }
+    }
+
+    pendingFormation?.let { formation ->
+        AlertDialog(
+            onDismissRequest = { pendingFormation = null },
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+            tonalElevation = 8.dp,
+            shape = RoundedCornerShape(24.dp),
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            title = {
+                Text(
+                    text = "Cambiar a ${formation.label}",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Al cambiar de formación se vaciarán el once y el banquillo. Los jugadores volverán a No convocados."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        changeFormation(formation)
+                        pendingFormation = null
+                    }
+                ) {
+                    Text(
+                        text = "Cambiar",
+                        color = accent,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingFormation = null }) {
+                    Text(
+                        text = "Cancelar",
+                        color = onBg.copy(alpha = 0.76f)
+                    )
+                }
+            }
+        )
     }
 
     if (pendingDelete != null) {
@@ -647,11 +776,13 @@ private fun SquadContent(
 @Composable
 private fun LineupContent(
     players: List<Player>,
+    selectedFormation: TacticalFormation,
     selectedForSwap: Player?,
     accent: Color,
     accent2: Color,
     onText: Color,
     danger: Color,
+    onFormationSelectorClick: () -> Unit,
     onPlayerClick: (Player) -> Unit,
     onEmptySlotClick: (LineupSlot) -> Unit,
     onBenchPlayerClick: (Player) -> Unit,
@@ -681,7 +812,18 @@ private fun LineupContent(
 
     LazyColumn(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
+            FormationSelectorRow(
+                selectedFormation = selectedFormation,
+                accent = accent,
+                accent2 = accent2,
+                onText = onText,
+                onClick = onFormationSelectorClick
+            )
+        }
+
+        item {
             PitchBoard(
+                formation = selectedFormation,
                 starters = starters,
                 selectedForSwap = selectedForSwap,
                 accent = accent,
@@ -754,7 +896,206 @@ private fun LineupContent(
 }
 
 @Composable
+private fun FormationSelectorRow(
+    selectedFormation: TacticalFormation,
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(22.dp),
+        color = GlassBase.copy(alpha = 0.055f),
+        border = BorderStroke(1.dp, onText.copy(alpha = 0.05f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "Formación",
+                    color = onText,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Configura la estructura del once",
+                    color = onText.copy(alpha = 0.58f),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = accent.copy(alpha = 0.15f),
+                border = BorderStroke(1.dp, accent.copy(alpha = 0.26f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = selectedFormation.label,
+                        color = accent,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Black
+                    )
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Cambiar formación",
+                        tint = accent,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FormationPickerSheet(
+    selectedFormation: TacticalFormation,
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    onDismiss: () -> Unit,
+    onFormationClick: (TacticalFormation) -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+        tonalElevation = 8.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(42.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(onText.copy(alpha = 0.18f))
+                    .align(Alignment.CenterHorizontally)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = "Seleccionar formación",
+                        color = onText,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Si eliges una distinta, se vaciará el once y el banquillo.",
+                        color = onText.copy(alpha = 0.60f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            availableFormations.forEach { formation ->
+                FormationOptionRow(
+                    formation = formation,
+                    selected = formation.id == selectedFormation.id,
+                    accent = accent,
+                    accent2 = accent2,
+                    onText = onText,
+                    onClick = { onFormationClick(formation) }
+                )
+            }
+
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(
+                    text = "Cerrar",
+                    color = accent,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FormationOptionRow(
+    formation: TacticalFormation,
+    selected: Boolean,
+    accent: Color,
+    accent2: Color,
+    onText: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(18.dp),
+        color = if (selected) accent.copy(alpha = 0.13f) else GlassBase.copy(alpha = 0.055f),
+        border = BorderStroke(
+            width = if (selected) 1.dp else 0.8.dp,
+            color = if (selected) accent.copy(alpha = 0.34f) else onText.copy(alpha = 0.05f)
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = if (selected) accent.copy(alpha = 0.18f) else GlassBase.copy(alpha = 0.06f)
+            ) {
+                Text(
+                    text = formation.label,
+                    color = if (selected) accent else onText.copy(alpha = 0.82f),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                )
+            }
+
+            Spacer(Modifier.width(12.dp))
+
+            Text(
+                text = "${formation.defenders} DEF · ${formation.midfielders} MED · ${formation.forwards} DEL",
+                color = onText.copy(alpha = 0.62f),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Seleccionada",
+                    tint = accent,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun PitchBoard(
+    formation: TacticalFormation,
     starters: List<Player>,
     selectedForSwap: Player?,
     accent: Color,
@@ -802,7 +1143,7 @@ private fun PitchBoard(
                     .padding(start = 14.dp, end = 14.dp, top = 22.dp, bottom = 42.dp),
                 verticalArrangement = Arrangement.SpaceEvenly
             ) {
-                lineupRules.forEach { rule ->
+                formation.rules().forEach { rule ->
                     val linePlayers = (0 until rule.max).map { index ->
                         val slot = LineupSlot(slotId(rule.position, index), rule.position, rule.title)
                         slot to starters.firstOrNull { it.lineupSlot == slot.id }
