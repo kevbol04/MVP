@@ -166,9 +166,6 @@ fun AppNavGraph(
                     onGoTraining = {
                         navController.navigateToTab(Route.Trainings.route)
                     },
-                    onGoTrainingHistory = {
-                        navController.navigateToTab(Route.TrainingsHistory.route)
-                    },
                     onGoMatches = {
                         navController.navigateToTab(Route.Matches.route)
                     },
@@ -310,59 +307,6 @@ fun AppNavGraph(
 
                 TrainingsScreen(
                     trainings = trainings,
-                    onBack = {
-                        navController.popBackStack()
-                    },
-                    onCreateTraining = {
-                        navController.navigate(Route.TrainingForm.route)
-                    },
-                    onEditTraining = { training ->
-                        navController.navigate(
-                            Route.TrainingFormWithId.createRoute(training.id)
-                        )
-                    },
-                    onDeleteTraining = { training ->
-                        vm.delete(training)
-                        showSnackbar("Entrenamiento eliminado")
-                    },
-                    onToggleDone = { training ->
-                        vm.toggleDone(training)
-                        showSnackbar(
-                            if (training.isDone) {
-                                "Entrenamiento marcado como pendiente"
-                            } else {
-                                "Entrenamiento marcado como hecho"
-                            }
-                        )
-                    },
-
-                    onGoDashboard = {
-                        navController.navigateToTab(Route.Dashboard.route)
-                    },
-                    onGoMatches = {
-                        navController.navigateToTab(Route.Matches.route)
-                    },
-                    onGoPlayers = {
-                        navController.navigateToTab(Route.Players.route)
-                    },
-                    onGoStats = {
-                        navController.navigateToTab(Route.Stats.route)
-                    }
-                )
-            }
-
-            composable(Route.TrainingsHistory.route) {
-                val vm: TrainingsViewModel = hiltViewModel()
-
-                LaunchedEffect(currentUserId) {
-                    vm.setUser(currentUserId)
-                }
-
-                val trainings by vm.trainings.collectAsState()
-
-                TrainingsScreen(
-                    trainings = trainings,
-                    initialTab = "history",
                     onBack = {
                         navController.popBackStack()
                     },

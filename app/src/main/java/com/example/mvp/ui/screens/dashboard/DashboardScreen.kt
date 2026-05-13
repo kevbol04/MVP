@@ -121,7 +121,7 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(horizontal = 18.dp)
                 .padding(top = 42.dp, bottom = bottomBarHeight + 6.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             DashboardHeader(
                 username = username,
@@ -146,20 +146,6 @@ fun DashboardScreen(
                 onCreateMatch = onCreateMatch,
                 onCreatePlayer = onCreatePlayer,
                 onGoStats = onGoStats
-            )
-
-            SectionTitle(title = "Resumen rápido", onText = onBg)
-
-            StatsGrid(
-                summary = summary,
-                accent = accent,
-                accent2 = accent2,
-                danger = danger,
-                onText = onBg,
-                onGoTraining = onGoTraining,
-                onGoTrainingHistory = onGoTrainingHistory,
-                onGoMatches = onGoMatches,
-                onGoPlayers = onGoPlayers
             )
 
             SectionTitle(title = "Actividad reciente", onText = onBg)
@@ -334,10 +320,10 @@ private fun QuickActionsRow(
     onCreatePlayer: () -> Unit,
     onGoStats: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
         SectionTitle(title = "Accesos rápidos", onText = onText)
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             QuickActionCard(
                 modifier = Modifier.weight(1f),
                 title = "Entreno",
@@ -356,7 +342,7 @@ private fun QuickActionsRow(
             )
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             QuickActionCard(
                 modifier = Modifier.weight(1f),
                 title = "Jugador",
@@ -390,10 +376,10 @@ private fun QuickActionCard(
 ) {
     Surface(
         modifier = modifier
-            .height(54.dp)
+            .height(62.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
-        color = GlassBase.copy(alpha = 0.08f)
+        shape = RoundedCornerShape(20.dp),
+        color = GlassBase.copy(alpha = 0.085f)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp),
@@ -401,14 +387,14 @@ private fun QuickActionCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(30.dp)
+                    .size(34.dp)
                     .clip(CircleShape)
                     .background(accent.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
+                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
             }
-            Spacer(Modifier.width(9.dp))
+            Spacer(Modifier.width(11.dp))
             Text(
                 text = title,
                 color = onText,
@@ -422,7 +408,7 @@ private fun QuickActionCard(
                 imageVector = if (isCreateAction) Icons.Default.Add else Icons.Default.KeyboardArrowRight,
                 contentDescription = null,
                 tint = onText.copy(alpha = 0.50f),
-                modifier = Modifier.size(17.dp)
+                modifier = Modifier.size(18.dp)
             )
         }
     }
@@ -439,133 +425,6 @@ private fun SectionTitle(title: String, onText: Color) {
     )
 }
 
-@Composable
-private fun StatsGrid(
-    summary: DashboardSummary,
-    accent: Color,
-    accent2: Color,
-    danger: Color,
-    onText: Color,
-    onGoTraining: () -> Unit,
-    onGoTrainingHistory: () -> Unit,
-    onGoMatches: () -> Unit,
-    onGoPlayers: () -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SummaryCard(
-                modifier = Modifier.weight(1f),
-                title = "Cumplimiento",
-                value = "${summary.completionRate}%",
-                detail = "${summary.doneTrainings}/${summary.totalTrainings} entrenos",
-                icon = Icons.Default.CheckCircle,
-                color = accent,
-                onText = onText,
-                onClick = onGoTrainingHistory
-            )
-            SummaryCard(
-                modifier = Modifier.weight(1f),
-                title = "Atrasados",
-                value = summary.overdueTrainings.size.toString(),
-                detail = if (summary.overdueTrainings.isEmpty()) "Todo al día" else "Revisar pendientes",
-                icon = Icons.Default.WarningAmber,
-                color = if (summary.overdueTrainings.isEmpty()) accent2 else danger,
-                onText = onText,
-                onClick = onGoTraining
-            )
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SummaryCard(
-                modifier = Modifier.weight(1f),
-                title = "Balance",
-                value = summary.matchBalance,
-                detail = "${summary.matchesPlayed} partidos",
-                icon = Icons.Default.SportsSoccer,
-                color = summary.balanceColor(fallback = accent2),
-                onText = onText,
-                onClick = onGoMatches
-            )
-            SummaryCard(
-                modifier = Modifier.weight(1f),
-                title = "Plantilla",
-                value = summary.availablePlayers.toString(),
-                detail = "${summary.playersCount} jugadores · OVR ${summary.averageRating}",
-                icon = Icons.Default.Groups,
-                color = accent,
-                onText = onText,
-                onClick = onGoPlayers
-            )
-        }
-    }
-}
-
-@Composable
-private fun SummaryCard(
-    modifier: Modifier,
-    title: String,
-    value: String,
-    detail: String,
-    icon: ImageVector,
-    color: Color,
-    onText: Color,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = modifier
-            .height(80.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
-        color = GlassBase.copy(alpha = 0.08f)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(color.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(17.dp))
-            }
-
-            Spacer(Modifier.width(9.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = value,
-                    color = onText,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Black,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = title,
-                    color = onText.copy(alpha = 0.86f),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = null,
-                tint = onText.copy(alpha = 0.38f),
-                modifier = Modifier.size(16.dp)
-            )
-        }
-    }
-}
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun RecentActivityPanel(
@@ -579,24 +438,26 @@ private fun RecentActivityPanel(
     onOpenPlayer: (Long) -> Unit,
     onCreateTraining: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
         if (summary.lastTraining == null && summary.lastMatch == null && summary.lastPlayer == null) {
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = GlassBase.copy(alpha = 0.08f),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(72.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.Timeline,
                         contentDescription = null,
                         tint = accent,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
                             text = "Aún no hay actividad",
@@ -681,27 +542,27 @@ private fun RecentRow(
     onClick: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(22.dp),
         color = GlassBase.copy(alpha = 0.08f),
         modifier = Modifier
             .fillMaxWidth()
-            .height(62.dp)
+            .height(70.dp)
             .clickable(onClick = onClick)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp),
+            modifier = Modifier.padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(38.dp)
                     .clip(CircleShape)
                     .background(color.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
             }
-            Spacer(Modifier.width(10.dp))
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -728,7 +589,7 @@ private fun RecentRow(
                     color = color,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                     maxLines = 1
                 )
             }

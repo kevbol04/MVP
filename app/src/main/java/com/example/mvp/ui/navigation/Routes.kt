@@ -17,7 +17,6 @@ sealed class Route(val route: String) {
 
     // Trainings
     data object Trainings : Route("trainings")
-    data object TrainingsHistory : Route("trainings_history")
     data object TrainingForm : Route("training_form")
     data object TrainingFormWithId : Route("training_form/{trainingId}") {
         const val ARG_ID = "trainingId"
