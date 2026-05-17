@@ -1,6 +1,8 @@
 package com.example.mvp.ui.screens.dashboard
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,18 +16,21 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -38,11 +43,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mvp.ui.components.BottomBarDestination
 import com.example.mvp.ui.components.ProFootballBottomBar
+import com.example.mvp.R
+import com.example.mvp.domain.model.Club
+import com.example.mvp.domain.model.ClubBadgeDefaults
 import com.example.mvp.domain.model.Match
 import com.example.mvp.domain.model.MatchResult
 import com.example.mvp.domain.model.Player
@@ -60,6 +70,7 @@ import java.time.format.DateTimeFormatter
 fun DashboardScreen(
     modifier: Modifier = Modifier,
     username: String = "Usuario",
+    club: Club? = null,
     trainings: List<Training> = emptyList(),
     matches: List<Match> = emptyList(),
     players: List<Player> = emptyList(),
@@ -68,6 +79,7 @@ fun DashboardScreen(
     onGoMatches: () -> Unit = {},
     onGoPlayers: () -> Unit = {},
     onGoStats: () -> Unit = {},
+    onGoClub: () -> Unit = {},
     onGoSettings: () -> Unit = {},
     onCreateTraining: () -> Unit = {},
     onCreateMatch: () -> Unit = {},
@@ -110,51 +122,64 @@ fun DashboardScreen(
                 )
         )
 
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 18.dp)
-                .padding(top = 42.dp, bottom = bottomBarHeight + 6.dp),
+                .padding(horizontal = 18.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                top = 42.dp,
+                bottom = bottomBarHeight + 18.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            DashboardHeader(
-                username = username,
-                accent = accent,
-                accent2 = accent2,
-                onText = onBg,
-                onGoSettings = onGoSettings
-            )
+            item {
+                DashboardHeader(
+                    username = username,
+                    accent = accent,
+                    accent2 = accent2,
+                    onText = onBg,
+                    onGoSettings = onGoSettings
+                )
+            }
 
-            ObjectiveCard(
-                summary = summary,
-                accent = accent,
-                onText = onBg,
-                onClick = onGoTraining
-            )
+            item {
+                ClubDashboardCard(
+                    club = club,
+                    username = username,
+                    summary = summary,
+                    accent = accent,
+                    accent2 = accent2,
+                    onText = onBg
+                )
+            }
 
-            QuickActionsRow(
-                accent = accent,
-                accent2 = accent2,
-                onText = onBg,
-                onCreateTraining = onCreateTraining,
-                onCreateMatch = onCreateMatch,
-                onCreatePlayer = onCreatePlayer,
-                onGoStats = onGoStats
-            )
+            item {
+                QuickActionsRow(
+                    accent = accent,
+                    accent2 = accent2,
+                    onText = onBg,
+                    onCreateTraining = onCreateTraining,
+                    onCreateMatch = onCreateMatch,
+                    onCreatePlayer = onCreatePlayer,
+                    onGoStats = onGoStats
+                )
+            }
 
-            SectionTitle(title = "Actividad reciente", onText = onBg)
+            item { SectionTitle(title = "Actividad reciente", onText = onBg) }
 
-            RecentActivityPanel(
-                summary = summary,
-                accent = accent,
-                accent2 = accent2,
-                danger = danger,
-                onText = onBg,
-                onOpenTraining = onOpenTraining,
-                onOpenMatch = onOpenMatch,
-                onOpenPlayer = onOpenPlayer,
-                onCreateTraining = onCreateTraining
-            )
+            item {
+                RecentActivityPanel(
+                    summary = summary,
+                    accent = accent,
+                    accent2 = accent2,
+                    danger = danger,
+                    onText = onBg,
+                    onOpenTraining = onOpenTraining,
+                    onOpenMatch = onOpenMatch,
+                    onOpenPlayer = onOpenPlayer,
+                    onCreateTraining = onCreateTraining
+                )
+            }
         }
 
         ProFootballBottomBar(
@@ -236,54 +261,266 @@ private fun DashboardHeader(
 }
 
 @Composable
-private fun ObjectiveCard(
+private fun ClubDashboardCard(
+    club: Club?,
+    username: String,
     summary: DashboardSummary,
     accent: Color,
-    onText: Color,
-    onClick: () -> Unit
+    accent2: Color,
+    onText: Color
 ) {
-    val pendingCount = (summary.totalTrainings - summary.doneTrainings).coerceAtLeast(0)
-    val overdueCount = summary.overdueTrainings.size
+    val clubName = club?.displayName ?: "Configura tu club"
+    val season = club?.season?.takeIf { it.isNotBlank() } ?: "Temporada sin definir"
+    val city = club?.city?.takeIf { it.isNotBlank() } ?: "Ciudad sin definir"
+    val coach = club?.coachName?.takeIf { it.isNotBlank() } ?: username
 
-    val objectiveText = when {
-        summary.totalTrainings == 0 -> "No hay objetivos definidos"
-        overdueCount > 0 -> "Cerrar $overdueCount entrenos atrasado${if (overdueCount == 1) "" else "s"}"
-        pendingCount > 0 -> "Completar $pendingCount entrenos pendiente${if (pendingCount == 1) "" else "s"}"
-        else -> "Planificar próxima sesión"
-    }
+    val cardShape = RoundedCornerShape(30.dp)
 
-    Surface(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = GlassBase.copy(alpha = 0.08f)
+            .clip(cardShape)
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        GlassBase.copy(alpha = 0.145f),
+                        accent.copy(alpha = 0.075f),
+                        accent2.copy(alpha = 0.095f)
+                    )
+                )
+            )
+            .border(
+                width = 1.dp,
+                brush = Brush.linearGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.10f),
+                        accent.copy(alpha = 0.18f),
+                        Color.White.copy(alpha = 0.04f)
+                    )
+                ),
+                shape = cardShape
+            )
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .size(150.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 46.dp, y = (-58).dp)
+                .background(
+                    Brush.radialGradient(
+                        listOf(accent.copy(alpha = 0.22f), Color.Transparent)
+                    ),
+                    shape = CircleShape
+                )
+        )
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .align(Alignment.BottomStart)
+                .offset(x = (-42).dp, y = 44.dp)
+                .background(
+                    Brush.radialGradient(
+                        listOf(accent2.copy(alpha = 0.16f), Color.Transparent)
+                    ),
+                    shape = CircleShape
+                )
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 17.dp),
+            verticalArrangement = Arrangement.spacedBy(13.dp)
         ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = "Objetivo actual",
-                    color = onText.copy(alpha = 0.68f),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = objectiveText,
-                    color = onText,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Black,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(70.dp)
+                        .clip(RoundedCornerShape(23.dp))
+                        .background(Color.White.copy(alpha = 0.055f))
+                        .border(
+                            width = 1.dp,
+                            color = Color.White.copy(alpha = 0.08f),
+                            shape = RoundedCornerShape(23.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ClubBadgeEmblem(
+                        badgeId = club?.badgeId ?: ClubBadgeDefaults.DEFAULT_ID,
+                        size = 60.dp,
+                        accent = accent,
+                        accent2 = accent2
+                    )
+                }
+
+                Spacer(Modifier.width(15.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = "Club actual",
+                        color = accent,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = clubName,
+                        color = onText,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "$season · $city",
+                        color = onText.copy(alpha = 0.72f),
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "Míster: $coach",
+                        color = onText.copy(alpha = 0.58f),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
-            SmallPillButton(text = "VER", accent = accent, onClick = onClick)
+            HorizontalDivider(color = onText.copy(alpha = 0.075f))
+
+            ClubRecentForm(
+                recentResults = summary.recentResults,
+                accent = accent,
+                onText = onText
+            )
         }
+    }
+}
+
+@Composable
+private fun ClubBadgeEmblem(
+    badgeId: String,
+    size: androidx.compose.ui.unit.Dp,
+    accent: Color,
+    accent2: Color
+) {
+    val badge = dashboardBadgePresetById(badgeId)
+
+    Image(
+        painter = painterResource(id = badge.drawableRes),
+        contentDescription = null,
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.size(size)
+    )
+}
+
+private data class DashboardBadgePreset(
+    val id: String,
+    val drawableRes: Int
+)
+
+private fun dashboardBadgePresets(): List<DashboardBadgePreset> = listOf(
+    DashboardBadgePreset("royal_blue", R.drawable.club_badge_classic_gold),
+    DashboardBadgePreset("galaxy_purple", R.drawable.club_badge_silver_star),
+    DashboardBadgePreset("ocean_cyan", R.drawable.club_badge_purple_ball),
+    DashboardBadgePreset("green_star", R.drawable.club_badge_blue_stadium),
+    DashboardBadgePreset("fire_red", R.drawable.club_badge_green_city),
+    DashboardBadgePreset("gold_crown", R.drawable.club_badge_orange_crown)
+)
+
+private fun dashboardBadgePresetById(id: String): DashboardBadgePreset {
+    val cleanId = ClubBadgeDefaults.sanitize(id)
+    return dashboardBadgePresets().firstOrNull { it.id == cleanId } ?: dashboardBadgePresets().first()
+}
+
+@Composable
+private fun ClubRecentForm(
+    recentResults: List<MatchResult>,
+    accent: Color,
+    onText: Color
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = "Forma reciente",
+                color = onText.copy(alpha = 0.88f),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "Últimos partidos",
+                color = onText.copy(alpha = 0.52f),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        if (recentResults.isEmpty()) {
+            Text(
+                text = "— — —",
+                color = accent,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Black,
+                maxLines = 1
+            )
+        } else {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                recentResults.forEach { result ->
+                    FormDot(result = result, fallback = accent)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FormDot(result: MatchResult, fallback: Color) {
+    val color = result.resultColor()
+    val letter = when (result) {
+        MatchResult.VICTORIA -> "V"
+        MatchResult.EMPATE -> "E"
+        MatchResult.DERROTA -> "D"
+    }
+
+    Box(
+        modifier = Modifier
+            .size(24.dp)
+            .clip(CircleShape)
+            .background(color.copy(alpha = 0.18f))
+            .border(
+                width = 1.dp,
+                color = color.copy(alpha = 0.30f),
+                shape = CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = letter,
+            color = color,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Black,
+            maxLines = 1
+        )
     }
 }
 
@@ -368,43 +605,52 @@ private fun QuickActionCard(
     isCreateAction: Boolean = true,
     onClick: () -> Unit
 ) {
-    Surface(
+    Row(
         modifier = modifier
-            .height(62.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        color = GlassBase.copy(alpha = 0.085f)
+            .height(58.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(34.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(accent.copy(alpha = 0.90f))
+        )
+
+        Spacer(Modifier.width(10.dp))
+
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(accent.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(accent.copy(alpha = 0.16f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
-            }
-            Spacer(Modifier.width(11.dp))
-            Text(
-                text = title,
-                color = onText,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.weight(1f))
-            Icon(
-                imageVector = if (isCreateAction) Icons.Default.Add else Icons.Default.KeyboardArrowRight,
-                contentDescription = null,
-                tint = onText.copy(alpha = 0.50f),
-                modifier = Modifier.size(18.dp)
-            )
+            Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
         }
+
+        Spacer(Modifier.width(10.dp))
+
+        Text(
+            text = title,
+            color = onText,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+
+        Icon(
+            imageVector = if (isCreateAction) Icons.Default.Add else Icons.Default.KeyboardArrowRight,
+            contentDescription = null,
+            tint = onText.copy(alpha = 0.45f),
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
@@ -534,16 +780,17 @@ private fun RecentRow(
     onText: Color,
     onClick: () -> Unit
 ) {
-    Surface(
-        shape = RoundedCornerShape(22.dp),
-        color = GlassBase.copy(alpha = 0.08f),
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(70.dp)
+            .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 2.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(62.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -553,7 +800,7 @@ private fun RecentRow(
                     .background(color.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(21.dp))
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
@@ -587,6 +834,11 @@ private fun RecentRow(
                 )
             }
         }
+
+        HorizontalDivider(
+            color = onText.copy(alpha = 0.07f),
+            modifier = Modifier.padding(start = 50.dp)
+        )
     }
 }
 
@@ -616,6 +868,7 @@ private data class DashboardSummary(
     val playersCount: Int,
     val availablePlayers: Int,
     val averageRating: Int,
+    val recentResults: List<MatchResult>,
     val lastTraining: Training?,
     val lastMatch: Match?,
     val lastPlayer: Player?
@@ -665,6 +918,7 @@ private data class DashboardSummary(
                 playersCount = playersCount,
                 availablePlayers = availablePlayers,
                 averageRating = averageRating,
+                recentResults = matches.sortedByDescending { it.id }.take(5).map { it.result },
                 lastTraining = orderedTrainings.firstOrNull(),
                 lastMatch = matches.maxByOrNull { it.id },
                 lastPlayer = players.maxByOrNull { it.id }

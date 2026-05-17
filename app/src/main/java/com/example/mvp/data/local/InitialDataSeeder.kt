@@ -1,6 +1,7 @@
 package com.example.mvp.data.local
 
 import com.example.mvp.data.local.dao.AuthUserDao
+import com.example.mvp.data.local.dao.ClubDao
 import com.example.mvp.data.local.dao.MatchDao
 import com.example.mvp.data.local.dao.PlayerDao
 import com.example.mvp.data.local.dao.TrainingDao
@@ -37,7 +38,8 @@ class InitialDataSeeder @Inject constructor(
     private val authUserDao: AuthUserDao,
     private val playerDao: PlayerDao,
     private val matchDao: MatchDao,
-    private val trainingDao: TrainingDao
+    private val trainingDao: TrainingDao,
+    private val clubDao: ClubDao
 ) {
     private val mutex = Mutex()
 
@@ -53,7 +55,8 @@ class InitialDataSeeder @Inject constructor(
                 authUserDao = authUserDao,
                 playerDao = playerDao,
                 matchDao = matchDao,
-                trainingDao = trainingDao
+                trainingDao = trainingDao,
+                clubDao = clubDao
             )
         }
     }

@@ -5,6 +5,8 @@ sealed class Route(val route: String) {
     // Auth / Dashboard
     data object Auth : Route("auth")
     data object Dashboard : Route("dashboard")
+    data object Club : Route("club")
+    data object ClubSetup : Route("club_setup")
 
     // Settings
     data object Settings : Route("settings")

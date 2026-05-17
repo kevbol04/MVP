@@ -1,10 +1,12 @@
 package com.example.mvp.data.local
 
 import com.example.mvp.data.local.dao.AuthUserDao
+import com.example.mvp.data.local.dao.ClubDao
 import com.example.mvp.data.local.dao.MatchDao
 import com.example.mvp.data.local.dao.PlayerDao
 import com.example.mvp.data.local.dao.TrainingDao
 import com.example.mvp.data.local.entities.AuthUserEntity
+import com.example.mvp.data.local.entities.ClubEntity
 import com.example.mvp.data.local.entities.MatchEntity
 import com.example.mvp.data.local.entities.PlayerEntity
 import com.example.mvp.data.local.entities.TrainingEntity
@@ -25,7 +27,8 @@ object SamplePayLoad {
         authUserDao: AuthUserDao,
         playerDao: PlayerDao,
         matchDao: MatchDao,
-        trainingDao: TrainingDao
+        trainingDao: TrainingDao,
+        clubDao: ClubDao
     ) {
         if (authUserDao.findByEmail(DEMO_EMAIL) != null) return
 
@@ -40,10 +43,21 @@ object SamplePayLoad {
             )
         )
 
+        clubDao.insert(buildClub(userId))
         buildPlayers(userId).forEach { playerDao.insert(it) }
         buildMatches(userId).forEach { matchDao.insert(it) }
         buildTrainings(userId).forEach { trainingDao.insert(it) }
     }
+
+    private fun buildClub(userId: Long): ClubEntity = ClubEntity(
+        userId = userId,
+        name = "Real Madrid CF",
+        season = "2025/2026",
+        stadium = "Santiago Bernabéu",
+        city = "Madrid",
+        coachName = DEMO_NAME,
+        badgeId = "royal_blue"
+    )
 
     private fun buildPlayers(userId: Long): List<PlayerEntity> = listOf(
         // Porteros

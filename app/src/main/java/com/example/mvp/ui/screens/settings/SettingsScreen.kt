@@ -26,6 +26,7 @@ fun SettingsScreen(
     username: String = "Usuario",
     onBack: () -> Unit = {},
     onOpenAccount: () -> Unit = {},
+    onOpenClub: () -> Unit = {},
     onOpenPrivacy: () -> Unit = {},
     onOpenAbout: () -> Unit = {},
     onLogout: () -> Unit = {}
@@ -106,7 +107,7 @@ fun SettingsScreen(
                     DividerGlass()
                     SettingsSwitchRow(
                         title = "Recordatorios de entrenamiento",
-                        subtitle = "Sesiones planificadas y objetivos",
+                        subtitle = "Sesiones planificadas",
                         icon = Icons.Default.FitnessCenter,
                         accent = accent,
                         accent2 = accent2,
@@ -117,6 +118,7 @@ fun SettingsScreen(
                     )
                 }
             }
+
 
             item { SectionTitle(title = "Seguridad", onText = onBg) }
 
@@ -157,6 +159,16 @@ fun SettingsScreen(
                         accent2 = accent2,
                         onText = onBg,
                         onClick = onOpenAccount
+                    )
+                    DividerGlass()
+                    SettingsNavRow(
+                        title = "Editar club",
+                        subtitle = "Escudo, nombre, estadio y míster",
+                        icon = Icons.Default.Flag,
+                        accent = accent,
+                        accent2 = accent2,
+                        onText = onBg,
+                        onClick = onOpenClub
                     )
                     DividerGlass()
                     SettingsNavRow(

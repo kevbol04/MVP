@@ -27,6 +27,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mvp.ui.components.AppLoadingScreen
 import com.example.mvp.ui.components.AppSnackbarHost
+import com.example.mvp.ui.screens.club.ClubScreen
+import com.example.mvp.ui.screens.club.ClubViewModel
 import com.example.mvp.ui.screens.dashboard.DashboardScreen
 import com.example.mvp.ui.screens.login.AuthRoute
 import com.example.mvp.ui.screens.matches.MatchDetailScreen
@@ -145,19 +147,32 @@ fun AppNavGraph(
                 val playersVm: PlayersViewModel = hiltViewModel()
                 val matchesVm: MatchesViewModel = hiltViewModel()
                 val trainingsVm: TrainingsViewModel = hiltViewModel()
+                val clubVm: ClubViewModel = hiltViewModel()
 
                 LaunchedEffect(currentUserId) {
                     playersVm.setUser(currentUserId)
                     matchesVm.setUser(currentUserId)
                     trainingsVm.setUser(currentUserId)
+                    clubVm.setUser(currentUserId)
                 }
 
                 val players by playersVm.players.collectAsState()
                 val matches by matchesVm.matches.collectAsState()
                 val trainings by trainingsVm.trainings.collectAsState()
+                val club by clubVm.club.collectAsState()
+                val clubLoaded by clubVm.loaded.collectAsState()
+
+                LaunchedEffect(currentUserId, clubLoaded, club) {
+                    if (currentUserId > 0L && clubLoaded && club == null) {
+                        navController.navigate(Route.ClubSetup.route) {
+                            popUpTo(Route.Dashboard.route) { inclusive = true }
+                        }
+                    }
+                }
 
                 DashboardScreen(
                     username = currentUsername,
+                    club = club,
                     trainings = trainings,
                     matches = matches,
                     players = players,
@@ -173,6 +188,9 @@ fun AppNavGraph(
                     },
                     onGoStats = {
                         navController.navigateToTab(Route.Stats.route)
+                    },
+                    onGoClub = {
+                        navController.navigate(Route.Club.route)
                     },
                     onGoSettings = {
                         navController.navigate(Route.Settings.route)
@@ -216,6 +234,9 @@ fun AppNavGraph(
                     onOpenAccount = {
                         navController.navigate(Route.Account.route)
                     },
+                    onOpenClub = {
+                        navController.navigate(Route.Club.route)
+                    },
                     onOpenPrivacy = {
                         navController.navigate(Route.Privacy.route)
                     },
@@ -232,6 +253,65 @@ fun AppNavGraph(
                         navController.navigate(Route.Auth.route) {
                             popUpTo(0) {
                                 inclusive = true
+                            }
+                        }
+                    }
+                )
+            }
+
+            // ---------------- CLUB ----------------
+            composable(Route.Club.route) {
+                val vm: ClubViewModel = hiltViewModel()
+
+                LaunchedEffect(currentUserId) {
+                    vm.setUser(currentUserId)
+                }
+
+                val club by vm.club.collectAsState()
+
+                ClubScreen(
+                    club = club,
+                    defaultCoachName = currentUsername,
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onSave = { updatedClub ->
+                        vm.save(updatedClub)
+                        showSnackbar("Club actualizado correctamente")
+                    }
+                )
+            }
+
+
+            // ---------------- CLUB SETUP ----------------
+            composable(Route.ClubSetup.route) {
+                val vm: ClubViewModel = hiltViewModel()
+
+                LaunchedEffect(currentUserId) {
+                    vm.setUser(currentUserId)
+                }
+
+                ClubScreen(
+                    club = null,
+                    defaultCoachName = currentUsername,
+                    isInitialSetup = true,
+                    onBack = {},
+                    onCancelInitialSetup = {
+                        currentUserId = 0L
+                        currentUsername = "Usuario"
+                        currentEmail = ""
+
+                        sessionViewModel.clearSession()
+
+                        navController.navigate(Route.Auth.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onSave = { createdClub ->
+                        vm.save(createdClub) {
+                            showSnackbar("Club creado correctamente")
+                            navController.navigate(Route.Dashboard.route) {
+                                popUpTo(Route.ClubSetup.route) { inclusive = true }
                             }
                         }
                     }

@@ -1,10 +1,12 @@
 package com.example.mvp.di
 
 import com.example.mvp.data.repository.AuthRepositoryImpl
+import com.example.mvp.data.repository.ClubRepositoryImpl
 import com.example.mvp.data.repository.MatchRepositoryImpl
 import com.example.mvp.data.repository.PlayerRepositoryImpl
 import com.example.mvp.data.repository.TrainingRepositoryImpl
 import com.example.mvp.domain.repository.AuthRepository
+import com.example.mvp.domain.repository.ClubRepository
 import com.example.mvp.domain.repository.MatchRepository
 import com.example.mvp.domain.repository.PlayerRepository
 import com.example.mvp.domain.repository.TrainingRepository
@@ -33,4 +35,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindPlayerRepository(impl: PlayerRepositoryImpl): PlayerRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindClubRepository(impl: ClubRepositoryImpl): ClubRepository
 }

@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.mvp.data.local.dao.AuthUserDao
+import com.example.mvp.data.local.dao.ClubDao
 import com.example.mvp.data.local.dao.MatchDao
 import com.example.mvp.data.local.dao.PlayerDao
 import com.example.mvp.data.local.dao.TrainingDao
@@ -41,4 +42,7 @@ object DatabaseModule {
 
     @Provides
     fun providePlayerDao(db: AppDatabase): PlayerDao = db.playerDao()
+
+    @Provides
+    fun provideClubDao(db: AppDatabase): ClubDao = db.clubDao()
 }

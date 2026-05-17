@@ -2,10 +2,10 @@ package com.example.mvp.ui.screens.matches
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mvp.domain.model.Match
 import com.example.mvp.domain.repository.MatchRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
-import com.example.mvp.domain.model.Match
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 

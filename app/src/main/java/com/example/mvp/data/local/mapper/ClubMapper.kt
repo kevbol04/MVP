@@ -1,0 +1,26 @@
+package com.example.mvp.data.local.mapper
+
+import com.example.mvp.data.local.entities.ClubEntity
+import com.example.mvp.domain.model.Club
+import com.example.mvp.domain.model.ClubBadgeDefaults
+
+fun ClubEntity.toModel(): Club = Club(
+    id = id,
+    name = name,
+    season = season,
+    stadium = stadium,
+    city = city,
+    coachName = coachName,
+    badgeId = ClubBadgeDefaults.sanitize(badgeId)
+)
+
+fun Club.toEntity(userId: Long): ClubEntity = ClubEntity(
+    id = id,
+    userId = userId,
+    name = name.trim(),
+    season = season.trim(),
+    stadium = stadium.trim(),
+    city = city.trim(),
+    coachName = coachName.trim(),
+    badgeId = ClubBadgeDefaults.sanitize(badgeId)
+)
