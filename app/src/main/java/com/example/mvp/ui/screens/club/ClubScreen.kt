@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,8 +23,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Stadium
@@ -34,7 +37,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -86,6 +89,10 @@ fun ClubScreen(
     var coachName by rememberSaveable { mutableStateOf("") }
     var badgeId by rememberSaveable { mutableStateOf(ClubBadgeDefaults.DEFAULT_ID) }
     var nameTouched by rememberSaveable { mutableStateOf(false) }
+    var seasonTouched by rememberSaveable { mutableStateOf(false) }
+    var stadiumTouched by rememberSaveable { mutableStateOf(false) }
+    var cityTouched by rememberSaveable { mutableStateOf(false) }
+    var coachTouched by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(club?.id, club?.coachName, club?.badgeId, fallbackCoachName) {
         name = club?.name.orEmpty()
@@ -96,8 +103,59 @@ fun ClubScreen(
         badgeId = ClubBadgeDefaults.sanitize(club?.badgeId.orEmpty())
     }
 
-    val nameError = nameTouched && name.isBlank()
-    val canSave = name.isNotBlank()
+    val seasonRegex = Regex("^\\d{4}/\\d{4}$")
+
+    val nameErrorText = when {
+        name.isBlank() -> "El nombre del club es obligatorio"
+        name.trim().length < 3 -> "El nombre debe tener al menos 3 caracteres"
+        else -> null
+    }
+
+    val seasonErrorText = when {
+        season.isBlank() -> "La temporada es obligatoria"
+        !seasonRegex.matches(season.trim()) -> "Usa el formato 2025/2026"
+        else -> {
+            val years = season.trim().split("/")
+            val firstYear = years[0].toIntOrNull()
+            val secondYear = years[1].toIntOrNull()
+
+            if (firstYear == null || secondYear == null || secondYear != firstYear + 1) {
+                "La temporada debe ser consecutiva, por ejemplo 2025/2026"
+            } else {
+                null
+            }
+        }
+    }
+
+    val stadiumErrorText = when {
+        stadium.isBlank() -> "El estadio es obligatorio"
+        stadium.trim().length < 3 -> "El estadio debe tener al menos 3 caracteres"
+        else -> null
+    }
+
+    val cityErrorText = when {
+        city.isBlank() -> "La ciudad es obligatoria"
+        city.trim().length < 2 -> "La ciudad debe tener al menos 2 caracteres"
+        else -> null
+    }
+
+    val coachErrorText = when {
+        coachName.isBlank() -> "El entrenador es obligatorio"
+        coachName.trim().length < 2 -> "El entrenador debe tener al menos 2 caracteres"
+        else -> null
+    }
+
+    val nameError = nameTouched && nameErrorText != null
+    val seasonError = seasonTouched && seasonErrorText != null
+    val stadiumError = stadiumTouched && stadiumErrorText != null
+    val cityError = cityTouched && cityErrorText != null
+    val coachError = coachTouched && coachErrorText != null
+
+    val canSave = nameErrorText == null &&
+            seasonErrorText == null &&
+            stadiumErrorText == null &&
+            cityErrorText == null &&
+            coachErrorText == null
 
     Box(
         modifier = modifier
@@ -160,80 +218,91 @@ fun ClubScreen(
 
             SectionTitle("Datos del club", onBg)
 
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.24f),
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    ClubTextField(
-                        value = name,
-                        onValueChange = {
-                            name = it
-                            nameTouched = true
-                        },
-                        label = "Nombre del club",
-                        icon = Icons.Default.SportsSoccer,
-                        accent = accent,
-                        onText = onBg,
-                        isError = nameError,
-                        supportingText = if (nameError) "El nombre del club es obligatorio" else null
-                    )
-                    ClubTextField(
-                        value = season,
-                        onValueChange = { season = it },
-                        label = "Temporada",
-                        icon = Icons.Default.Flag,
-                        accent = accent2,
-                        onText = onBg,
-                        placeholder = "2025/2026"
-                    )
-                    ClubTextField(
-                        value = stadium,
-                        onValueChange = { stadium = it },
-                        label = "Estadio",
-                        icon = Icons.Default.Stadium,
-                        accent = accent,
-                        onText = onBg
-                    )
-                    ClubTextField(
-                        value = city,
-                        onValueChange = { city = it },
-                        label = "Ciudad",
-                        icon = Icons.Default.LocationCity,
-                        accent = accent2,
-                        onText = onBg
-                    )
-                    ClubTextField(
-                        value = coachName,
-                        onValueChange = { coachName = it },
-                        label = "Entrenador",
-                        icon = Icons.Default.SportsSoccer,
-                        accent = accent,
-                        onText = onBg
-                    )
-                }
+            PremiumFormPanel(onText = onBg, accent = accent) {
+                ClubTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                        nameTouched = true
+                    },
+                    label = "Nombre del club",
+                    icon = Icons.Default.SportsSoccer,
+                    accent = accent,
+                    onText = onBg,
+                    isError = nameError,
+                    supportingText = if (nameError) nameErrorText else null
+                )
+
+                ClubTextField(
+                    value = season,
+                    onValueChange = {
+                        season = it
+                        seasonTouched = true
+                    },
+                    label = "Temporada",
+                    icon = Icons.Default.Flag,
+                    accent = accent2,
+                    onText = onBg,
+                    placeholder = "2025/2026",
+                    isError = seasonError,
+                    supportingText = if (seasonError) seasonErrorText else null
+                )
+
+                ClubTextField(
+                    value = stadium,
+                    onValueChange = {
+                        stadium = it
+                        stadiumTouched = true
+                    },
+                    label = "Estadio",
+                    icon = Icons.Default.Stadium,
+                    accent = accent,
+                    onText = onBg,
+                    isError = stadiumError,
+                    supportingText = if (stadiumError) stadiumErrorText else null
+                )
+
+                ClubTextField(
+                    value = city,
+                    onValueChange = {
+                        city = it
+                        cityTouched = true
+                    },
+                    label = "Ciudad",
+                    icon = Icons.Default.LocationCity,
+                    accent = accent2,
+                    onText = onBg,
+                    isError = cityError,
+                    supportingText = if (cityError) cityErrorText else null
+                )
+
+                ClubTextField(
+                    value = coachName,
+                    onValueChange = {
+                        coachName = it
+                        coachTouched = true
+                    },
+                    label = "Entrenador",
+                    icon = Icons.Default.Person,
+                    accent = accent,
+                    onText = onBg,
+                    isError = coachError,
+                    supportingText = if (coachError) coachErrorText else null
+                )
             }
 
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+            PremiumSaveButton(
+                text = if (isInitialSetup) "Crear club" else "Guardar club",
                 enabled = canSave,
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = accent,
-                    contentColor = ButtonTextDark,
-                    disabledContainerColor = GlassBase.copy(alpha = 0.14f),
-                    disabledContentColor = onBg.copy(alpha = 0.45f)
-                ),
+                accent = accent,
+                onText = onBg,
                 onClick = {
                     nameTouched = true
+                    seasonTouched = true
+                    stadiumTouched = true
+                    cityTouched = true
+                    coachTouched = true
+
                     if (canSave) {
                         onSave(
                             Club(
@@ -242,20 +311,13 @@ fun ClubScreen(
                                 season = season.trim(),
                                 stadium = stadium.trim(),
                                 city = city.trim(),
-                                coachName = coachName.trim().ifBlank { fallbackCoachName },
+                                coachName = coachName.trim(),
                                 badgeId = badgeId
                             )
                         )
                     }
                 }
-            ) {
-                Icon(Icons.Default.Save, contentDescription = null)
-                Spacer(Modifier.size(10.dp))
-                Text(
-                    text = if (isInitialSetup) "Crear club" else "Guardar club",
-                    fontWeight = FontWeight.Black
-                )
-            }
+            )
 
             if (isInitialSetup) {
                 Text(
@@ -333,32 +395,89 @@ private fun ClubPreviewCard(
     accent2: Color,
     onText: Color
 ) {
-    val shape = RoundedCornerShape(30.dp)
+    val shape = RoundedCornerShape(34.dp)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .height(232.dp)
+            .shadow(18.dp, shape, clip = false)
             .clip(shape)
             .background(
-                Brush.horizontalGradient(
-                    listOf(
-                        GlassBase.copy(alpha = 0.15f),
-                        GlassBase.copy(alpha = 0.09f)
+                Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF10273A),
+                        Color(0xFF123B49),
+                        Color(0xFF071623)
                     )
                 )
             )
-            .border(1.dp, onText.copy(alpha = 0.06f), shape)
-            .padding(18.dp)
+            .border(
+                width = 1.dp,
+                brush = Brush.horizontalGradient(
+                    listOf(
+                        accent.copy(alpha = 0.60f),
+                        Color.White.copy(alpha = 0.10f),
+                        accent2.copy(alpha = 0.42f)
+                    )
+                ),
+                shape = shape
+            )
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                ClubBadgeEmblem(
-                    badgeId = badgeId,
-                    size = 54.dp,
-                    accent = accent,
-                    accent2 = accent2
+        Box(
+            modifier = Modifier
+                .size(280.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 84.dp, y = (-88).dp)
+                .background(
+                    Brush.radialGradient(
+                        listOf(accent.copy(alpha = 0.45f), Color.Transparent)
+                    ),
+                    CircleShape
                 )
-                Spacer(Modifier.size(12.dp))
+        )
+
+        Box(
+            modifier = Modifier
+                .size(220.dp)
+                .align(Alignment.BottomStart)
+                .offset(x = (-88).dp, y = 88.dp)
+                .background(
+                    Brush.radialGradient(
+                        listOf(accent2.copy(alpha = 0.28f), Color.Transparent)
+                    ),
+                    CircleShape
+                )
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(92.dp)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(Color.Black.copy(alpha = 0.18f))
+                        .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(28.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ClubBadgeEmblem(
+                        badgeId = badgeId,
+                        size = 76.dp,
+                        accent = accent,
+                        accent2 = accent2
+                    )
+                }
+
+                Spacer(Modifier.size(16.dp))
+
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = name.ifBlank { "Mi club" },
@@ -368,31 +487,95 @@ private fun ClubPreviewCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Spacer(Modifier.height(4.dp))
                     Text(
-                        text = listOf(season, city).filter { it.isNotBlank() }.joinToString(" · ").ifBlank { "Temporada y ciudad sin definir" },
-                        color = onText.copy(alpha = 0.70f),
+                        text = listOf(season, city)
+                            .filter { it.isNotBlank() }
+                            .joinToString(" · ")
+                            .ifBlank { "Temporada y ciudad sin definir" },
+                        color = onText.copy(alpha = 0.74f),
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                MiniInfoChip(
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                PremiumMiniInfoCard(
                     modifier = Modifier.weight(1f),
-                    title = "Estadio",
+                    icon = Icons.Default.Stadium,
+                    title = "ESTADIO",
                     value = stadium.ifBlank { "Sin definir" },
                     accent = accent,
                     onText = onText
                 )
-                MiniInfoChip(
+                PremiumMiniInfoCard(
                     modifier = Modifier.weight(1f),
-                    title = "Entrenador",
+                    icon = Icons.Default.Person,
+                    title = "ENTRENADOR",
                     value = coachName.ifBlank { "Sin definir" },
                     accent = accent2,
                     onText = onText
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun PremiumMiniInfoCard(
+    modifier: Modifier,
+    icon: ImageVector,
+    title: String,
+    value: String,
+    accent: Color,
+    onText: Color
+) {
+    val shape = RoundedCornerShape(20.dp)
+
+    Row(
+        modifier = modifier
+            .height(74.dp)
+            .clip(shape)
+            .background(
+                Brush.horizontalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.13f),
+                        Color.White.copy(alpha = 0.055f)
+                    )
+                )
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.10f), shape)
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = accent,
+            modifier = Modifier.size(28.dp)
+        )
+        Spacer(Modifier.size(10.dp))
+        Column {
+            Text(
+                text = title,
+                color = accent,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Black,
+                maxLines = 1
+            )
+            Text(
+                text = value,
+                color = onText,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -438,26 +621,71 @@ private fun BadgeOption(
     onText: Color,
     onClick: () -> Unit
 ) {
-    val shape = RoundedCornerShape(22.dp)
+    val shape = RoundedCornerShape(26.dp)
+
     Box(
         modifier = modifier
-            .height(86.dp)
+            .height(106.dp)
+            .shadow(
+                elevation = if (selected) 14.dp else 4.dp,
+                shape = shape,
+                clip = false
+            )
             .clip(shape)
-            .background(if (selected) accent.copy(alpha = 0.12f) else GlassBase.copy(alpha = 0.055f))
+            .background(
+                Brush.linearGradient(
+                    colors = if (selected) {
+                        listOf(accent.copy(alpha = 0.24f), GlassBase.copy(alpha = 0.14f))
+                    } else {
+                        listOf(GlassBase.copy(alpha = 0.11f), GlassBase.copy(alpha = 0.055f))
+                    }
+                )
+            )
             .border(
-                width = 1.dp,
-                color = if (selected) accent.copy(alpha = 0.82f) else onText.copy(alpha = 0.08f),
+                width = if (selected) 2.dp else 1.dp,
+                color = if (selected) accent.copy(alpha = 0.95f) else onText.copy(alpha = 0.09f),
                 shape = shape
             )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.radialGradient(
+                            listOf(accent.copy(alpha = 0.22f), Color.Transparent)
+                        )
+                    )
+            )
+        }
+
         ClubBadgeEmblem(
             badgeId = badge.id,
-            size = 52.dp,
+            size = if (selected) 68.dp else 60.dp,
             accent = accent,
             accent2 = accent2
         )
+
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(accent),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = ButtonTextDark,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
     }
 }
 
@@ -532,6 +760,74 @@ private fun MiniInfoChip(
 }
 
 @Composable
+private fun PremiumFormPanel(
+    onText: Color,
+    accent: Color,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        content = content
+    )
+}
+
+@Composable
+private fun PremiumSaveButton(
+    text: String,
+    enabled: Boolean,
+    accent: Color,
+    onText: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp, bottom = 8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            accent.copy(alpha = 0.55f),
+                            accent.copy(alpha = 0.20f)
+                        )
+                    )
+                )
+        )
+
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .shadow(18.dp, RoundedCornerShape(999.dp), clip = false),
+            enabled = enabled,
+            shape = RoundedCornerShape(999.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = accent,
+                contentColor = ButtonTextDark,
+                disabledContainerColor = GlassBase.copy(alpha = 0.14f),
+                disabledContentColor = onText.copy(alpha = 0.45f)
+            ),
+            onClick = onClick
+        ) {
+            Icon(Icons.Default.Save, contentDescription = null)
+            Spacer(Modifier.size(12.dp))
+            Text(
+                text = text,
+                fontWeight = FontWeight.Black,
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+    }
+}
+
+@Composable
 private fun ClubTextField(
     value: String,
     onValueChange: (String) -> Unit,
@@ -545,27 +841,59 @@ private fun ClubTextField(
     singleLine: Boolean = true,
     minLines: Int = 1
 ) {
+    val shape = RoundedCornerShape(18.dp)
+
     OutlinedTextField(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(
+                Brush.horizontalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.06f),
+                        Color.White.copy(alpha = 0.025f)
+                    )
+                )
+            ),
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        label = {
+            Text(
+                text = label,
+                fontWeight = FontWeight.Medium
+            )
+        },
         placeholder = if (placeholder.isNotBlank()) ({ Text(placeholder) }) else null,
         leadingIcon = {
-            Icon(icon, contentDescription = null, tint = accent)
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(accent.copy(alpha = 0.13f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(21.dp)
+                )
+            }
         },
+        trailingIcon = null,
         isError = isError,
         supportingText = supportingText?.let { text -> ({ Text(text) }) },
         singleLine = singleLine,
         minLines = minLines,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+        shape = shape,
         colors = OutlinedTextFieldDefaults.colors(
             focusedTextColor = onText,
             unfocusedTextColor = onText,
             focusedBorderColor = accent,
-            unfocusedBorderColor = onText.copy(alpha = 0.22f),
+            unfocusedBorderColor = onText.copy(alpha = 0.20f),
             focusedLabelColor = accent,
-            unfocusedLabelColor = onText.copy(alpha = 0.62f),
+            unfocusedLabelColor = onText.copy(alpha = 0.58f),
             cursorColor = accent,
             focusedContainerColor = Color.Transparent,
             unfocusedContainerColor = Color.Transparent,
@@ -577,11 +905,34 @@ private fun ClubTextField(
 
 @Composable
 private fun SectionTitle(title: String, onText: Color) {
-    Text(
-        text = title,
-        color = onText,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(horizontal = 2.dp)
-    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp, start = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (title.contains("Escudo")) Icons.Default.SportsSoccer else Icons.Default.Flag,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(Modifier.size(10.dp))
+
+        Text(
+            text = title,
+            color = onText,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Black
+        )
+    }
 }

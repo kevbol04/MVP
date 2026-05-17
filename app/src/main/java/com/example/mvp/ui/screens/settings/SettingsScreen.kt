@@ -163,8 +163,8 @@ fun SettingsScreen(
                     DividerGlass()
                     SettingsNavRow(
                         title = "Editar club",
-                        subtitle = "Escudo, nombre, estadio y míster",
-                        icon = Icons.Default.Flag,
+                        subtitle = "Personaliza los datos de tu club",
+                        icon = Icons.Default.Shield,
                         accent = accent,
                         accent2 = accent2,
                         onText = onBg,
