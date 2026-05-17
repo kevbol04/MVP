@@ -1,6 +1,6 @@
 package com.example.mvp.domain.repository
 
-import com.example.mvp.ui.screens.players.Player
+import com.example.mvp.domain.model.Player
 import kotlinx.coroutines.flow.Flow
 
 interface PlayerRepository {

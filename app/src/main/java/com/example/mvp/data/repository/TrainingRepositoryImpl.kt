@@ -3,8 +3,8 @@ package com.example.mvp.data.repository
 import com.example.mvp.data.local.dao.TrainingDao
 import com.example.mvp.data.local.mapper.toEntity
 import com.example.mvp.data.local.mapper.toModel
+import com.example.mvp.domain.model.Training
 import com.example.mvp.domain.repository.TrainingRepository
-import com.example.mvp.ui.screens.training.Training
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

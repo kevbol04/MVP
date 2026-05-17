@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
+import com.example.mvp.domain.model.Training
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,23 +42,6 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.launch
-
-enum class TrainingType(val label: String) {
-    FUERZA("Fuerza"),
-    RESISTENCIA("Resistencia"),
-    VELOCIDAD("Velocidad"),
-    TECNICA("Técnica"),
-    RECUPERACION("Recuperación")
-}
-
-data class Training(
-    val id: Int,
-    val name: String,
-    val dateText: String,
-    val durationMin: Int,
-    val type: TrainingType,
-    val isDone: Boolean = false
-)
 
 private enum class TrainingTab(val label: String) {
     PENDING("Por hacer"),

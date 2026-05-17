@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.mvp.domain.repository.TrainingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
+import com.example.mvp.domain.model.Training
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 

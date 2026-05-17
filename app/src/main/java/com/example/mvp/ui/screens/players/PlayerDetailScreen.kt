@@ -19,7 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
 import com.example.mvp.ui.theme.Loss
-import com.example.mvp.ui.theme.Win
+import com.example.mvp.domain.model.Player
+import com.example.mvp.domain.model.PlayerStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

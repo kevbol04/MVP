@@ -1,6 +1,6 @@
 package com.example.mvp.domain.repository
 
-import com.example.mvp.ui.screens.matches.Match
+import com.example.mvp.domain.model.Match
 import kotlinx.coroutines.flow.Flow
 
 interface MatchRepository {

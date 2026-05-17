@@ -1,8 +1,8 @@
 package com.example.mvp.data.local.mapper
 
 import com.example.mvp.data.local.entities.TrainingEntity
-import com.example.mvp.ui.screens.training.Training
-import com.example.mvp.ui.screens.training.TrainingType
+import com.example.mvp.domain.model.Training
+import com.example.mvp.domain.model.TrainingType
 
 fun TrainingEntity.toModel(): Training {
     return Training(

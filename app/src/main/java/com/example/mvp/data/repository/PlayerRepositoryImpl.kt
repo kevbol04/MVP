@@ -3,8 +3,8 @@ package com.example.mvp.data.repository
 import com.example.mvp.data.local.dao.PlayerDao
 import com.example.mvp.data.local.mapper.toEntity
 import com.example.mvp.data.local.mapper.toModel
+import com.example.mvp.domain.model.Player
 import com.example.mvp.domain.repository.PlayerRepository
-import com.example.mvp.ui.screens.players.Player
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

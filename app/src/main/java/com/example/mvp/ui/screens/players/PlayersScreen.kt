@@ -40,31 +40,12 @@ import com.example.mvp.ui.components.EmptyState
 import com.example.mvp.ui.components.ProFootballBottomBar
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
+import com.example.mvp.domain.model.Player
+import com.example.mvp.domain.model.PlayerPosition
+import com.example.mvp.domain.model.PlayerStatus
 import com.example.mvp.ui.theme.Loss
 import kotlin.math.min
 
-enum class PlayerPosition(val short: String, val label: String) {
-    POR("POR", "Portero"),
-    DEF("DEF", "Defensa"),
-    MED("MED", "Mediocentro"),
-    DEL("DEL", "Delantero")
-}
-
-enum class PlayerStatus(val label: String) {
-    DISPONIBLE("Disponible"),
-    LESIONADO("Lesionado")
-}
-
-data class Player(
-    val id: Int,
-    val name: String,
-    val position: PlayerPosition,
-    val age: Int,
-    val number: Int,
-    val rating: Int,
-    val status: PlayerStatus,
-    val lineupSlot: String? = null
-)
 
 private enum class PlayersTab { Squad, Lineup }
 

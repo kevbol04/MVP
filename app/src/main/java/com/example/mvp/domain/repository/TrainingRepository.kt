@@ -1,6 +1,6 @@
 package com.example.mvp.domain.repository
 
-import com.example.mvp.ui.screens.training.Training
+import com.example.mvp.domain.model.Training
 import kotlinx.coroutines.flow.Flow
 
 interface TrainingRepository {

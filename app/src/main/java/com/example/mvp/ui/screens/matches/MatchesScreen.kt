@@ -27,6 +27,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.mvp.ui.components.BottomBarDestination
+import com.example.mvp.domain.model.Match
+import com.example.mvp.domain.model.MatchResult
+import com.example.mvp.domain.model.Competition
 import com.example.mvp.ui.components.EmptyState
 import com.example.mvp.ui.components.ProFootballBottomBar
 import com.example.mvp.ui.theme.ButtonTextDark
@@ -36,28 +39,6 @@ import com.example.mvp.ui.theme.Loss
 import com.example.mvp.ui.theme.Win
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-
-enum class MatchResult(val label: String) {
-    VICTORIA("Victoria"),
-    EMPATE("Empate"),
-    DERROTA("Derrota")
-}
-
-enum class Competition(val label: String) {
-    LIGA("Liga"),
-    COPA("Copa"),
-    AMISTOSO("Amistoso")
-}
-
-data class Match(
-    val id: Int,
-    val rival: String,
-    val dateText: String,
-    val competition: Competition,
-    val goalsFor: Int,
-    val goalsAgainst: Int,
-    val result: MatchResult
-)
 
 private enum class BottomTab { Training, Matches, Players, Stats }
 

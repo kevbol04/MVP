@@ -11,6 +11,9 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.example.mvp.domain.model.Match
+import com.example.mvp.domain.model.MatchResult
+import com.example.mvp.domain.model.Competition
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip

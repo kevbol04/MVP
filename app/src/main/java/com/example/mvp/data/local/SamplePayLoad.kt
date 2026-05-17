@@ -9,11 +9,11 @@ import com.example.mvp.data.local.entities.MatchEntity
 import com.example.mvp.data.local.entities.PlayerEntity
 import com.example.mvp.data.local.entities.TrainingEntity
 import com.example.mvp.data.security.AuthPasswordHasher
-import com.example.mvp.ui.screens.matches.Competition
-import com.example.mvp.ui.screens.matches.MatchResult
-import com.example.mvp.ui.screens.players.PlayerPosition
-import com.example.mvp.ui.screens.players.PlayerStatus
-import com.example.mvp.ui.screens.training.TrainingType
+import com.example.mvp.domain.model.Competition
+import com.example.mvp.domain.model.MatchResult
+import com.example.mvp.domain.model.PlayerPosition
+import com.example.mvp.domain.model.PlayerStatus
+import com.example.mvp.domain.model.TrainingType
 
 object SamplePayLoad {
 

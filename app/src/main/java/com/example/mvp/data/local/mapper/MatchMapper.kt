@@ -1,9 +1,9 @@
 package com.example.mvp.data.local.mapper
 
 import com.example.mvp.data.local.entities.MatchEntity
-import com.example.mvp.ui.screens.matches.Competition
-import com.example.mvp.ui.screens.matches.Match
-import com.example.mvp.ui.screens.matches.MatchResult
+import com.example.mvp.domain.model.Competition
+import com.example.mvp.domain.model.Match
+import com.example.mvp.domain.model.MatchResult
 
 fun MatchEntity.toModel(): Match {
     return Match(

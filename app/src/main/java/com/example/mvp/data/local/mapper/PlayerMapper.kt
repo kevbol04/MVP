@@ -1,9 +1,9 @@
 package com.example.mvp.data.local.mapper
 
 import com.example.mvp.data.local.entities.PlayerEntity
-import com.example.mvp.ui.screens.players.Player
-import com.example.mvp.ui.screens.players.PlayerPosition
-import com.example.mvp.ui.screens.players.PlayerStatus
+import com.example.mvp.domain.model.Player
+import com.example.mvp.domain.model.PlayerPosition
+import com.example.mvp.domain.model.PlayerStatus
 
 private fun safePosition(value: String): PlayerPosition =
     runCatching { PlayerPosition.valueOf(value) }.getOrElse { PlayerPosition.MED }
