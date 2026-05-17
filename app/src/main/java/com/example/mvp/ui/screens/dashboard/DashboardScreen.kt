@@ -918,12 +918,23 @@ private data class DashboardSummary(
                 playersCount = playersCount,
                 availablePlayers = availablePlayers,
                 averageRating = averageRating,
-                recentResults = matches.sortedByDescending { it.id }.take(5).map { it.result },
+                recentResults = matches
+                    .sortedByDescending { it.parsedDate() ?: LocalDate.MIN }
+                    .take(5)
+                    .map { it.result },
                 lastTraining = orderedTrainings.firstOrNull(),
                 lastMatch = matches.maxByOrNull { it.id },
                 lastPlayer = players.maxByOrNull { it.id }
             )
         }
+    }
+}
+
+private fun Match.parsedDate(): LocalDate? {
+    return try {
+        LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
+    } catch (_: Exception) {
+        null
     }
 }
 

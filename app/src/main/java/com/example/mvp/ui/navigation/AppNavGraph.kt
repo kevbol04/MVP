@@ -276,8 +276,14 @@ fun AppNavGraph(
                         navController.popBackStack()
                     },
                     onSave = { updatedClub ->
-                        vm.save(updatedClub)
-                        showSnackbar("Club actualizado correctamente")
+                        vm.save(updatedClub) {
+                            showSnackbar("Club actualizado correctamente")
+
+                            snackbarScope.launch {
+                                delay(300)
+                                navController.popBackStack()
+                            }
+                        }
                     }
                 )
             }
@@ -870,14 +876,5 @@ private fun NavHostController.navigateToTab(route: String) {
         popUpTo(Route.Dashboard.route) {
             saveState = true
         }
-    }
-}
-
-private fun isTrainingOverdue(dateText: String): Boolean {
-    return try {
-        val date = LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
-        date.isBefore(LocalDate.now())
-    } catch (_: Exception) {
-        false
     }
 }
