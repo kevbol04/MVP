@@ -7,7 +7,6 @@ import com.example.mvp.domain.model.ClubBadgeDefaults
 fun ClubEntity.toModel(): Club = Club(
     id = id,
     name = name,
-    season = season,
     stadium = stadium,
     city = city,
     coachName = coachName,
@@ -18,7 +17,6 @@ fun Club.toEntity(userId: Long): ClubEntity = ClubEntity(
     id = id,
     userId = userId,
     name = name.trim(),
-    season = season.trim(),
     stadium = stadium.trim(),
     city = city.trim(),
     coachName = coachName.trim(),

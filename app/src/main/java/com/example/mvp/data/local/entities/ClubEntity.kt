@@ -28,7 +28,6 @@ data class ClubEntity(
     val userId: Long,
 
     val name: String,
-    val season: String,
     val stadium: String,
     val city: String,
 

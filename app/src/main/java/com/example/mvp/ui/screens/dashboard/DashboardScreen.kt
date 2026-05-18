@@ -270,7 +270,6 @@ private fun ClubDashboardCard(
     onText: Color
 ) {
     val clubName = club?.displayName ?: "Configura tu club"
-    val season = club?.season?.takeIf { it.isNotBlank() } ?: "Temporada sin definir"
     val city = club?.city?.takeIf { it.isNotBlank() } ?: "Ciudad sin definir"
     val coach = club?.coachName?.takeIf { it.isNotBlank() } ?: username
 
@@ -379,7 +378,7 @@ private fun ClubDashboardCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "$season · $city",
+                        text = city,
                         color = onText.copy(alpha = 0.72f),
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,

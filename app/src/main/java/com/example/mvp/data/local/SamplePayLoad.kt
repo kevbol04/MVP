@@ -52,7 +52,6 @@ object SamplePayLoad {
     private fun buildClub(userId: Long): ClubEntity = ClubEntity(
         userId = userId,
         name = "Real Madrid CF",
-        season = "2025/2026",
         stadium = "Santiago Bernabéu",
         city = "Madrid",
         coachName = DEMO_NAME,

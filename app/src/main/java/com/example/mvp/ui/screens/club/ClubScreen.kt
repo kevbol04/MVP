@@ -30,8 +30,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Stadium
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -83,48 +81,28 @@ fun ClubScreen(
     val fallbackCoachName = defaultCoachName.trim().ifBlank { "Usuario" }
 
     var name by rememberSaveable { mutableStateOf("") }
-    var season by rememberSaveable { mutableStateOf("") }
     var stadium by rememberSaveable { mutableStateOf("") }
     var city by rememberSaveable { mutableStateOf("") }
     var coachName by rememberSaveable { mutableStateOf("") }
     var badgeId by rememberSaveable { mutableStateOf(ClubBadgeDefaults.DEFAULT_ID) }
     var nameTouched by rememberSaveable { mutableStateOf(false) }
-    var seasonTouched by rememberSaveable { mutableStateOf(false) }
     var stadiumTouched by rememberSaveable { mutableStateOf(false) }
     var cityTouched by rememberSaveable { mutableStateOf(false) }
     var coachTouched by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(club?.id, club?.coachName, club?.badgeId, fallbackCoachName) {
         name = club?.name.orEmpty()
-        season = club?.season.orEmpty().ifBlank { "2025/2026" }
         stadium = club?.stadium.orEmpty()
         city = club?.city.orEmpty()
         coachName = club?.coachName.orEmpty().ifBlank { fallbackCoachName }
         badgeId = ClubBadgeDefaults.sanitize(club?.badgeId.orEmpty())
     }
 
-    val seasonRegex = Regex("^\\d{4}/\\d{4}$")
 
     val nameErrorText = when {
         name.isBlank() -> "El nombre del club es obligatorio"
         name.trim().length < 3 -> "El nombre debe tener al menos 3 caracteres"
         else -> null
-    }
-
-    val seasonErrorText = when {
-        season.isBlank() -> "La temporada es obligatoria"
-        !seasonRegex.matches(season.trim()) -> "Usa el formato 2025/2026"
-        else -> {
-            val years = season.trim().split("/")
-            val firstYear = years[0].toIntOrNull()
-            val secondYear = years[1].toIntOrNull()
-
-            if (firstYear == null || secondYear == null || secondYear != firstYear + 1) {
-                "La temporada debe ser consecutiva, por ejemplo 2025/2026"
-            } else {
-                null
-            }
-        }
     }
 
     val stadiumErrorText = when {
@@ -146,13 +124,11 @@ fun ClubScreen(
     }
 
     val nameError = nameTouched && nameErrorText != null
-    val seasonError = seasonTouched && seasonErrorText != null
     val stadiumError = stadiumTouched && stadiumErrorText != null
     val cityError = cityTouched && cityErrorText != null
     val coachError = coachTouched && coachErrorText != null
 
     val canSave = nameErrorText == null &&
-            seasonErrorText == null &&
             stadiumErrorText == null &&
             cityErrorText == null &&
             coachErrorText == null
@@ -185,7 +161,7 @@ fun ClubScreen(
         ) {
             ClubHeader(
                 clubName = if (isInitialSetup) "Crea tu club" else name.ifBlank { "Configurar club" },
-                subtitle = if (isInitialSetup) "Elige identidad y empieza tu carrera" else season.ifBlank { "Datos deportivos principales" },
+                subtitle = if (isInitialSetup) "Elige identidad y empieza tu carrera" else "Datos deportivos principales",
                 badgeId = badgeId,
                 accent = accent,
                 accent2 = accent2,
@@ -196,7 +172,6 @@ fun ClubScreen(
 
             ClubPreviewCard(
                 name = name,
-                season = season,
                 stadium = stadium,
                 city = city,
                 coachName = coachName,
@@ -231,21 +206,6 @@ fun ClubScreen(
                     onText = onBg,
                     isError = nameError,
                     supportingText = if (nameError) nameErrorText else null
-                )
-
-                ClubTextField(
-                    value = season,
-                    onValueChange = {
-                        season = it
-                        seasonTouched = true
-                    },
-                    label = "Temporada",
-                    icon = Icons.Default.Flag,
-                    accent = accent2,
-                    onText = onBg,
-                    placeholder = "2025/2026",
-                    isError = seasonError,
-                    supportingText = if (seasonError) seasonErrorText else null
                 )
 
                 ClubTextField(
@@ -299,7 +259,6 @@ fun ClubScreen(
                 onText = onBg,
                 onClick = {
                     nameTouched = true
-                    seasonTouched = true
                     stadiumTouched = true
                     cityTouched = true
                     coachTouched = true
@@ -309,7 +268,6 @@ fun ClubScreen(
                             Club(
                                 id = club?.id ?: 0,
                                 name = name.trim(),
-                                season = season.trim(),
                                 stadium = stadium.trim(),
                                 city = city.trim(),
                                 coachName = coachName.trim(),
@@ -387,7 +345,6 @@ private fun ClubHeader(
 @Composable
 private fun ClubPreviewCard(
     name: String,
-    season: String,
     stadium: String,
     city: String,
     coachName: String,
@@ -490,10 +447,7 @@ private fun ClubPreviewCard(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = listOf(season, city)
-                            .filter { it.isNotBlank() }
-                            .joinToString(" · ")
-                            .ifBlank { "Temporada y ciudad sin definir" },
+                        text = city.ifBlank { "Ciudad sin definir" },
                         color = onText.copy(alpha = 0.74f),
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
