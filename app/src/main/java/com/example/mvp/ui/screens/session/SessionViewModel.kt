@@ -6,6 +6,7 @@ import com.example.mvp.data.local.InitialDataSeeder
 import com.example.mvp.data.session.UserSession
 import com.example.mvp.data.session.UserSessionManager
 import com.example.mvp.domain.repository.AuthRepository
+import com.example.mvp.domain.repository.ClubRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,13 +16,15 @@ import javax.inject.Inject
 
 data class SessionUiState(
     val loading: Boolean = true,
-    val userSession: UserSession? = null
+    val userSession: UserSession? = null,
+    val hasCompletedClubSetup: Boolean = false
 )
 
 @HiltViewModel
 class SessionViewModel @Inject constructor(
     private val sessionManager: UserSessionManager,
     private val authRepository: AuthRepository,
+    private val clubRepository: ClubRepository,
 
     // SOLO DESARROLLO:
     // Este seeder crea user@gmail.com / 1234 y datos de prueba antes de mostrar el login.
@@ -36,7 +39,6 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch {
             // SOLO DESARROLLO:
             // Carga usuario demo y datos de prueba antes de mostrar Login/Dashboard.
-            // Esto evita que user@gmail.com falle en el primer intento de login.
             //
             // ANTES DE PUBLICAR:
             // Eliminar este bloque y eliminar InitialDataSeeder.kt / SamplePayLoad.kt.
@@ -54,7 +56,8 @@ class SessionViewModel @Inject constructor(
         if (session == null) {
             _uiState.value = SessionUiState(
                 loading = false,
-                userSession = null
+                userSession = null,
+                hasCompletedClubSetup = false
             )
             return
         }
@@ -73,7 +76,8 @@ class SessionViewModel @Inject constructor(
 
             _uiState.value = SessionUiState(
                 loading = false,
-                userSession = null
+                userSession = null,
+                hasCompletedClubSetup = false
             )
             return
         }
@@ -92,9 +96,14 @@ class SessionViewModel @Inject constructor(
             )
         }
 
+        val hasClub = runCatching {
+            clubRepository.hasClub(verifiedSession.userId)
+        }.getOrDefault(false)
+
         _uiState.value = SessionUiState(
             loading = false,
-            userSession = verifiedSession
+            userSession = verifiedSession,
+            hasCompletedClubSetup = hasClub
         )
     }
 
@@ -102,6 +111,12 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch {
             sessionManager.saveSession(userId, name, email)
         }
+    }
+
+    fun markClubSetupCompleted() {
+        _uiState.value = _uiState.value.copy(
+            hasCompletedClubSetup = true
+        )
     }
 
     fun clearSession() {

@@ -295,6 +295,7 @@ fun ClubScreen(
                 text = if (isInitialSetup) "Crear club" else "Guardar club",
                 enabled = canSave,
                 accent = accent,
+                accent2 = accent2,
                 onText = onBg,
                 onClick = {
                     nameTouched = true
@@ -778,52 +779,72 @@ private fun PremiumSaveButton(
     text: String,
     enabled: Boolean,
     accent: Color,
+    accent2: Color,
     onText: Color,
     onClick: () -> Unit
 ) {
-    Box(
+    val shape = RoundedCornerShape(18.dp)
+
+    val backgroundBrush = if (enabled) {
+        Brush.horizontalGradient(
+            colors = listOf(
+                accent.copy(alpha = 0.98f),
+                accent2.copy(alpha = 0.92f)
+            )
+        )
+    } else {
+        Brush.horizontalGradient(
+            colors = listOf(
+                Color(0xFF1A3142).copy(alpha = 0.92f),
+                Color(0xFF22364B).copy(alpha = 0.92f)
+            )
+        )
+    }
+
+    val borderColor = if (enabled) {
+        Color.White.copy(alpha = 0.10f)
+    } else {
+        Color.White.copy(alpha = 0.06f)
+    }
+
+    val contentColor = if (enabled) {
+        ButtonTextDark
+    } else {
+        onText.copy(alpha = 0.38f)
+    }
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 4.dp, bottom = 8.dp)
+            .padding(top = 6.dp, bottom = 8.dp)
+            .height(56.dp)
+            .clip(shape)
+            .background(backgroundBrush)
+            .border(
+                width = 1.dp,
+                color = borderColor,
+                shape = shape
+            )
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 18.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .padding(horizontal = 14.dp, vertical = 8.dp)
-                .clip(RoundedCornerShape(999.dp))
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            accent.copy(alpha = 0.55f),
-                            accent.copy(alpha = 0.20f)
-                        )
-                    )
-                )
+        Icon(
+            imageVector = Icons.Default.Save,
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.size(18.dp)
         )
 
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp)
-                .shadow(18.dp, RoundedCornerShape(999.dp), clip = false),
-            enabled = enabled,
-            shape = RoundedCornerShape(999.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = accent,
-                contentColor = ButtonTextDark,
-                disabledContainerColor = GlassBase.copy(alpha = 0.14f),
-                disabledContentColor = onText.copy(alpha = 0.45f)
-            ),
-            onClick = onClick
-        ) {
-            Icon(Icons.Default.Save, contentDescription = null)
-            Spacer(Modifier.size(12.dp))
-            Text(
-                text = text,
-                fontWeight = FontWeight.Black,
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
+        Spacer(modifier = Modifier.size(10.dp))
+
+        Text(
+            text = text,
+            color = contentColor,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleMedium
+        )
     }
 }
 

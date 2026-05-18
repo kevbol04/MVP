@@ -5,5 +5,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface ClubRepository {
     fun observeClub(userId: Long): Flow<Club?>
+    suspend fun hasClub(userId: Long): Boolean
     suspend fun save(userId: Long, club: Club)
 }

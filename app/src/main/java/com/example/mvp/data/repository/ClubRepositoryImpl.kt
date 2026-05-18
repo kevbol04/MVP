@@ -16,6 +16,12 @@ class ClubRepositoryImpl @Inject constructor(
     override fun observeClub(userId: Long): Flow<Club?> =
         dao.observeClub(userId).map { it?.toModel() }
 
+    override suspend fun hasClub(userId: Long): Boolean {
+        if (userId <= 0L) return false
+
+        return dao.getClub(userId) != null
+    }
+
     override suspend fun save(userId: Long, club: Club) {
         val existing = dao.getClub(userId)
         val entity = club.toEntity(userId)

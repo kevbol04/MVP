@@ -75,6 +75,7 @@ fun AppNavGraph(
     val sessionViewModel: SessionViewModel = hiltViewModel()
     val sessionState by sessionViewModel.uiState.collectAsState()
     val savedSession = sessionState.userSession
+    val hasCompletedClubSetup = sessionState.hasCompletedClubSetup
 
     var minimumSplashFinished by remember {
         mutableStateOf(false)
@@ -108,14 +109,48 @@ fun AppNavGraph(
         currentEmail = savedSession?.email ?: ""
     }
 
+    LaunchedEffect(savedSession, hasCompletedClubSetup) {
+        val currentRoute = navController.currentBackStackEntry?.destination?.route
+
+        if (savedSession == null) {
+            if (currentRoute != Route.Auth.route) {
+                navController.navigate(Route.Auth.route) {
+                    popUpTo(0) {
+                        inclusive = true
+                    }
+                }
+            }
+            return@LaunchedEffect
+        }
+
+        if (!hasCompletedClubSetup) {
+            if (currentRoute != Route.ClubSetup.route) {
+                navController.navigate(Route.ClubSetup.route) {
+                    popUpTo(0) {
+                        inclusive = true
+                    }
+                }
+            }
+            return@LaunchedEffect
+        }
+
+        if (currentRoute == Route.Auth.route || currentRoute == Route.ClubSetup.route) {
+            navController.navigate(Route.Dashboard.route) {
+                popUpTo(0) {
+                    inclusive = true
+                }
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
 
         NavHost(
             navController = navController,
-            startDestination = if (savedSession != null) {
-                Route.Dashboard.route
-            } else {
-                startDestination
+            startDestination = when {
+                savedSession == null -> startDestination
+                hasCompletedClubSetup -> Route.Dashboard.route
+                else -> Route.ClubSetup.route
             }
         ) {
 
@@ -132,12 +167,6 @@ fun AppNavGraph(
                             name = name,
                             email = email
                         )
-
-                        navController.navigate(Route.Dashboard.route) {
-                            popUpTo(Route.Auth.route) {
-                                inclusive = true
-                            }
-                        }
                     }
                 )
             }
@@ -315,9 +344,14 @@ fun AppNavGraph(
                     },
                     onSave = { createdClub ->
                         vm.save(createdClub) {
+                            sessionViewModel.markClubSetupCompleted()
+
                             showSnackbar("Club creado correctamente")
+
                             navController.navigate(Route.Dashboard.route) {
-                                popUpTo(Route.ClubSetup.route) { inclusive = true }
+                                popUpTo(Route.ClubSetup.route) {
+                                    inclusive = true
+                                }
                             }
                         }
                     }
