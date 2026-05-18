@@ -1,6 +1,9 @@
 package com.example.mvp.data.local.dao
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
 import com.example.mvp.data.local.entities.PlayerEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -16,9 +19,31 @@ interface PlayerDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: PlayerEntity): Long
 
-    @Update
-    suspend fun update(entity: PlayerEntity)
+    @Query(
+        """
+        UPDATE players
+        SET name = :name,
+            position = :position,
+            age = :age,
+            number = :number,
+            rating = :rating,
+            status = :status,
+            lineup_slot = :lineupSlot
+        WHERE id = :playerId AND user_id = :userId
+        """
+    )
+    suspend fun updateForUser(
+        playerId: Int,
+        userId: Long,
+        name: String,
+        position: String,
+        age: Int,
+        number: Int,
+        rating: Int,
+        status: String,
+        lineupSlot: String?
+    ): Int
 
-    @Delete
-    suspend fun delete(entity: PlayerEntity)
+    @Query("DELETE FROM players WHERE id = :playerId AND user_id = :userId")
+    suspend fun deleteByIdForUser(playerId: Int, userId: Long): Int
 }

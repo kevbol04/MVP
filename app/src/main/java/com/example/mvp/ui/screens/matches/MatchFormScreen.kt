@@ -322,11 +322,10 @@ fun MatchFormScreen(
                                 Match(
                                     id = initial?.id ?: 0,
                                     rival = rival.trim(),
-                                    dateText = dateText.trim(),
+                                    dateEpochDay = parseDateOrNull(dateText)?.toEpochDay() ?: 0L,
                                     competition = competition,
                                     goalsFor = goalsFor,
-                                    goalsAgainst = goalsAgainst,
-                                    result = computedResult
+                                    goalsAgainst = goalsAgainst
                                 )
                             )
                         },
@@ -521,6 +520,13 @@ private fun validateMatchRival(raw: String): String? {
     if (txt.contains(Regex("\\s{2,}"))) return "Evita usar espacios dobles."
 
     return null
+}
+
+
+private fun parseDateOrNull(raw: String): LocalDate? {
+    val formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu")
+        .withResolverStyle(ResolverStyle.STRICT)
+    return runCatching { LocalDate.parse(raw.trim(), formatter) }.getOrNull()
 }
 
 private fun validateDateStrict(raw: String): String? {

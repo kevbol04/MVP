@@ -25,11 +25,23 @@ class PlayerRepositoryImpl @Inject constructor(
         if (player.id == 0) {
             dao.insert(entity.copy(id = 0))
         } else {
-            dao.update(entity)
+            dao.updateForUser(
+                playerId = entity.id,
+                userId = userId,
+                name = entity.name,
+                position = entity.position,
+                age = entity.age,
+                number = entity.number,
+                rating = entity.rating,
+                status = entity.status,
+                lineupSlot = entity.lineupSlot
+            )
         }
     }
 
     override suspend fun delete(userId: Long, player: Player) {
-        dao.delete(player.toEntity(userId))
+        if (player.id != 0) {
+            dao.deleteByIdForUser(playerId = player.id, userId = userId)
+        }
     }
 }

@@ -16,7 +16,7 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["user_id"])]
+    indices = [Index(value = ["user_id"]), Index(value = ["date_epoch_day"])]
 )
 data class MatchEntity(
     @PrimaryKey(autoGenerate = true)
@@ -27,11 +27,10 @@ data class MatchEntity(
 
     val rival: String,
 
-    @ColumnInfo(name = "date_text")
-    val dateText: String,
+    @ColumnInfo(name = "date_epoch_day")
+    val dateEpochDay: Long,
 
     val competition: String,
-    val result: String,
 
     @ColumnInfo(name = "goals_for")
     val goalsFor: Int,

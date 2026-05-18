@@ -18,18 +18,30 @@ class TrainingRepositoryImpl @Inject constructor(
     }
 
     override suspend fun upsertTraining(userId: Long, training: Training) {
+        val entity = training.toEntity(userId)
+
         if (training.id == 0) {
-            dao.insert(training.toEntity(userId))
+            dao.insert(entity.copy(id = 0))
         } else {
-            dao.update(training.toEntity(userId))
+            dao.updateForUser(
+                trainingId = entity.id,
+                userId = userId,
+                name = entity.name,
+                dateEpochDay = entity.dateEpochDay,
+                durationMin = entity.durationMin,
+                type = entity.type,
+                isDone = entity.isDone
+            )
         }
     }
 
     override suspend fun deleteTraining(userId: Long, training: Training) {
-        dao.delete(training.toEntity(userId))
+        if (training.id != 0) {
+            dao.deleteByIdForUser(trainingId = training.id, userId = userId)
+        }
     }
 
     override suspend fun toggleTrainingDone(userId: Long, training: Training) {
-        dao.update(training.copy(isDone = !training.isDone).toEntity(userId))
+        upsertTraining(userId, training.copy(isDone = !training.isDone))
     }
 }

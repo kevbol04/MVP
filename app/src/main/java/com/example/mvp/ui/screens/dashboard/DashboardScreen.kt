@@ -894,7 +894,7 @@ private data class DashboardSummary(
             val pendingTrainings = trainings.filter { !it.isDone }
             val overdueTrainings = pendingTrainings
                 .filter { it.isOverdue(today) }
-                .sortedWith(compareBy<Training> { it.parsedDate() ?: LocalDate.MAX }.thenBy { it.name.lowercase() })
+                .sortedWith(compareBy<Training> { it.parsedDate() }.thenBy { it.name.lowercase() })
 
             val matchesPlayed = matches.size
             val wins = matches.count { it.result == MatchResult.VICTORIA }
@@ -918,7 +918,7 @@ private data class DashboardSummary(
                 availablePlayers = availablePlayers,
                 averageRating = averageRating,
                 recentResults = matches
-                    .sortedByDescending { it.parsedDate() ?: LocalDate.MIN }
+                    .sortedByDescending { it.parsedDate() }
                     .take(5)
                     .map { it.result },
                 lastTraining = orderedTrainings.firstOrNull(),
@@ -929,24 +929,12 @@ private data class DashboardSummary(
     }
 }
 
-private fun Match.parsedDate(): LocalDate? {
-    return try {
-        LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
-    } catch (_: Exception) {
-        null
-    }
-}
+private fun Match.parsedDate(): LocalDate = date
 
-private fun Training.parsedDate(): LocalDate? {
-    return try {
-        LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
-    } catch (_: Exception) {
-        null
-    }
-}
+private fun Training.parsedDate(): LocalDate = date
 
 private fun Training.isOverdue(today: LocalDate = LocalDate.now()): Boolean {
-    val date = parsedDate() ?: return false
+    val date = parsedDate()
     return !isDone && date.isBefore(today)
 }
 

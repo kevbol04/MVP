@@ -12,10 +12,12 @@ import com.example.mvp.data.local.entities.PlayerEntity
 import com.example.mvp.data.local.entities.TrainingEntity
 import com.example.mvp.data.security.AuthPasswordHasher
 import com.example.mvp.domain.model.Competition
-import com.example.mvp.domain.model.MatchResult
 import com.example.mvp.domain.model.PlayerPosition
 import com.example.mvp.domain.model.PlayerStatus
 import com.example.mvp.domain.model.TrainingType
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 object SamplePayLoad {
 
@@ -118,16 +120,16 @@ object SamplePayLoad {
     )
 
     private fun buildMatches(userId: Long): List<MatchEntity> = listOf(
-        match(userId, "Atlético de Madrid", "05/04/2026", Competition.LIGA, MatchResult.VICTORIA, 3, 1),
-        match(userId, "FC Barcelona", "29/03/2026", Competition.COPA, MatchResult.EMPATE, 2, 2),
-        match(userId, "Valencia CF", "22/03/2026", Competition.LIGA, MatchResult.VICTORIA, 2, 0),
-        match(userId, "Sevilla FC", "15/03/2026", Competition.LIGA, MatchResult.DERROTA, 1, 2),
-        match(userId, "Real Sociedad", "08/03/2026", Competition.COPA, MatchResult.VICTORIA, 4, 2),
-        match(userId, "Villarreal CF", "01/03/2026", Competition.AMISTOSO, MatchResult.EMPATE, 1, 1),
-        match(userId, "Real Betis", "22/02/2026", Competition.LIGA, MatchResult.VICTORIA, 3, 0),
-        match(userId, "Athletic Club", "15/02/2026", Competition.LIGA, MatchResult.DERROTA, 0, 1),
-        match(userId, "Getafe CF", "08/02/2026", Competition.AMISTOSO, MatchResult.VICTORIA, 2, 1),
-        match(userId, "Girona FC", "01/02/2026", Competition.LIGA, MatchResult.VICTORIA, 5, 2)
+        match(userId, "Atlético de Madrid", "05/04/2026", Competition.LIGA, 3, 1),
+        match(userId, "FC Barcelona", "29/03/2026", Competition.COPA, 2, 2),
+        match(userId, "Valencia CF", "22/03/2026", Competition.LIGA, 2, 0),
+        match(userId, "Sevilla FC", "15/03/2026", Competition.LIGA, 1, 2),
+        match(userId, "Real Sociedad", "08/03/2026", Competition.COPA, 4, 2),
+        match(userId, "Villarreal CF", "01/03/2026", Competition.AMISTOSO, 1, 1),
+        match(userId, "Real Betis", "22/02/2026", Competition.LIGA, 3, 0),
+        match(userId, "Athletic Club", "15/02/2026", Competition.LIGA, 0, 1),
+        match(userId, "Getafe CF", "08/02/2026", Competition.AMISTOSO, 2, 1),
+        match(userId, "Girona FC", "01/02/2026", Competition.LIGA, 5, 2)
     )
 
     private fun match(
@@ -135,15 +137,13 @@ object SamplePayLoad {
         rival: String,
         dateText: String,
         competition: Competition,
-        result: MatchResult,
         goalsFor: Int,
         goalsAgainst: Int
     ): MatchEntity = MatchEntity(
         userId = userId,
         rival = rival,
-        dateText = dateText,
+        dateEpochDay = dateText.toEpochDayOrZero(),
         competition = competition.name,
-        result = result.name,
         goalsFor = goalsFor,
         goalsAgainst = goalsAgainst
     )
@@ -181,9 +181,15 @@ object SamplePayLoad {
     ): TrainingEntity = TrainingEntity(
         userId = userId,
         name = name,
-        dateText = dateText,
+        dateEpochDay = dateText.toEpochDayOrZero(),
         durationMin = durationMin,
         type = type.name,
         isDone = isDone
     )
+
+    private val DATE_FORMATTER: DateTimeFormatter =
+        DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+
+    private fun String.toEpochDayOrZero(): Long =
+        runCatching { LocalDate.parse(this, DATE_FORMATTER).toEpochDay() }.getOrDefault(0L)
 }

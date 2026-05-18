@@ -22,14 +22,26 @@ class MatchRepositoryImpl @Inject constructor(
     }
 
     override suspend fun upsertMatch(userId: Long, match: Match) {
+        val entity = match.toEntity(userId)
+
         if (match.id == 0) {
-            dao.insert(match.toEntity(userId))
+            dao.insert(entity.copy(id = 0))
         } else {
-            dao.update(match.toEntity(userId))
+            dao.updateForUser(
+                matchId = entity.id,
+                userId = userId,
+                rival = entity.rival,
+                dateEpochDay = entity.dateEpochDay,
+                competition = entity.competition,
+                goalsFor = entity.goalsFor,
+                goalsAgainst = entity.goalsAgainst
+            )
         }
     }
 
     override suspend fun deleteMatch(userId: Long, match: Match) {
-        dao.delete(match.toEntity(userId))
+        if (match.id != 0) {
+            dao.deleteByIdForUser(matchId = match.id, userId = userId)
+        }
     }
 }

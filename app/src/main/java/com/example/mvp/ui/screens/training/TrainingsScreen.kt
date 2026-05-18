@@ -622,12 +622,12 @@ private fun TrainingCalendar(
     var selectedDate by remember(month) { mutableStateOf<LocalDate?>(null) }
 
     val byDate = remember(trainings) {
-        trainings.groupBy { parseTrainingDate(it.dateText) }
+        trainings.groupBy { it.date }
     }
 
     val monthTrainings = remember(trainings, month) {
         trainings
-            .filter { parseTrainingDate(it.dateText)?.let { date -> YearMonth.from(date) == month } == true }
+            .filter { YearMonth.from(it.date) == month }
             .sortedByDate()
     }
 
@@ -820,7 +820,7 @@ private fun CalendarTrainingLine(
 @Composable
 private fun CalendarGrid(
     month: YearMonth,
-    trainingsByDate: Map<LocalDate?, List<Training>>,
+    trainingsByDate: Map<LocalDate, List<Training>>,
     selectedDate: LocalDate?,
     onSelectDate: (LocalDate?) -> Unit,
     accent: Color,
@@ -925,14 +925,14 @@ private fun List<Training>.sortedPendingSmart(): List<Training> {
     val today = LocalDate.now()
     return sortedWith(
         compareBy<Training> { training ->
-            val date = parseTrainingDate(training.dateText)
+            val date = training.date
             when {
                 date == null -> 3
                 date.isBefore(today) -> 0
                 date.isEqual(today) -> 1
                 else -> 2
             }
-        }.thenBy { parseTrainingDate(it.dateText) }
+        }.thenBy { it.date }
             .thenBy { it.name.lowercase(Locale.getDefault()) }
             .thenBy { it.id }
     )
@@ -940,20 +940,18 @@ private fun List<Training>.sortedPendingSmart(): List<Training> {
 
 private fun List<Training>.sortedByDate(desc: Boolean = false): List<Training> {
     return if (desc) {
-        sortedWith(compareByDescending<Training> { parseTrainingDate(it.dateText) }.thenByDescending { it.id })
+        sortedWith(compareByDescending<Training> { it.date }.thenByDescending { it.id })
     } else {
-        sortedWith(compareBy<Training> { parseTrainingDate(it.dateText) }.thenBy { it.id })
+        sortedWith(compareBy<Training> { it.date }.thenBy { it.id })
     }
 }
 
 private fun Training.isOverdue(): Boolean {
-    val date = parseTrainingDate(dateText) ?: return false
     return !isDone && date.isBefore(LocalDate.now())
 }
 
 
 private fun Training.isFuturePending(): Boolean {
-    val date = parseTrainingDate(dateText) ?: return false
     return !isDone && date.isAfter(LocalDate.now())
 }
 

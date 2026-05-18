@@ -3,17 +3,15 @@ package com.example.mvp.data.local.mapper
 import com.example.mvp.data.local.entities.MatchEntity
 import com.example.mvp.domain.model.Competition
 import com.example.mvp.domain.model.Match
-import com.example.mvp.domain.model.MatchResult
 
 fun MatchEntity.toModel(): Match {
     return Match(
         id = id,
         rival = rival,
-        dateText = dateText,
+        dateEpochDay = dateEpochDay,
         competition = competition.toCompetition(),
         goalsFor = goalsFor,
-        goalsAgainst = goalsAgainst,
-        result = result.toMatchResult()
+        goalsAgainst = goalsAgainst
     )
 }
 
@@ -22,11 +20,10 @@ fun Match.toEntity(userId: Long): MatchEntity {
         id = id,
         userId = userId,
         rival = rival,
-        dateText = dateText,
+        dateEpochDay = dateEpochDay,
         competition = competition.name,
         goalsFor = goalsFor,
-        goalsAgainst = goalsAgainst,
-        result = result.name
+        goalsAgainst = goalsAgainst
     )
 }
 
@@ -34,10 +31,4 @@ private fun String.toCompetition(): Competition {
     return Competition.entries.firstOrNull { competition ->
         competition.name == this || competition.label == this
     } ?: Competition.entries.first()
-}
-
-private fun String.toMatchResult(): MatchResult {
-    return MatchResult.entries.firstOrNull { result ->
-        result.name == this || result.label == this
-    } ?: MatchResult.entries.first()
 }

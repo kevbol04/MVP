@@ -268,7 +268,7 @@ fun TrainingFormScreen(
                                 Training(
                                     id = initial?.id ?: 0,
                                     name = name.trim(),
-                                    dateText = dateText.trim(),
+                                    dateEpochDay = finalDate?.toEpochDay() ?: 0L,
                                     durationMin = durationText.toInt(),
                                     type = type,
                                     isDone = finalIsDone

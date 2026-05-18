@@ -16,7 +16,7 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["user_id"])]
+    indices = [Index(value = ["user_id"]), Index(value = ["date_epoch_day"])]
 )
 data class TrainingEntity(
     @PrimaryKey(autoGenerate = true)
@@ -27,8 +27,8 @@ data class TrainingEntity(
 
     val name: String,
 
-    @ColumnInfo(name = "date_text")
-    val dateText: String,
+    @ColumnInfo(name = "date_epoch_day")
+    val dateEpochDay: Long,
 
     @ColumnInfo(name = "duration_min")
     val durationMin: Int,

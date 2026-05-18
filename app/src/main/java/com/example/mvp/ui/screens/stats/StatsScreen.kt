@@ -121,7 +121,7 @@ fun StatsScreen(
     val ligaMatches = matches.count { it.competition == Competition.LIGA }
     val copaMatches = matches.count { it.competition == Competition.COPA }
     val amistosos = matches.count { it.competition == Competition.AMISTOSO }
-    val lastMatch = matches.maxByOrNull { parseDateOrNull(it.dateText) ?: LocalDate.MIN }
+    val lastMatch = matches.maxByOrNull { it.date }
 
     val completedTrainings = trainings.filter { it.isDone }
     val pendingTrainings = trainings.filter { !it.isDone && !it.isOverdue() }
@@ -134,13 +134,13 @@ fun StatsScreen(
     val totalMinutes = completedTrainings.sumOf { it.durationMin }
     val avgMinutes = if (completedTrainings.isEmpty()) 0.0 else totalMinutes.toDouble() / completedTrainings.size.toDouble()
     val minutesThisMonth = completedTrainings
-        .filter { parseDateOrNull(it.dateText)?.let { date -> YearMonth.from(date) == currentMonth } == true }
+        .filter { YearMonth.from(it.date) == currentMonth }
         .sumOf { it.durationMin }
     val completedThisMonth = completedTrainings.count {
-        parseDateOrNull(it.dateText)?.let { date -> YearMonth.from(date) == currentMonth } == true
+        YearMonth.from(it.date) == currentMonth
     }
-    val lastTraining = completedTrainings.maxByOrNull { parseDateOrNull(it.dateText) ?: LocalDate.MIN }
-    val nextTraining = pendingTrainings.minByOrNull { parseDateOrNull(it.dateText) ?: LocalDate.MAX }
+    val lastTraining = completedTrainings.maxByOrNull { it.date }
+    val nextTraining = pendingTrainings.minByOrNull { it.date }
     val favoriteTrainingType = completedTrainings
         .groupingBy { it.type }
         .eachCount()
@@ -150,7 +150,7 @@ fun StatsScreen(
     val totalRecords = totalPlayers + totalMatches + totalTrainingRecords
 
     val recentMatches = matches
-        .sortedByDescending { parseDateOrNull(it.dateText) ?: LocalDate.MIN }
+        .sortedByDescending { it.date }
         .take(5)
 
     val recentLosses = recentMatches.count { it.result == MatchResult.DERROTA }
@@ -865,7 +865,7 @@ private fun MatchStatsSection(
 
     GlassCard(title = "Forma reciente", onText = onText) {
         val recent = matches
-            .sortedByDescending { parseDateOrNull(it.dateText) ?: LocalDate.MIN }
+            .sortedByDescending { it.date }
             .take(5)
 
         if (recent.isEmpty()) {
@@ -1417,12 +1417,7 @@ private fun resultColor(result: MatchResult): Color {
 }
 
 private fun Training.isOverdue(): Boolean {
-    return try {
-        val date = LocalDate.parse(dateText, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
-        !isDone && date.isBefore(LocalDate.now())
-    } catch (_: Exception) {
-        false
-    }
+    return !isDone && date.isBefore(LocalDate.now())
 }
 
 private fun parseDateOrNull(dateText: String): LocalDate? {

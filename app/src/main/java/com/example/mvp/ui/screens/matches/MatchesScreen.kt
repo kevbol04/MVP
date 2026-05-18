@@ -81,7 +81,7 @@ fun MatchesScreen(
                 matchesQuery && matchesCompetition
             }
             .sortedWith(
-                compareByDescending<Match> { parseMatchDateOrNull(it.dateText) ?: LocalDate.MIN }
+                compareByDescending<Match> { it.date }
                     .thenByDescending { it.id }
             )
     }
