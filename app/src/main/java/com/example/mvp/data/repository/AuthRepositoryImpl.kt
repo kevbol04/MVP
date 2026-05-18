@@ -75,6 +75,12 @@ class AuthRepositoryImpl @Inject constructor(
         user.toDomain()
     }
 
+    override suspend fun findById(id: Long): AuthUser? {
+        if (id <= 0L) return null
+
+        return dao.findById(id)?.toDomain()
+    }
+
     override suspend fun updateProfile(
         oldEmail: String,
         newName: String,
