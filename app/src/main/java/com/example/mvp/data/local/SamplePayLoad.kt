@@ -14,6 +14,8 @@ import com.example.mvp.data.security.AuthPasswordHasher
 import com.example.mvp.domain.model.Competition
 import com.example.mvp.domain.model.PlayerPosition
 import com.example.mvp.domain.model.PlayerStatus
+import com.example.mvp.domain.model.PlayerLevel
+import com.example.mvp.domain.model.defaultStyleFor
 import com.example.mvp.domain.model.TrainingType
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -116,8 +118,18 @@ object SamplePayLoad {
         number = number,
         rating = rating,
         status = status.name,
+        level = levelFromRating(rating).name,
+        style = defaultStyleFor(position).name,
         lineupSlot = null
     )
+
+    private fun levelFromRating(rating: Int): PlayerLevel = when {
+        rating >= 88 -> PlayerLevel.ESTRELLA
+        rating >= 83 -> PlayerLevel.DESTACADO
+        rating >= 75 -> PlayerLevel.BUENO
+        rating >= 65 -> PlayerLevel.NORMAL
+        else -> PlayerLevel.LIMITADO
+    }
 
     private fun buildMatches(userId: Long): List<MatchEntity> = listOf(
         match(userId, "Atlético de Madrid", "05/04/2026", Competition.LIGA, 3, 1),

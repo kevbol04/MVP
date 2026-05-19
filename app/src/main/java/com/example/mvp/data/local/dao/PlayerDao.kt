@@ -28,6 +28,8 @@ interface PlayerDao {
             number = :number,
             rating = :rating,
             status = :status,
+            level = :level,
+            style = :style,
             lineup_slot = :lineupSlot
         WHERE id = :playerId AND user_id = :userId
         """
@@ -41,6 +43,8 @@ interface PlayerDao {
         number: Int,
         rating: Int,
         status: String,
+        level: String,
+        style: String,
         lineupSlot: String?
     ): Int
 

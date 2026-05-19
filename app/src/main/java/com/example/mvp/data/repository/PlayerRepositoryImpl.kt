@@ -14,13 +14,16 @@ class PlayerRepositoryImpl @Inject constructor(
 ) : PlayerRepository {
 
     override fun observePlayers(userId: Long): Flow<List<Player>> =
-        dao.observeAll(userId).map { list -> list.map { it.toModel() } }
+        dao.observeAll(userId).map { list ->
+            list.map { it.toModel() }
+                .sortedWith(compareByDescending<Player> { it.rating }.thenBy { it.name })
+        }
 
     override fun observePlayer(userId: Long, playerId: Int): Flow<Player?> =
         dao.observeById(userId, playerId).map { it?.toModel() }
 
     override suspend fun save(userId: Long, player: Player) {
-        val entity = player.toEntity(userId)
+        val entity = player.withCalculatedRating().toEntity(userId)
 
         if (player.id == 0) {
             dao.insert(entity.copy(id = 0))
@@ -34,6 +37,8 @@ class PlayerRepositoryImpl @Inject constructor(
                 number = entity.number,
                 rating = entity.rating,
                 status = entity.status,
+                level = entity.level,
+                style = entity.style,
                 lineupSlot = entity.lineupSlot
             )
         }

@@ -32,6 +32,12 @@ data class PlayerEntity(
     val rating: Int,
     val status: String,
 
+    @ColumnInfo(name = "level")
+    val level: String = "BUENO",
+
+    @ColumnInfo(name = "style")
+    val style: String = "COMPLETO",
+
     @ColumnInfo(name = "lineup_slot")
     val lineupSlot: String? = null
 )

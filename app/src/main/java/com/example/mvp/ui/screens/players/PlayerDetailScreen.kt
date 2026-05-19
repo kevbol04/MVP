@@ -21,6 +21,10 @@ import com.example.mvp.ui.theme.GlassBase
 import com.example.mvp.ui.theme.Loss
 import com.example.mvp.domain.model.Player
 import com.example.mvp.domain.model.PlayerStatus
+import com.example.mvp.domain.model.PlayerAttributes
+import com.example.mvp.domain.model.PlayerPosition
+import com.example.mvp.domain.model.generateAttributes
+import com.example.mvp.domain.model.calculateRating
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +56,9 @@ fun PlayerDetailScreen(
         PlayerStatus.LESIONADO -> Loss.copy(alpha = 0.16f) to Loss
         else -> accent.copy(alpha = 0.16f) to accent
     }
+
+    val attributes = generateAttributes(player.position, player.level, player.style)
+    val rating = calculateRating(player.position, player.level, player.style)
 
     Box(
         modifier = modifier
@@ -122,12 +129,20 @@ fun PlayerDetailScreen(
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = initials(player.name),
-                                color = ButtonTextDark,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Black
-                            )
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "$rating",
+                                    color = ButtonTextDark,
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Black
+                                )
+                                Text(
+                                    text = "OVR",
+                                    color = ButtonTextDark.copy(alpha = 0.80f),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
 
                         Spacer(Modifier.width(14.dp))
@@ -140,7 +155,7 @@ fun PlayerDetailScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "${player.position.label} · #${player.number}",
+                                text = "${player.position.label} · ${player.style.label} · #${player.number}",
                                 color = onBg.copy(alpha = 0.70f),
                                 style = MaterialTheme.typography.bodySmall
                             )
@@ -153,22 +168,9 @@ fun PlayerDetailScreen(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(18.dp),
-                            color = accent.copy(alpha = 0.16f)
-                        ) {
-                            Text(
-                                text = "OVR ${player.rating}",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                color = accent,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
                         Surface(
                             shape = RoundedCornerShape(14.dp),
                             color = statusBg
@@ -196,8 +198,15 @@ fun PlayerDetailScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         StatCard("Dorsal", "#${player.number}", accent, onBg, Modifier.weight(1f))
-                        StatCard("Nivel", levelLabel(player.rating), accent, onBg, Modifier.weight(1f))
+                        StatCard("Nivel", player.level.label, accent, onBg, Modifier.weight(1f))
                     }
+
+                    AttributeDetailPreview(
+                        position = player.position,
+                        attributes = attributes,
+                        accent = accent,
+                        onBg = onBg
+                    )
                 }
             }
         }
@@ -251,4 +260,69 @@ private fun levelLabel(rating: Int): String = when {
     rating >= 78 -> "Pro"
     rating >= 70 -> "Medio"
     else -> "Base"
+}
+@Composable
+private fun AttributeDetailPreview(
+    position: PlayerPosition,
+    attributes: PlayerAttributes,
+    accent: Color,
+    onBg: Color
+) {
+    val values = if (position == PlayerPosition.POR) {
+        attributes.goalkeeperAttributes()
+    } else {
+        attributes.fieldAttributes()
+    }
+
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = GlassBase.copy(alpha = 0.08f)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Atributos",
+                color = onBg,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+            values.forEach { (label, value) ->
+                AttributeDetailRow(label = label, value = value, accent = accent, onBg = onBg)
+            }
+        }
+    }
+}
+
+@Composable
+private fun AttributeDetailRow(label: String, value: Int, accent: Color, onBg: Color) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(
+            text = label,
+            color = onBg.copy(alpha = 0.68f),
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.width(82.dp)
+        )
+        LinearProgressIndicator(
+            progress = value / 100f,
+            modifier = Modifier
+                .weight(1f)
+                .height(7.dp)
+                .clip(RoundedCornerShape(50)),
+            color = accent,
+            trackColor = GlassBase.copy(alpha = 0.16f)
+        )
+        Text(
+            text = "$value",
+            color = onBg,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.width(28.dp)
+        )
+    }
 }
