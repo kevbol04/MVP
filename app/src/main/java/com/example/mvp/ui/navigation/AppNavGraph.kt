@@ -634,8 +634,10 @@ fun AppNavGraph(
                     return@composable
                 }
 
+                val match = current ?: return@composable
+
                 MatchDetailScreen(
-                    match = current!!,
+                    match = match,
                     onBack = {
                         navController.popBackStack()
                     },
@@ -699,10 +701,11 @@ fun AppNavGraph(
                 }
 
                 val players by vm.players.collectAsState()
+                val selectedFormationId by vm.selectedFormationId.collectAsState()
 
                 PlayersScreen(
                     players = players,
-                    userId = currentUserId,
+                    selectedFormationId = selectedFormationId,
                     onBack = {
                         navController.popBackStack()
                     },
@@ -725,6 +728,9 @@ fun AppNavGraph(
                     },
                     onSavePlayer = { player ->
                         vm.save(player)
+                    },
+                    onSaveSelectedFormation = { formationId ->
+                        vm.saveSelectedFormation(formationId)
                     },
 
                     onGoDashboard = {
@@ -841,8 +847,10 @@ fun AppNavGraph(
                     return@composable
                 }
 
+                val player = current ?: return@composable
+
                 PlayerDetailScreen(
-                    player = current!!,
+                    player = player,
                     onBack = {
                         navController.popBackStack()
                     },

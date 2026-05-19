@@ -35,5 +35,8 @@ data class ClubEntity(
     val coachName: String,
 
     @ColumnInfo(name = "badge_id", defaultValue = "royal_blue")
-    val badgeId: String = "royal_blue"
+    val badgeId: String = "royal_blue",
+
+    @ColumnInfo(name = "selected_formation_id", defaultValue = "442")
+    val selectedFormationId: String = "442"
 )

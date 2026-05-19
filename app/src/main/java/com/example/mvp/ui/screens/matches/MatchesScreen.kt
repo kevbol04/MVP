@@ -258,7 +258,7 @@ fun MatchesScreen(
         }
     }
 
-    if (toDelete != null) {
+    toDelete?.let { matchToDelete ->
         AlertDialog(
             onDismissRequest = { toDelete = null },
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
@@ -267,11 +267,11 @@ fun MatchesScreen(
             titleContentColor = MaterialTheme.colorScheme.onSurface,
             textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             title = { Text("Eliminar partido", fontWeight = FontWeight.SemiBold) },
-            text = { Text("Se eliminará “${toDelete!!.rival}”. Esta acción no se puede deshacer.") },
+            text = { Text("Se eliminará “${matchToDelete.rival}”. Esta acción no se puede deshacer.") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onDeleteMatch(toDelete!!)
+                        onDeleteMatch(matchToDelete)
                         toDelete = null
                     }
                 ) {

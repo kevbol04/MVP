@@ -6,11 +6,16 @@ data class Club(
     val stadium: String = "",
     val city: String = "",
     val coachName: String = "",
-    val badgeId: String = ClubBadgeDefaults.DEFAULT_ID
+    val badgeId: String = ClubBadgeDefaults.DEFAULT_ID,
+    val selectedFormationId: String = DEFAULT_FORMATION_ID
 ) {
     val displayName: String
         get() = name.ifBlank { "Mi club" }
 
     val displayCoach: String
         get() = coachName.ifBlank { "Entrenador sin definir" }
+
+    companion object {
+        const val DEFAULT_FORMATION_ID = "442"
+    }
 }

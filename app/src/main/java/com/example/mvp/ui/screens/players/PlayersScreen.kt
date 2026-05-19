@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -125,13 +124,14 @@ private val ShirtShape = GenericShape { size, _ ->
 fun PlayersScreen(
     modifier: Modifier = Modifier,
     players: List<Player> = emptyList(),
-    userId: Long = 0,
+    selectedFormationId: String = availableFormations.first().id,
     onBack: () -> Unit = {},
     onCreatePlayer: () -> Unit = {},
     onEditPlayer: (Player) -> Unit = {},
     onOpenPlayer: (Player) -> Unit = {},
     onDeletePlayer: (Player) -> Unit = {},
     onSavePlayer: (Player) -> Unit = {},
+    onSaveSelectedFormation: (String) -> Unit = {},
     onGoDashboard: () -> Unit = {},
     onGoTraining: () -> Unit = {},
     onGoMatches: () -> Unit = {},
@@ -150,23 +150,11 @@ fun PlayersScreen(
     var pendingDelete by remember { mutableStateOf<Player?>(null) }
     var selectedForSwap by remember { mutableStateOf<Player?>(null) }
 
-    val context = LocalContext.current
-    val lineupPrefs = remember(context) {
-        context.getSharedPreferences("profootball_lineup", 0)
+    val safeSelectedFormationId = remember(selectedFormationId) {
+        formationById(selectedFormationId).id
     }
-    val formationPreferenceKey = remember(userId) {
-        "selected_formation_$userId"
-    }
-    var selectedFormationId by remember(formationPreferenceKey) {
-        mutableStateOf(
-            lineupPrefs.getString(
-                formationPreferenceKey,
-                availableFormations.first().id
-            ) ?: availableFormations.first().id
-        )
-    }
-    val selectedFormation = remember(selectedFormationId) {
-        formationById(selectedFormationId)
+    val selectedFormation = remember(safeSelectedFormationId) {
+        formationById(safeSelectedFormationId)
     }
 
     var showFormationSheet by remember { mutableStateOf(false) }
@@ -180,7 +168,7 @@ fun PlayersScreen(
     }
 
     fun changeFormation(formation: TacticalFormation) {
-        if (formation.id == selectedFormationId) return
+        if (formation.id == safeSelectedFormationId) return
 
         players
             .filter { it.lineupSlot != null }
@@ -189,8 +177,7 @@ fun PlayersScreen(
             }
 
         selectedForSwap = null
-        selectedFormationId = formation.id
-        lineupPrefs.edit().putString(formationPreferenceKey, formation.id).apply()
+        onSaveSelectedFormation(formation.id)
     }
 
     fun canMoveToLineupSlot(player: Player, slot: LineupSlot): Boolean {
@@ -446,7 +433,7 @@ fun PlayersScreen(
                 onText = onBg,
                 onDismiss = { showFormationSheet = false },
                 onFormationClick = { formation ->
-                    if (formation.id == selectedFormationId) {
+                    if (formation.id == safeSelectedFormationId) {
                         showFormationSheet = false
                     } else {
                         pendingFormation = formation
@@ -501,8 +488,7 @@ fun PlayersScreen(
         )
     }
 
-    if (pendingDelete != null) {
-        val p = pendingDelete!!
+    pendingDelete?.let { playerToDelete ->
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
@@ -511,11 +497,11 @@ fun PlayersScreen(
             titleContentColor = MaterialTheme.colorScheme.onSurface,
             textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             title = { Text("Eliminar jugador", fontWeight = FontWeight.SemiBold) },
-            text = { Text("Se eliminará a ${p.name}. ¿Deseas continuar?") },
+            text = { Text("Se eliminará a ${playerToDelete.name}. ¿Deseas continuar?") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onDeletePlayer(p)
+                        onDeletePlayer(playerToDelete)
                         pendingDelete = null
                     }
                 ) {

@@ -32,4 +32,15 @@ class ClubRepositoryImpl @Inject constructor(
             dao.update(entity.copy(id = existing.id))
         }
     }
+
+    override suspend fun updateSelectedFormation(userId: Long, formationId: String) {
+        if (userId <= 0L || formationId.isBlank()) return
+
+        if (dao.getClub(userId) == null) return
+
+        dao.updateSelectedFormation(
+            userId = userId,
+            formationId = formationId.trim().ifBlank { Club.DEFAULT_FORMATION_ID }
+        )
+    }
 }

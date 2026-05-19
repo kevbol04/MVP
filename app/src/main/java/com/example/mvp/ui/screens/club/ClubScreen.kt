@@ -271,7 +271,8 @@ fun ClubScreen(
                                 stadium = stadium.trim(),
                                 city = city.trim(),
                                 coachName = coachName.trim(),
-                                badgeId = badgeId
+                                badgeId = badgeId,
+                                selectedFormationId = club?.selectedFormationId ?: Club.DEFAULT_FORMATION_ID
                             )
                         )
                     }

@@ -279,7 +279,7 @@ fun TrainingsScreen(
         )
     }
 
-    if (toDelete != null) {
+    toDelete?.let { trainingToDelete ->
         AlertDialog(
             onDismissRequest = { toDelete = null },
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
@@ -288,11 +288,11 @@ fun TrainingsScreen(
             titleContentColor = MaterialTheme.colorScheme.onSurface,
             textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             title = { Text("Eliminar entrenamiento", fontWeight = FontWeight.SemiBold) },
-            text = { Text("Se eliminará “${toDelete!!.name}”. Esta acción no se puede deshacer.") },
+            text = { Text("Se eliminará “${trainingToDelete.name}”. Esta acción no se puede deshacer.") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        toDelete?.let(onDeleteTraining)
+                        onDeleteTraining(trainingToDelete)
                         toDelete = null
                     }
                 ) {
@@ -685,13 +685,14 @@ private fun TrainingCalendar(
                 onText = onText
             )
 
-            if (selectedDate != null) {
+            val date = selectedDate
+            if (date != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Entrenamientos del ${selectedDate!!.format(dayFormatter)}",
+                        text = "Entrenamientos del ${date.format(dayFormatter)}",
                         color = onText,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.weight(1f)
