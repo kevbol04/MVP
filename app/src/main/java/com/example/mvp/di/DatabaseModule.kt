@@ -2,8 +2,6 @@ package com.example.mvp.di
 
 import android.content.Context
 import androidx.room.Room
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.mvp.data.local.dao.AuthUserDao
 import com.example.mvp.data.local.dao.ClubDao
 import com.example.mvp.data.local.dao.MatchDao
