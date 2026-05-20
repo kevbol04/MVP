@@ -57,10 +57,14 @@ fun MatchDetailScreen(
     val accent2 = MaterialTheme.colorScheme.secondary
     val onBg = MaterialTheme.colorScheme.onBackground
 
-    val resultColor = when (match.result) {
-        MatchResult.VICTORIA -> Win
-        MatchResult.EMPATE -> Draw
-        MatchResult.DERROTA -> Loss
+    val resultColor = if (!match.isFinished) {
+        accent2
+    } else {
+        when (match.result) {
+            MatchResult.VICTORIA -> Win
+            MatchResult.EMPATE -> Draw
+            MatchResult.DERROTA -> Loss
+        }
     }
 
     val goalDifference = match.goalsFor - match.goalsAgainst
@@ -133,7 +137,7 @@ fun MatchDetailScreen(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.SportsSoccer,
                     title = "A favor",
-                    value = match.goalsFor.toString(),
+                    value = if (match.isFinished) match.goalsFor.toString() else "--",
                     accent = accent,
                     accent2 = accent2,
                     onText = onBg
@@ -143,7 +147,7 @@ fun MatchDetailScreen(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.SportsSoccer,
                     title = "En contra",
-                    value = match.goalsAgainst.toString(),
+                    value = if (match.isFinished) match.goalsAgainst.toString() else "--",
                     accent = accent,
                     accent2 = accent2,
                     onText = onBg
@@ -158,7 +162,7 @@ fun MatchDetailScreen(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.WorkspacePremium,
                     title = "Diferencia",
-                    value = if (goalDifference > 0) "+$goalDifference" else goalDifference.toString(),
+                    value = if (!match.isFinished) "--" else if (goalDifference > 0) "+$goalDifference" else goalDifference.toString(),
                     accent = resultColor,
                     accent2 = accent2,
                     onText = onBg
@@ -198,8 +202,8 @@ fun MatchDetailScreen(
                 )
 
                 DetailLine(
-                    label = "Resultado",
-                    value = match.result.label,
+                    label = "Estado",
+                    value = match.statusLabel,
                     valueColor = resultColor,
                     onText = onBg
                 )
@@ -331,7 +335,7 @@ private fun ScoreHeroCard(
                         )
 
                         Text(
-                            text = match.result.label,
+                            text = match.statusLabel,
                             color = resultColor,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold
@@ -364,7 +368,7 @@ private fun ScoreHeroCard(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = match.goalsFor.toString(),
+                            text = if (match.isFinished) match.goalsFor.toString() else "--",
                             color = onText,
                             style = MaterialTheme.typography.displayMedium,
                             fontWeight = FontWeight.Black
@@ -378,7 +382,7 @@ private fun ScoreHeroCard(
                         )
 
                         Text(
-                            text = match.goalsAgainst.toString(),
+                            text = if (match.isFinished) match.goalsAgainst.toString() else "--",
                             color = onText,
                             style = MaterialTheme.typography.displayMedium,
                             fontWeight = FontWeight.Black

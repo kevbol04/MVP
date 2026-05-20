@@ -19,6 +19,28 @@ interface MatchDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: MatchEntity): Long
 
+    @Query("SELECT COUNT(*) FROM matches WHERE user_id = :userId AND date_epoch_day = :dateEpochDay AND id != :matchId")
+    suspend fun countByDateForUser(userId: Long, dateEpochDay: Long, matchId: Int): Int
+
+    @Query(
+        """
+        SELECT * FROM matches
+        WHERE user_id = :userId
+          AND id != :matchId
+          AND date_epoch_day BETWEEN :minDateEpochDay AND :maxDateEpochDay
+          AND date_epoch_day != :dateEpochDay
+        ORDER BY ABS(date_epoch_day - :dateEpochDay) ASC, date_epoch_day ASC
+        LIMIT 1
+        """
+    )
+    suspend fun findRestConflictForUser(
+        userId: Long,
+        matchId: Int,
+        dateEpochDay: Long,
+        minDateEpochDay: Long,
+        maxDateEpochDay: Long
+    ): MatchEntity?
+
     @Query(
         """
         UPDATE matches
@@ -26,7 +48,8 @@ interface MatchDao {
             date_epoch_day = :dateEpochDay,
             competition = :competition,
             goals_for = :goalsFor,
-            goals_against = :goalsAgainst
+            goals_against = :goalsAgainst,
+            is_finished = :isFinished
         WHERE id = :matchId AND user_id = :userId
         """
     )
@@ -37,7 +60,8 @@ interface MatchDao {
         dateEpochDay: Long,
         competition: String,
         goalsFor: Int,
-        goalsAgainst: Int
+        goalsAgainst: Int,
+        isFinished: Boolean
     ): Int
 
     @Query("DELETE FROM matches WHERE id = :matchId AND user_id = :userId")

@@ -543,6 +543,9 @@ fun AppNavGraph(
                 LaunchedEffect(currentUserId) {
                     vm.setUser(currentUserId)
                 }
+                LaunchedEffect(vm) {
+                    vm.messages.collect { message -> showSnackbar(message) }
+                }
 
                 val matches by vm.matches.collectAsState()
 
@@ -565,8 +568,9 @@ fun AppNavGraph(
                         )
                     },
                     onDeleteMatch = { match ->
-                        vm.delete(match)
-                        showSnackbar("Partido eliminado")
+                        vm.delete(match) {
+                            showSnackbar("Partido eliminado")
+                        }
                     },
 
                     onGoDashboard = {
@@ -590,16 +594,23 @@ fun AppNavGraph(
                 LaunchedEffect(currentUserId) {
                     vm.setUser(currentUserId)
                 }
+                LaunchedEffect(vm) {
+                    vm.messages.collect { message -> showSnackbar(message) }
+                }
+
+                val matches by vm.matches.collectAsState()
 
                 MatchFormScreen(
                     initial = null,
+                    existingMatches = matches,
                     onBack = {
                         navController.popBackStack()
                     },
                     onSave = { match ->
-                        vm.save(match.copy(id = 0))
-                        navController.popBackStack()
-                        showSnackbar("Partido creado correctamente")
+                        vm.save(match.copy(id = 0)) {
+                            navController.popBackStack()
+                            showSnackbar(if (match.isFinished) "Resultado guardado correctamente" else "Partido programado correctamente")
+                        }
                     }
                 )
             }
@@ -609,6 +620,9 @@ fun AppNavGraph(
 
                 LaunchedEffect(currentUserId) {
                     vm.setUser(currentUserId)
+                }
+                LaunchedEffect(vm) {
+                    vm.messages.collect { message -> showSnackbar(message) }
                 }
 
                 val id = backStackEntry.arguments
@@ -655,6 +669,9 @@ fun AppNavGraph(
                 LaunchedEffect(currentUserId) {
                     vm.setUser(currentUserId)
                 }
+                LaunchedEffect(vm) {
+                    vm.messages.collect { message -> showSnackbar(message) }
+                }
 
                 val id = backStackEntry.arguments
                     ?.getString(Route.MatchFormWithId.ARG_ID)
@@ -679,15 +696,19 @@ fun AppNavGraph(
                     return@composable
                 }
 
+                val matches by vm.matches.collectAsState()
+
                 MatchFormScreen(
                     initial = current,
+                    existingMatches = matches,
                     onBack = {
                         navController.popBackStack()
                     },
                     onSave = { edited ->
-                        vm.save(edited)
-                        navController.popBackStack()
-                        showSnackbar("Partido actualizado correctamente")
+                        vm.save(edited) {
+                            navController.popBackStack()
+                            showSnackbar(if (edited.isFinished) "Resultado actualizado correctamente" else "Partido programado correctamente")
+                        }
                     }
                 )
             }

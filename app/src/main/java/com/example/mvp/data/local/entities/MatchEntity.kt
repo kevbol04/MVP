@@ -36,5 +36,8 @@ data class MatchEntity(
     val goalsFor: Int,
 
     @ColumnInfo(name = "goals_against")
-    val goalsAgainst: Int
+    val goalsAgainst: Int,
+
+    @ColumnInfo(name = "is_finished", defaultValue = "1")
+    val isFinished: Boolean = true
 )

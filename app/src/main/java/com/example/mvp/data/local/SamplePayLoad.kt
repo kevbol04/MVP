@@ -139,16 +139,33 @@ object SamplePayLoad {
     }
 
     private fun buildMatches(userId: Long): List<MatchEntity> = listOf(
-        match(userId, "Atlético de Madrid", "05/04/2026", Competition.LIGA, 3, 1),
-        match(userId, "FC Barcelona", "29/03/2026", Competition.COPA, 2, 2),
-        match(userId, "Valencia CF", "22/03/2026", Competition.LIGA, 2, 0),
-        match(userId, "Sevilla FC", "15/03/2026", Competition.LIGA, 1, 2),
-        match(userId, "Real Sociedad", "08/03/2026", Competition.COPA, 4, 2),
+        // Marzo
         match(userId, "Villarreal CF", "01/03/2026", Competition.AMISTOSO, 1, 1),
-        match(userId, "Real Betis", "22/02/2026", Competition.LIGA, 3, 0),
-        match(userId, "Athletic Club", "15/02/2026", Competition.LIGA, 0, 1),
-        match(userId, "Getafe CF", "08/02/2026", Competition.AMISTOSO, 2, 1),
-        match(userId, "Girona FC", "01/02/2026", Competition.LIGA, 5, 2)
+        match(userId, "Real Sociedad", "08/03/2026", Competition.COPA, 4, 2),
+        match(userId, "Sevilla FC", "15/03/2026", Competition.LIGA, 1, 2),
+        match(userId, "Valencia CF", "22/03/2026", Competition.LIGA, 2, 0),
+        match(userId, "FC Barcelona", "29/03/2026", Competition.COPA, 2, 2),
+
+        // Abril
+        match(userId, "Atlético de Madrid", "05/04/2026", Competition.LIGA, 3, 1),
+        match(userId, "Real Betis", "12/04/2026", Competition.LIGA, 2, 1),
+        match(userId, "Athletic Club", "19/04/2026", Competition.LIGA, 0, 1),
+        match(userId, "Getafe CF", "23/04/2026", Competition.AMISTOSO, 2, 0),
+        match(userId, "Girona FC", "26/04/2026", Competition.LIGA, 3, 2),
+
+        // Mayo
+        match(userId, "Celta de Vigo", "03/05/2026", Competition.LIGA, 2, 0),
+        match(userId, "RCD Mallorca", "10/05/2026", Competition.LIGA, 1, 1),
+        match(userId, "Rayo Vallecano", "18/05/2026", Competition.LIGA, 0, 0, isFinished = false),
+        match(userId, "CA Osasuna", "24/05/2026", Competition.LIGA, 0, 0, isFinished = false),
+        match(userId, "Granada CF", "31/05/2026", Competition.AMISTOSO, 0, 0, isFinished = false),
+
+        // Junio
+        match(userId, "Deportivo Alavés", "04/06/2026", Competition.LIGA, 0, 0, isFinished = false),
+        match(userId, "UD Las Palmas", "07/06/2026", Competition.LIGA, 0, 0, isFinished = false),
+        match(userId, "RCD Espanyol", "14/06/2026", Competition.COPA, 0, 0, isFinished = false),
+        match(userId, "Levante UD", "21/06/2026", Competition.LIGA, 0, 0, isFinished = false),
+        match(userId, "Elche CF", "28/06/2026", Competition.AMISTOSO, 0, 0, isFinished = false)
     )
 
     private fun match(
@@ -157,14 +174,16 @@ object SamplePayLoad {
         dateText: String,
         competition: Competition,
         goalsFor: Int,
-        goalsAgainst: Int
+        goalsAgainst: Int,
+        isFinished: Boolean = true
     ): MatchEntity = MatchEntity(
         userId = userId,
         rival = rival,
         dateEpochDay = dateText.toEpochDayOrZero(),
         competition = competition.name,
         goalsFor = goalsFor,
-        goalsAgainst = goalsAgainst
+        goalsAgainst = goalsAgainst,
+        isFinished = isFinished
     )
 
     private fun buildTrainings(userId: Long): List<TrainingEntity> = listOf(

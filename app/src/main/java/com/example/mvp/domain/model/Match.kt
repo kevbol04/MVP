@@ -14,8 +14,9 @@ data class Match(
     val rival: String,
     val dateEpochDay: Long,
     val competition: Competition,
-    val goalsFor: Int,
-    val goalsAgainst: Int
+    val goalsFor: Int = 0,
+    val goalsAgainst: Int = 0,
+    val isFinished: Boolean = true
 ) {
     val date: LocalDate
         get() = LocalDate.ofEpochDay(dateEpochDay)
@@ -29,6 +30,22 @@ data class Match(
             goalsFor == goalsAgainst -> MatchResult.EMPATE
             else -> MatchResult.DERROTA
         }
+
+    val needsResult: Boolean
+        get() = !isFinished && date.isBefore(LocalDate.now())
+
+    val statusLabel: String
+        get() = when {
+            isFinished -> result.label
+            needsResult -> "Pendiente de resultado"
+            else -> "Programado"
+        }
+
+    val scoreText: String
+        get() = if (isFinished) "$goalsFor - $goalsAgainst" else "Por jugar"
+
+    val isFutureScheduled: Boolean
+        get() = !isFinished && date.isAfter(LocalDate.now())
 
     companion object {
         fun epochDayFromDateText(raw: String): Long? {

@@ -108,20 +108,21 @@ fun StatsScreen(
     val avgRating = if (players.isNotEmpty()) players.map { it.rating }.average() else 0.0
     val bestPlayer = players.maxByOrNull { it.rating }
 
-    val totalMatches = matches.size
-    val wins = matches.count { it.result == MatchResult.VICTORIA }
-    val draws = matches.count { it.result == MatchResult.EMPATE }
-    val losses = matches.count { it.result == MatchResult.DERROTA }
+    val finishedMatches = matches.filter { it.isFinished }
+    val totalMatches = finishedMatches.size
+    val wins = finishedMatches.count { it.result == MatchResult.VICTORIA }
+    val draws = finishedMatches.count { it.result == MatchResult.EMPATE }
+    val losses = finishedMatches.count { it.result == MatchResult.DERROTA }
     val winRate = if (totalMatches == 0) 0f else wins.toFloat() / totalMatches.toFloat()
-    val goalsFor = matches.sumOf { it.goalsFor }
-    val goalsAgainst = matches.sumOf { it.goalsAgainst }
+    val goalsFor = finishedMatches.sumOf { it.goalsFor }
+    val goalsAgainst = finishedMatches.sumOf { it.goalsAgainst }
     val goalDifference = goalsFor - goalsAgainst
     val avgGoalsFor = if (totalMatches == 0) 0.0 else goalsFor.toDouble() / totalMatches.toDouble()
     val avgGoalsAgainst = if (totalMatches == 0) 0.0 else goalsAgainst.toDouble() / totalMatches.toDouble()
-    val ligaMatches = matches.count { it.competition == Competition.LIGA }
-    val copaMatches = matches.count { it.competition == Competition.COPA }
-    val amistosos = matches.count { it.competition == Competition.AMISTOSO }
-    val lastMatch = matches.maxByOrNull { it.date }
+    val ligaMatches = finishedMatches.count { it.competition == Competition.LIGA }
+    val copaMatches = finishedMatches.count { it.competition == Competition.COPA }
+    val amistosos = finishedMatches.count { it.competition == Competition.AMISTOSO }
+    val lastMatch = finishedMatches.maxByOrNull { it.date }
 
     val completedTrainings = trainings.filter { it.isDone }
     val pendingTrainings = trainings.filter { !it.isDone && !it.isOverdue() }
@@ -149,7 +150,7 @@ fun StatsScreen(
 
     val totalRecords = totalPlayers + totalMatches + totalTrainingRecords
 
-    val recentMatches = matches
+    val recentMatches = finishedMatches
         .sortedByDescending { it.date }
         .take(5)
 
@@ -325,7 +326,7 @@ fun StatsScreen(
                     ligaMatches = ligaMatches,
                     copaMatches = copaMatches,
                     amistosos = amistosos,
-                    matches = matches,
+                    matches = finishedMatches,
                     accent = accent,
                     accent2 = accent2,
                     onText = onBg

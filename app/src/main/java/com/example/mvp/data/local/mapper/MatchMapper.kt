@@ -11,7 +11,8 @@ fun MatchEntity.toModel(): Match {
         dateEpochDay = dateEpochDay,
         competition = competition.toCompetition(),
         goalsFor = goalsFor,
-        goalsAgainst = goalsAgainst
+        goalsAgainst = goalsAgainst,
+        isFinished = isFinished
     )
 }
 
@@ -22,8 +23,9 @@ fun Match.toEntity(userId: Long): MatchEntity {
         rival = rival,
         dateEpochDay = dateEpochDay,
         competition = competition.name,
-        goalsFor = goalsFor,
-        goalsAgainst = goalsAgainst
+        goalsFor = if (isFinished) goalsFor else 0,
+        goalsAgainst = if (isFinished) goalsAgainst else 0,
+        isFinished = isFinished
     )
 }
 

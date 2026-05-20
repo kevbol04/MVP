@@ -896,10 +896,11 @@ private data class DashboardSummary(
                 .filter { it.isOverdue(today) }
                 .sortedWith(compareBy<Training> { it.parsedDate() }.thenBy { it.name.lowercase() })
 
-            val matchesPlayed = matches.size
-            val wins = matches.count { it.result == MatchResult.VICTORIA }
-            val draws = matches.count { it.result == MatchResult.EMPATE }
-            val losses = matches.count { it.result == MatchResult.DERROTA }
+            val finishedMatches = matches.filter { it.isFinished }
+            val matchesPlayed = finishedMatches.size
+            val wins = finishedMatches.count { it.result == MatchResult.VICTORIA }
+            val draws = finishedMatches.count { it.result == MatchResult.EMPATE }
+            val losses = finishedMatches.count { it.result == MatchResult.DERROTA }
             val playersCount = players.size
             val availablePlayers = players.count { it.status != PlayerStatus.LESIONADO }
             val averageRating = if (players.isEmpty()) 0 else players.map { it.rating }.average().toInt()
@@ -917,12 +918,12 @@ private data class DashboardSummary(
                 playersCount = playersCount,
                 availablePlayers = availablePlayers,
                 averageRating = averageRating,
-                recentResults = matches
+                recentResults = finishedMatches
                     .sortedByDescending { it.parsedDate() }
                     .take(5)
                     .map { it.result },
                 lastTraining = orderedTrainings.firstOrNull(),
-                lastMatch = matches.maxByOrNull { it.id },
+                lastMatch = finishedMatches.maxByOrNull { it.id },
                 lastPlayer = players.maxByOrNull { it.id }
             )
         }
