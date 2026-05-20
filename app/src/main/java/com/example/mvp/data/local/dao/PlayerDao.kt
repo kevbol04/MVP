@@ -16,8 +16,40 @@ interface PlayerDao {
     @Query("SELECT * FROM players WHERE user_id = :userId AND id = :playerId LIMIT 1")
     fun observeById(userId: Long, playerId: Int): Flow<PlayerEntity?>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1
+            FROM players
+            WHERE user_id = :userId
+              AND number = :number
+              AND id != :excludedPlayerId
+        )
+        """
+    )
+    suspend fun existsPlayerWithNumber(
+        userId: Long,
+        number: Int,
+        excludedPlayerId: Int
+    ): Boolean
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(entity: PlayerEntity): Long
+
+    @Query(
+        """
+        UPDATE players
+        SET lineup_slot = NULL
+        WHERE user_id = :userId
+          AND lineup_slot = :lineupSlot
+          AND id != :excludedPlayerId
+        """
+    )
+    suspend fun clearLineupSlotForOtherPlayers(
+        userId: Long,
+        lineupSlot: String,
+        excludedPlayerId: Int
+    ): Int
 
     @Query(
         """

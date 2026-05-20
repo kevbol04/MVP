@@ -21,8 +21,8 @@ interface ClubDao {
     suspend fun insert(entity: ClubEntity): Long
 
     @Update
-    suspend fun update(entity: ClubEntity)
+    suspend fun update(entity: ClubEntity): Int
 
     @Query("UPDATE clubs SET selected_formation_id = :formationId WHERE user_id = :userId")
-    suspend fun updateSelectedFormation(userId: Long, formationId: String)
+    suspend fun updateSelectedFormation(userId: Long, formationId: String): Int
 }

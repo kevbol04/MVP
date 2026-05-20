@@ -1,6 +1,8 @@
 package com.example.mvp.data.repository
 
+import android.database.sqlite.SQLiteConstraintException
 import com.example.mvp.data.local.dao.PlayerDao
+import com.example.mvp.data.local.entities.PlayerEntity
 import com.example.mvp.data.local.mapper.toEntity
 import com.example.mvp.data.local.mapper.toModel
 import com.example.mvp.domain.model.Player
@@ -23,30 +25,74 @@ class PlayerRepositoryImpl @Inject constructor(
         dao.observeById(userId, playerId).map { it?.toModel() }
 
     override suspend fun save(userId: Long, player: Player) {
-        val entity = player.withCalculatedRating().toEntity(userId)
+        require(userId > 0L) { "La sesión no es válida." }
 
-        if (player.id == 0) {
-            dao.insert(entity.copy(id = 0))
-        } else {
-            dao.updateForUser(
-                playerId = entity.id,
-                userId = userId,
-                name = entity.name,
-                position = entity.position,
-                age = entity.age,
-                number = entity.number,
-                rating = entity.rating,
-                status = entity.status,
-                level = entity.level,
-                style = entity.style,
-                lineupSlot = entity.lineupSlot
-            )
+        val entity = player.withCalculatedRating().toEntity(userId)
+        validatePlayer(entity)
+        ensureNumberIsAvailable(entity)
+
+        runCatching {
+            entity.lineupSlot
+                ?.takeIf { it.isNotBlank() }
+                ?.let { slot ->
+                    dao.clearLineupSlotForOtherPlayers(
+                        userId = userId,
+                        lineupSlot = slot,
+                        excludedPlayerId = entity.id
+                    )
+                }
+
+            if (player.id == 0) {
+                val newId = dao.insert(entity.copy(id = 0))
+                check(newId > 0L) { "No se pudo guardar el jugador." }
+            } else {
+                val rows = dao.updateForUser(
+                    playerId = entity.id,
+                    userId = userId,
+                    name = entity.name,
+                    position = entity.position,
+                    age = entity.age,
+                    number = entity.number,
+                    rating = entity.rating,
+                    status = entity.status,
+                    level = entity.level,
+                    style = entity.style,
+                    lineupSlot = entity.lineupSlot
+                )
+
+                check(rows > 0) { "No se pudo actualizar el jugador. Puede que ya no exista." }
+            }
+        }.getOrElse { throwable ->
+            if (throwable is SQLiteConstraintException) {
+                error("No se pudo guardar el jugador porque el dorsal o el hueco de alineación ya está ocupado.")
+            }
+            throw throwable
         }
     }
 
     override suspend fun delete(userId: Long, player: Player) {
-        if (player.id != 0) {
-            dao.deleteByIdForUser(playerId = player.id, userId = userId)
-        }
+        require(userId > 0L) { "La sesión no es válida." }
+
+        if (player.id == 0) return
+
+        val rows = dao.deleteByIdForUser(playerId = player.id, userId = userId)
+        check(rows > 0) { "No se pudo eliminar el jugador. Puede que ya no exista." }
+    }
+
+    private suspend fun ensureNumberIsAvailable(entity: PlayerEntity) {
+        val exists = dao.existsPlayerWithNumber(
+            userId = entity.userId,
+            number = entity.number,
+            excludedPlayerId = entity.id
+        )
+
+        require(!exists) { "El dorsal #${entity.number} ya está asignado a otro jugador." }
+    }
+
+    private fun validatePlayer(entity: PlayerEntity) {
+        require(entity.name.isNotBlank()) { "El nombre del jugador no puede estar vacío." }
+        require(entity.age in 15..50) { "La edad del jugador debe estar entre 15 y 50 años." }
+        require(entity.number in 1..99) { "El dorsal debe estar entre 1 y 99." }
+        require(entity.rating in 1..99) { "La valoración debe estar entre 1 y 99." }
     }
 }

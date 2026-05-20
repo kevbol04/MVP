@@ -22,12 +22,16 @@ class MatchRepositoryImpl @Inject constructor(
     }
 
     override suspend fun upsertMatch(userId: Long, match: Match) {
+        require(userId > 0L) { "La sesión no es válida." }
+
         val entity = match.toEntity(userId)
+        validateMatch(entity.rival, entity.goalsFor, entity.goalsAgainst)
 
         if (match.id == 0) {
-            dao.insert(entity.copy(id = 0))
+            val newId = dao.insert(entity.copy(id = 0))
+            check(newId > 0L) { "No se pudo guardar el partido." }
         } else {
-            dao.updateForUser(
+            val rows = dao.updateForUser(
                 matchId = entity.id,
                 userId = userId,
                 rival = entity.rival,
@@ -36,12 +40,23 @@ class MatchRepositoryImpl @Inject constructor(
                 goalsFor = entity.goalsFor,
                 goalsAgainst = entity.goalsAgainst
             )
+
+            check(rows > 0) { "No se pudo actualizar el partido. Puede que ya no exista." }
         }
     }
 
     override suspend fun deleteMatch(userId: Long, match: Match) {
-        if (match.id != 0) {
-            dao.deleteByIdForUser(matchId = match.id, userId = userId)
-        }
+        require(userId > 0L) { "La sesión no es válida." }
+
+        if (match.id == 0) return
+
+        val rows = dao.deleteByIdForUser(matchId = match.id, userId = userId)
+        check(rows > 0) { "No se pudo eliminar el partido. Puede que ya no exista." }
+    }
+
+    private fun validateMatch(rival: String, goalsFor: Int, goalsAgainst: Int) {
+        require(rival.isNotBlank()) { "El rival no puede estar vacío." }
+        require(goalsFor >= 0) { "Los goles a favor no pueden ser negativos." }
+        require(goalsAgainst >= 0) { "Los goles en contra no pueden ser negativos." }
     }
 }

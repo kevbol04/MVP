@@ -16,7 +16,11 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["user_id"])]
+    indices = [
+        Index(value = ["user_id"]),
+        Index(value = ["user_id", "number"], unique = true),
+        Index(value = ["user_id", "lineup_slot"], unique = true)
+    ]
 )
 data class PlayerEntity(
     @PrimaryKey(autoGenerate = true)

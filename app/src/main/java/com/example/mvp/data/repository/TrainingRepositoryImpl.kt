@@ -18,12 +18,16 @@ class TrainingRepositoryImpl @Inject constructor(
     }
 
     override suspend fun upsertTraining(userId: Long, training: Training) {
+        require(userId > 0L) { "La sesión no es válida." }
+
         val entity = training.toEntity(userId)
+        validateTraining(entity.name, entity.durationMin)
 
         if (training.id == 0) {
-            dao.insert(entity.copy(id = 0))
+            val newId = dao.insert(entity.copy(id = 0))
+            check(newId > 0L) { "No se pudo guardar el entrenamiento." }
         } else {
-            dao.updateForUser(
+            val rows = dao.updateForUser(
                 trainingId = entity.id,
                 userId = userId,
                 name = entity.name,
@@ -32,16 +36,26 @@ class TrainingRepositoryImpl @Inject constructor(
                 type = entity.type,
                 isDone = entity.isDone
             )
+
+            check(rows > 0) { "No se pudo actualizar el entrenamiento. Puede que ya no exista." }
         }
     }
 
     override suspend fun deleteTraining(userId: Long, training: Training) {
-        if (training.id != 0) {
-            dao.deleteByIdForUser(trainingId = training.id, userId = userId)
-        }
+        require(userId > 0L) { "La sesión no es válida." }
+
+        if (training.id == 0) return
+
+        val rows = dao.deleteByIdForUser(trainingId = training.id, userId = userId)
+        check(rows > 0) { "No se pudo eliminar el entrenamiento. Puede que ya no exista." }
     }
 
     override suspend fun toggleTrainingDone(userId: Long, training: Training) {
         upsertTraining(userId, training.copy(isDone = !training.isDone))
+    }
+
+    private fun validateTraining(name: String, durationMin: Int) {
+        require(name.isNotBlank()) { "El nombre del entrenamiento no puede estar vacío." }
+        require(durationMin > 0) { "La duración del entrenamiento debe ser mayor que 0." }
     }
 }
