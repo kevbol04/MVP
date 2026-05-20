@@ -1,27 +1,45 @@
 package com.example.mvp.domain.model
 
+const val PLAYER_MIN_AGE = 16
+const val PLAYER_MAX_AGE = 40
+
+/**
+ * Modelo de dominio del jugador.
+ *
+ * La valoración no se recibe desde fuera ni se guarda como estado editable del modelo,
+ * porque eso permitía tener dos verdades distintas:
+ * - rating
+ * - position + level + style
+ *
+ * Ahora la única fuente de verdad es position + level + style.
+ * Si el estilo no corresponde a la posición, se usa automáticamente el estilo por defecto
+ * de esa posición para evitar estados imposibles.
+ */
 data class Player(
     val id: Int = 0,
     val name: String,
     val position: PlayerPosition,
     val age: Int,
     val number: Int,
-    val rating: Int,
     val status: PlayerStatus,
     val level: PlayerLevel = PlayerLevel.BUENO,
     val style: PlayerStyle = defaultStyleFor(position),
     val lineupSlot: String? = null
 ) {
-    /**
-     * La valoración real del jugador siempre debe salir de la misma regla:
-     * posición + nivel + estilo.
-     *
-     * El campo rating se mantiene por compatibilidad con la base de datos y con las pantallas
-     * que ya lo usan, pero antes de guardar o mapear se normaliza con este valor.
-     */
-    val calculatedRating: Int
-        get() = calculateRating(position, level, style)
+    val effectiveStyle: PlayerStyle
+        get() = style.takeIf { it in stylesFor(position) } ?: defaultStyleFor(position)
 
-    fun withCalculatedRating(): Player =
-        if (rating == calculatedRating) this else copy(rating = calculatedRating)
+    val rating: Int
+        get() = calculateRating(position, level, effectiveStyle)
+
+    /**
+     * Devuelve un jugador en un estado coherente antes de persistirlo o mostrarlo.
+     */
+    fun normalized(): Player = copy(
+        name = name.trim(),
+        age = age.coerceIn(PLAYER_MIN_AGE, PLAYER_MAX_AGE),
+        number = number.coerceIn(1, 99),
+        style = effectiveStyle,
+        lineupSlot = lineupSlot?.takeIf { it.isNotBlank() && status != PlayerStatus.LESIONADO }
+    )
 }

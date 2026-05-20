@@ -699,6 +699,9 @@ fun AppNavGraph(
                 LaunchedEffect(currentUserId) {
                     vm.setUser(currentUserId)
                 }
+                LaunchedEffect(vm) {
+                    vm.messages.collect { message -> showSnackbar(message) }
+                }
 
                 val players by vm.players.collectAsState()
                 val selectedFormationId by vm.selectedFormationId.collectAsState()
@@ -723,8 +726,9 @@ fun AppNavGraph(
                         )
                     },
                     onDeletePlayer = { player ->
-                        vm.delete(player)
-                        showSnackbar("Jugador eliminado")
+                        vm.delete(player) {
+                            showSnackbar("Jugador eliminado")
+                        }
                     },
                     onSavePlayer = { player ->
                         vm.save(player)
@@ -754,6 +758,9 @@ fun AppNavGraph(
                 LaunchedEffect(currentUserId) {
                     vm.setUser(currentUserId)
                 }
+                LaunchedEffect(vm) {
+                    vm.messages.collect { message -> showSnackbar(message) }
+                }
 
                 val players by vm.players.collectAsState()
 
@@ -764,9 +771,10 @@ fun AppNavGraph(
                         navController.popBackStack()
                     },
                     onSave = { player ->
-                        vm.save(player.copy(id = 0))
-                        navController.popBackStack()
-                        showSnackbar("Jugador creado correctamente")
+                        vm.save(player.copy(id = 0)) {
+                            navController.popBackStack()
+                            showSnackbar("Jugador creado correctamente")
+                        }
                     }
                 )
             }
@@ -776,6 +784,9 @@ fun AppNavGraph(
 
                 LaunchedEffect(currentUserId) {
                     vm.setUser(currentUserId)
+                }
+                LaunchedEffect(vm) {
+                    vm.messages.collect { message -> showSnackbar(message) }
                 }
 
                 val players by vm.players.collectAsState()
@@ -810,9 +821,10 @@ fun AppNavGraph(
                         navController.popBackStack()
                     },
                     onSave = { edited ->
-                        vm.save(edited)
-                        navController.popBackStack()
-                        showSnackbar("Jugador actualizado correctamente")
+                        vm.save(edited) {
+                            navController.popBackStack()
+                            showSnackbar("Jugador actualizado correctamente")
+                        }
                     }
                 )
             }

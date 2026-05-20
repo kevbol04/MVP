@@ -6,7 +6,6 @@ import com.example.mvp.domain.model.PlayerLevel
 import com.example.mvp.domain.model.PlayerPosition
 import com.example.mvp.domain.model.PlayerStatus
 import com.example.mvp.domain.model.PlayerStyle
-import com.example.mvp.domain.model.calculateRating
 import com.example.mvp.domain.model.defaultStyleFor
 import com.example.mvp.domain.model.stylesFor
 
@@ -28,7 +27,6 @@ fun PlayerEntity.toModel(): Player {
     val safePosition = safePosition(position)
     val safeLevel = safeLevel(level)
     val safeStyle = safeStyle(style, safePosition)
-    val calculatedRating = calculateRating(safePosition, safeLevel, safeStyle)
 
     return Player(
         id = id,
@@ -36,29 +34,27 @@ fun PlayerEntity.toModel(): Player {
         position = safePosition,
         age = age,
         number = number,
-        rating = calculatedRating,
         status = safeStatus(status),
         level = safeLevel,
         style = safeStyle,
         lineupSlot = lineupSlot
-    )
+    ).normalized()
 }
 
 fun Player.toEntity(userId: Long): PlayerEntity {
-    val safeStyle = if (style in stylesFor(position)) style else defaultStyleFor(position)
-    val calculatedRating = calculateRating(position, level, safeStyle)
+    val normalizedPlayer = normalized()
 
     return PlayerEntity(
-        id = id,
+        id = normalizedPlayer.id,
         userId = userId,
-        name = name,
-        position = position.name,
-        age = age,
-        number = number,
-        rating = calculatedRating,
-        status = status.name,
-        level = level.name,
-        style = safeStyle.name,
-        lineupSlot = lineupSlot
+        name = normalizedPlayer.name,
+        position = normalizedPlayer.position.name,
+        age = normalizedPlayer.age,
+        number = normalizedPlayer.number,
+        rating = normalizedPlayer.rating,
+        status = normalizedPlayer.status.name,
+        level = normalizedPlayer.level.name,
+        style = normalizedPlayer.effectiveStyle.name,
+        lineupSlot = normalizedPlayer.lineupSlot
     )
 }

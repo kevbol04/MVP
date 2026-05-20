@@ -3,12 +3,22 @@ package com.example.mvp.ui.screens.players
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mvp.domain.model.Club
+import com.example.mvp.domain.model.Player
 import com.example.mvp.domain.repository.ClubRepository
 import com.example.mvp.domain.repository.PlayerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import com.example.mvp.domain.model.Player
 import javax.inject.Inject
 
 @HiltViewModel
@@ -18,6 +28,9 @@ class PlayersViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val userId = MutableStateFlow<Long?>(null)
+
+    private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val messages: SharedFlow<String> = _messages.asSharedFlow()
 
     val players: StateFlow<List<Player>> =
         userId.filterNotNull()
@@ -36,26 +49,80 @@ class PlayersViewModel @Inject constructor(
         userId.value = id
     }
 
-    fun playerById(playerId: Int): Flow<Player?> {
-        return userId.filterNotNull()
+    fun playerById(playerId: Int) =
+        userId.filterNotNull()
             .distinctUntilChanged()
             .flatMapLatest { uid -> repo.observePlayer(uid, playerId) }
-    }
 
-    fun save(player: Player) {
-        val uid = userId.value ?: return
-        viewModelScope.launch { repo.save(uid, player) }
-    }
-
-    fun delete(player: Player) {
-        val uid = userId.value ?: return
-        viewModelScope.launch { repo.delete(uid, player) }
-    }
-
-    fun saveSelectedFormation(formationId: String) {
-        val uid = userId.value ?: return
-        viewModelScope.launch {
-            clubRepository.updateSelectedFormation(uid, formationId)
+    fun save(
+        player: Player,
+        onSuccess: () -> Unit = {}
+    ) {
+        val uid = userId.value
+        if (uid == null) {
+            emitMessage("No se pudo guardar el jugador porque no hay una sesión activa.")
+            return
         }
+
+        viewModelScope.launch {
+            runCatching {
+                repo.save(uid, player.normalized())
+            }.onSuccess {
+                onSuccess()
+            }.onFailure { throwable ->
+                _messages.emit(throwable.toUserMessage("No se pudo guardar el jugador."))
+            }
+        }
+    }
+
+    fun delete(
+        player: Player,
+        onSuccess: () -> Unit = {}
+    ) {
+        val uid = userId.value
+        if (uid == null) {
+            emitMessage("No se pudo eliminar el jugador porque no hay una sesión activa.")
+            return
+        }
+
+        viewModelScope.launch {
+            runCatching {
+                repo.delete(uid, player)
+            }.onSuccess {
+                onSuccess()
+            }.onFailure { throwable ->
+                _messages.emit(throwable.toUserMessage("No se pudo eliminar el jugador."))
+            }
+        }
+    }
+
+    fun saveSelectedFormation(
+        formationId: String,
+        onSuccess: () -> Unit = {}
+    ) {
+        val uid = userId.value
+        if (uid == null) {
+            emitMessage("No se pudo guardar la formación porque no hay una sesión activa.")
+            return
+        }
+
+        viewModelScope.launch {
+            runCatching {
+                clubRepository.updateSelectedFormation(uid, formationId)
+            }.onSuccess {
+                onSuccess()
+            }.onFailure { throwable ->
+                _messages.emit(throwable.toUserMessage("No se pudo guardar la formación."))
+            }
+        }
+    }
+
+    private fun emitMessage(message: String) {
+        _messages.tryEmit(message)
+    }
+
+    private fun Throwable.toUserMessage(defaultMessage: String): String {
+        val cleanMessage = message?.trim().orEmpty()
+        return cleanMessage.ifBlank { defaultMessage }
     }
 }

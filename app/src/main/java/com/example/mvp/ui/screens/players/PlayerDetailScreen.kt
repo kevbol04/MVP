@@ -24,7 +24,6 @@ import com.example.mvp.domain.model.PlayerStatus
 import com.example.mvp.domain.model.PlayerAttributes
 import com.example.mvp.domain.model.PlayerPosition
 import com.example.mvp.domain.model.generateAttributes
-import com.example.mvp.domain.model.calculateRating
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,8 +56,8 @@ fun PlayerDetailScreen(
         else -> accent.copy(alpha = 0.16f) to accent
     }
 
-    val attributes = generateAttributes(player.position, player.level, player.style)
-    val rating = calculateRating(player.position, player.level, player.style)
+    val attributes = generateAttributes(player.position, player.level, player.effectiveStyle)
+    val rating = player.rating
 
     Box(
         modifier = modifier

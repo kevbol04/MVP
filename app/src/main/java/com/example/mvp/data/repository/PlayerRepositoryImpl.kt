@@ -6,6 +6,8 @@ import com.example.mvp.data.local.entities.PlayerEntity
 import com.example.mvp.data.local.mapper.toEntity
 import com.example.mvp.data.local.mapper.toModel
 import com.example.mvp.domain.model.Player
+import com.example.mvp.domain.model.PLAYER_MAX_AGE
+import com.example.mvp.domain.model.PLAYER_MIN_AGE
 import com.example.mvp.domain.repository.PlayerRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -27,7 +29,7 @@ class PlayerRepositoryImpl @Inject constructor(
     override suspend fun save(userId: Long, player: Player) {
         require(userId > 0L) { "La sesión no es válida." }
 
-        val entity = player.withCalculatedRating().toEntity(userId)
+        val entity = player.normalized().toEntity(userId)
         validatePlayer(entity)
         ensureNumberIsAvailable(entity)
 
@@ -91,7 +93,9 @@ class PlayerRepositoryImpl @Inject constructor(
 
     private fun validatePlayer(entity: PlayerEntity) {
         require(entity.name.isNotBlank()) { "El nombre del jugador no puede estar vacío." }
-        require(entity.age in 15..50) { "La edad del jugador debe estar entre 15 y 50 años." }
+        require(entity.age in PLAYER_MIN_AGE..PLAYER_MAX_AGE) {
+            "La edad del jugador debe estar entre $PLAYER_MIN_AGE y $PLAYER_MAX_AGE años."
+        }
         require(entity.number in 1..99) { "El dorsal debe estar entre 1 y 99." }
         require(entity.rating in 1..99) { "La valoración debe estar entre 1 y 99." }
     }

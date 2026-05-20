@@ -21,6 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.mvp.domain.model.Player
+import com.example.mvp.domain.model.PLAYER_MAX_AGE
+import com.example.mvp.domain.model.PLAYER_MIN_AGE
 import com.example.mvp.domain.model.PlayerAttributes
 import com.example.mvp.domain.model.PlayerLevel
 import com.example.mvp.domain.model.PlayerPosition
@@ -87,7 +89,7 @@ fun PlayerFormScreen(
         when {
             ageText.isBlank() -> "La edad es obligatoria."
             v == null -> "Introduce una edad válida."
-            v !in 16..40 -> "La edad debe estar entre 16 y 40."
+            v !in PLAYER_MIN_AGE..PLAYER_MAX_AGE -> "La edad debe estar entre $PLAYER_MIN_AGE y $PLAYER_MAX_AGE."
             else -> null
         }
     }
@@ -413,9 +415,8 @@ fun PlayerFormScreen(
                                         id = initial?.id ?: 0,
                                         name = name.trim(),
                                         position = position,
-                                        age = age.coerceIn(16, 40),
+                                        age = age.coerceIn(PLAYER_MIN_AGE, PLAYER_MAX_AGE),
                                         number = number.coerceIn(1, 99),
-                                        rating = ratingInt,
                                         status = status,
                                         level = level,
                                         style = style,
