@@ -319,8 +319,6 @@ private fun ClubHeader(
         ClubBadgeEmblem(
             badgeId = badgeId,
             size = 46.dp,
-            accent = accent,
-            accent2 = accent2
         )
         Spacer(Modifier.size(12.dp))
         Column(Modifier.weight(1f)) {
@@ -430,8 +428,6 @@ private fun ClubPreviewCard(
                     ClubBadgeEmblem(
                         badgeId = badgeId,
                         size = 76.dp,
-                        accent = accent,
-                        accent2 = accent2
                     )
                 }
 
@@ -620,8 +616,6 @@ private fun BadgeOption(
         ClubBadgeEmblem(
             badgeId = badge.id,
             size = if (selected) 68.dp else 60.dp,
-            accent = accent,
-            accent2 = accent2
         )
 
         if (selected) {
@@ -648,9 +642,7 @@ private fun BadgeOption(
 @Composable
 private fun ClubBadgeEmblem(
     badgeId: String,
-    size: androidx.compose.ui.unit.Dp,
-    accent: Color,
-    accent2: Color
+    size: androidx.compose.ui.unit.Dp
 ) {
     val badge = badgePresetById(badgeId)
 
