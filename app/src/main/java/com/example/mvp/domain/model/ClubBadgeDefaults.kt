@@ -1,9 +1,11 @@
 package com.example.mvp.domain.model
 
 object ClubBadgeDefaults {
-    const val DEFAULT_ID = "royal_blue"
+    const val DEFAULT_ID = "galaxy_purple"
+    const val CUSTOM_ID = "custom"
 
     val ids: List<String> = listOf(
+        CUSTOM_ID,
         "royal_blue",
         "galaxy_purple",
         "ocean_cyan",

@@ -11,6 +11,7 @@ fun ClubEntity.toModel(): Club = Club(
     city = city,
     coachName = coachName,
     badgeId = ClubBadgeDefaults.sanitize(badgeId),
+    customBadgePath = customBadgePath?.takeIf { it.isNotBlank() },
     selectedFormationId = selectedFormationId.ifBlank { Club.DEFAULT_FORMATION_ID }
 )
 
@@ -22,5 +23,6 @@ fun Club.toEntity(userId: Long): ClubEntity = ClubEntity(
     city = city.trim(),
     coachName = coachName.trim(),
     badgeId = ClubBadgeDefaults.sanitize(badgeId),
+    customBadgePath = customBadgePath?.takeIf { it.isNotBlank() },
     selectedFormationId = selectedFormationId.ifBlank { Club.DEFAULT_FORMATION_ID }
 )

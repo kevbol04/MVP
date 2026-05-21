@@ -1,10 +1,15 @@
 package com.example.mvp.ui.screens.club
 
-import androidx.compose.foundation.Image
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -50,8 +55,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,8 +63,10 @@ import androidx.compose.ui.unit.dp
 import com.example.mvp.R
 import com.example.mvp.domain.model.Club
 import com.example.mvp.domain.model.ClubBadgeDefaults
+import com.example.mvp.ui.components.ClubBadgeImage
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.GlassBase
+import java.io.File
 
 @Composable
 fun ClubScreen(
@@ -79,25 +85,55 @@ fun ClubScreen(
     val onBg = MaterialTheme.colorScheme.onBackground
 
     val fallbackCoachName = defaultCoachName.trim().ifBlank { "Usuario" }
+    val context = LocalContext.current
 
     var name by rememberSaveable { mutableStateOf("") }
     var stadium by rememberSaveable { mutableStateOf("") }
     var city by rememberSaveable { mutableStateOf("") }
     var coachName by rememberSaveable { mutableStateOf("") }
     var badgeId by rememberSaveable { mutableStateOf(ClubBadgeDefaults.DEFAULT_ID) }
+    var customBadgePath by rememberSaveable { mutableStateOf<String?>(null) }
+    var badgeErrorText by rememberSaveable { mutableStateOf<String?>(null) }
+
     var nameTouched by rememberSaveable { mutableStateOf(false) }
     var stadiumTouched by rememberSaveable { mutableStateOf(false) }
     var cityTouched by rememberSaveable { mutableStateOf(false) }
     var coachTouched by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(club?.id, club?.coachName, club?.badgeId, fallbackCoachName) {
+    LaunchedEffect(club?.id, club?.coachName, club?.badgeId, club?.customBadgePath, fallbackCoachName) {
         name = club?.name.orEmpty()
         stadium = club?.stadium.orEmpty()
         city = club?.city.orEmpty()
         coachName = club?.coachName.orEmpty().ifBlank { fallbackCoachName }
         badgeId = ClubBadgeDefaults.sanitize(club?.badgeId.orEmpty())
+        customBadgePath = club?.customBadgePath?.takeIf { it.isNotBlank() }
+        badgeErrorText = null
     }
 
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri ?: return@rememberLauncherForActivityResult
+
+        if (!isRealPngImage(context, uri)) {
+            badgeErrorText = "Solo se permiten imágenes PNG."
+            return@rememberLauncherForActivityResult
+        }
+
+        val savedPath = saveClubBadgeToInternalStorage(context, uri)
+
+        if (savedPath != null) {
+            customBadgePath?.let { oldPath ->
+                runCatching { File(oldPath).delete() }
+            }
+
+            customBadgePath = savedPath
+            badgeId = ClubBadgeDefaults.CUSTOM_ID
+            badgeErrorText = null
+        } else {
+            badgeErrorText = "No se pudo cargar la imagen seleccionada."
+        }
+    }
 
     val nameErrorText = when {
         name.isBlank() -> "El nombre del club es obligatorio"
@@ -163,6 +199,7 @@ fun ClubScreen(
                 clubName = if (isInitialSetup) "Crea tu club" else name.ifBlank { "Configurar club" },
                 subtitle = if (isInitialSetup) "Elige identidad y empieza tu carrera" else "Datos deportivos principales",
                 badgeId = badgeId,
+                customBadgePath = customBadgePath,
                 accent = accent,
                 accent2 = accent2,
                 onText = onBg,
@@ -176,6 +213,7 @@ fun ClubScreen(
                 city = city,
                 coachName = coachName,
                 badgeId = badgeId,
+                customBadgePath = customBadgePath,
                 accent = accent,
                 accent2 = accent2,
                 onText = onBg
@@ -185,11 +223,31 @@ fun ClubScreen(
 
             BadgePicker(
                 selectedBadgeId = badgeId,
-                onSelected = { badgeId = it },
+                customBadgePath = customBadgePath,
+                onSelected = { selectedId ->
+                    badgeId = selectedId
+                    customBadgePath = null
+                    badgeErrorText = null
+                },
+                onPickCustom = {
+                    imagePickerLauncher.launch(arrayOf("image/*"))
+                },
                 accent = accent,
                 accent2 = accent2,
                 onText = onBg
             )
+
+            badgeErrorText?.let { error ->
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 4.dp, top = 2.dp)
+                )
+            }
 
             SectionTitle("Datos del club", onBg)
 
@@ -272,6 +330,7 @@ fun ClubScreen(
                                 city = city.trim(),
                                 coachName = coachName.trim(),
                                 badgeId = badgeId,
+                                customBadgePath = customBadgePath?.takeIf { it.isNotBlank() },
                                 selectedFormationId = club?.selectedFormationId ?: Club.DEFAULT_FORMATION_ID
                             )
                         )
@@ -301,6 +360,7 @@ private fun ClubHeader(
     clubName: String,
     subtitle: String,
     badgeId: String,
+    customBadgePath: String?,
     accent: Color,
     accent2: Color,
     onText: Color,
@@ -318,7 +378,8 @@ private fun ClubHeader(
         }
         ClubBadgeEmblem(
             badgeId = badgeId,
-            size = 46.dp,
+            customBadgePath = customBadgePath,
+            size = 46.dp
         )
         Spacer(Modifier.size(12.dp))
         Column(Modifier.weight(1f)) {
@@ -348,6 +409,7 @@ private fun ClubPreviewCard(
     city: String,
     coachName: String,
     badgeId: String,
+    customBadgePath: String?,
     accent: Color,
     accent2: Color,
     onText: Color
@@ -427,7 +489,8 @@ private fun ClubPreviewCard(
                 ) {
                     ClubBadgeEmblem(
                         badgeId = badgeId,
-                        size = 76.dp,
+                        customBadgePath = customBadgePath,
+                        size = 76.dp
                     )
                 }
 
@@ -535,20 +598,48 @@ private fun PremiumMiniInfoCard(
 @Composable
 private fun BadgePicker(
     selectedBadgeId: String,
+    customBadgePath: String?,
     onSelected: (String) -> Unit,
+    onPickCustom: () -> Unit,
     accent: Color,
     accent2: Color,
     onText: Color
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        val rows = remember { badgePresets().chunked(3) }
-        rows.forEach { rowItems ->
+        val badges = remember { badgePresets() }
+        val firstRow = remember { badges.take(2) }
+        val restRows = remember { badges.drop(2).chunked(3) }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            CustomBadgeOption(
+                modifier = Modifier.weight(1f),
+                customBadgePath = customBadgePath,
+                selected = customBadgePath != null,
+                accent = accent,
+                onText = onText,
+                onClick = onPickCustom
+            )
+
+            firstRow.forEach { badge ->
+                BadgeOption(
+                    modifier = Modifier.weight(1f),
+                    badge = badge,
+                    selected = customBadgePath == null && ClubBadgeDefaults.sanitize(selectedBadgeId) == badge.id,
+                    accent = accent,
+                    accent2 = accent2,
+                    onText = onText,
+                    onClick = { onSelected(badge.id) }
+                )
+            }
+        }
+
+        restRows.forEach { rowItems ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 rowItems.forEach { badge ->
                     BadgeOption(
                         modifier = Modifier.weight(1f),
                         badge = badge,
-                        selected = ClubBadgeDefaults.sanitize(selectedBadgeId) == badge.id,
+                        selected = customBadgePath == null && ClubBadgeDefaults.sanitize(selectedBadgeId) == badge.id,
                         accent = accent,
                         accent2 = accent2,
                         onText = onText,
@@ -615,8 +706,97 @@ private fun BadgeOption(
 
         ClubBadgeEmblem(
             badgeId = badge.id,
-            size = if (selected) 68.dp else 60.dp,
+            customBadgePath = null,
+            size = if (selected) 68.dp else 60.dp
         )
+
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(accent),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = ButtonTextDark,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CustomBadgeOption(
+    modifier: Modifier,
+    customBadgePath: String?,
+    selected: Boolean,
+    accent: Color,
+    onText: Color,
+    onClick: () -> Unit
+) {
+    val shape = RoundedCornerShape(26.dp)
+
+    Box(
+        modifier = modifier
+            .height(106.dp)
+            .shadow(
+                elevation = if (selected) 14.dp else 4.dp,
+                shape = shape,
+                clip = false
+            )
+            .clip(shape)
+            .background(
+                Brush.linearGradient(
+                    colors = if (selected) {
+                        listOf(accent.copy(alpha = 0.24f), GlassBase.copy(alpha = 0.14f))
+                    } else {
+                        listOf(GlassBase.copy(alpha = 0.11f), GlassBase.copy(alpha = 0.055f))
+                    }
+                )
+            )
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = if (selected) accent.copy(alpha = 0.95f) else onText.copy(alpha = 0.09f),
+                shape = shape
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        if (customBadgePath != null) {
+            ClubBadgeImage(
+                badgeId = ClubBadgeDefaults.DEFAULT_ID,
+                customBadgePath = customBadgePath,
+                size = if (selected) 68.dp else 60.dp
+            )
+        } else {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.UploadFile,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(30.dp)
+                )
+
+                Spacer(Modifier.height(7.dp))
+
+                Text(
+                    text = "Cargar imagen",
+                    color = onText.copy(alpha = 0.90f),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1
+                )
+            }
+        }
 
         if (selected) {
             Box(
@@ -642,15 +822,13 @@ private fun BadgeOption(
 @Composable
 private fun ClubBadgeEmblem(
     badgeId: String,
+    customBadgePath: String?,
     size: androidx.compose.ui.unit.Dp
 ) {
-    val badge = badgePresetById(badgeId)
-
-    Image(
-        painter = painterResource(id = badge.drawableRes),
-        contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = Modifier.size(size)
+    ClubBadgeImage(
+        badgeId = badgeId,
+        customBadgePath = customBadgePath,
+        size = size
     )
 }
 
@@ -661,7 +839,6 @@ private data class ClubBadgePreset(
 )
 
 private fun badgePresets(): List<ClubBadgePreset> = listOf(
-    ClubBadgePreset("royal_blue", "Clásico", R.drawable.club_badge_classic_gold),
     ClubBadgePreset("galaxy_purple", "Estrella", R.drawable.club_badge_silver_star),
     ClubBadgePreset("ocean_cyan", "Morado", R.drawable.club_badge_purple_ball),
     ClubBadgePreset("green_star", "Estadio", R.drawable.club_badge_blue_stadium),
@@ -672,6 +849,62 @@ private fun badgePresets(): List<ClubBadgePreset> = listOf(
 private fun badgePresetById(id: String): ClubBadgePreset {
     val cleanId = ClubBadgeDefaults.sanitize(id)
     return badgePresets().firstOrNull { it.id == cleanId } ?: badgePresets().first()
+}
+
+private fun isRealPngImage(context: Context, uri: Uri): Boolean {
+    val pngSignature = byteArrayOf(
+        0x89.toByte(),
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A
+    )
+
+    return runCatching {
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            val header = ByteArray(8)
+            val bytesRead = input.read(header)
+
+            bytesRead == 8 && header.contentEquals(pngSignature)
+        } ?: false
+    }.getOrDefault(false)
+}
+
+private fun getFileNameFromUri(context: Context, uri: Uri): String? {
+    return runCatching {
+        context.contentResolver.query(
+            uri,
+            arrayOf(OpenableColumns.DISPLAY_NAME),
+            null,
+            null,
+            null
+        )?.use { cursor ->
+            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+
+            if (cursor.moveToFirst() && nameIndex >= 0) {
+                cursor.getString(nameIndex)
+            } else {
+                null
+            }
+        }
+    }.getOrNull()
+}
+
+private fun saveClubBadgeToInternalStorage(context: Context, uri: Uri): String? {
+    return runCatching {
+        val file = File(context.filesDir, "club_badge_${System.currentTimeMillis()}.png")
+
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            file.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        } ?: return null
+
+        file.absolutePath
+    }.getOrNull()
 }
 
 @Composable
@@ -714,8 +947,7 @@ private fun PremiumFormPanel(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         content = content
     )

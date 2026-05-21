@@ -58,6 +58,7 @@ import com.example.mvp.domain.model.MatchResult
 import com.example.mvp.domain.model.Player
 import com.example.mvp.domain.model.PlayerStatus
 import com.example.mvp.domain.model.Training
+import com.example.mvp.ui.components.ClubBadgeImage
 import com.example.mvp.ui.theme.ButtonTextDark
 import com.example.mvp.ui.theme.Draw
 import com.example.mvp.ui.theme.GlassBase
@@ -347,11 +348,10 @@ private fun ClubDashboardCard(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    ClubBadgeEmblem(
+                    ClubBadgeImage(
                         badgeId = club?.badgeId ?: ClubBadgeDefaults.DEFAULT_ID,
-                        size = 60.dp,
-                        accent = accent,
-                        accent2 = accent2
+                        customBadgePath = club?.customBadgePath,
+                        size = 60.dp
                     )
                 }
 

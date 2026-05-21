@@ -7,6 +7,7 @@ data class Club(
     val city: String = "",
     val coachName: String = "",
     val badgeId: String = ClubBadgeDefaults.DEFAULT_ID,
+    val customBadgePath: String? = null,
     val selectedFormationId: String = DEFAULT_FORMATION_ID
 ) {
     val displayName: String

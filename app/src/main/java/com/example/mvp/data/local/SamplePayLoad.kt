@@ -60,7 +60,7 @@ object SamplePayLoad {
         stadium = "Santiago Bernabéu",
         city = "Madrid",
         coachName = DEMO_NAME,
-        badgeId = "royal_blue"
+        badgeId = "fire_red"
     )
 
     private fun buildPlayers(userId: Long): List<PlayerEntity> = listOf(
