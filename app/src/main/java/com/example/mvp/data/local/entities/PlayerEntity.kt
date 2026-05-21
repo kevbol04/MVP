@@ -33,7 +33,6 @@ data class PlayerEntity(
     val position: String,
     val age: Int,
     val number: Int,
-    val rating: Int,
     val status: String,
 
     @ColumnInfo(name = "level")

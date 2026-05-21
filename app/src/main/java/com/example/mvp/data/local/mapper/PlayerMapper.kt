@@ -51,7 +51,6 @@ fun Player.toEntity(userId: Long): PlayerEntity {
         position = normalizedPlayer.position.name,
         age = normalizedPlayer.age,
         number = normalizedPlayer.number,
-        rating = normalizedPlayer.rating,
         status = normalizedPlayer.status.name,
         level = normalizedPlayer.level.name,
         style = normalizedPlayer.effectiveStyle.name,

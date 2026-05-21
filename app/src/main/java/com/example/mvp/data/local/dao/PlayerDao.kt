@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PlayerDao {
 
-    @Query("SELECT * FROM players WHERE user_id = :userId ORDER BY rating DESC, name ASC")
+    @Query("SELECT * FROM players WHERE user_id = :userId ORDER BY name ASC")
     fun observeAll(userId: Long): Flow<List<PlayerEntity>>
 
     @Query("SELECT * FROM players WHERE user_id = :userId AND id = :playerId LIMIT 1")
@@ -58,7 +58,6 @@ interface PlayerDao {
             position = :position,
             age = :age,
             number = :number,
-            rating = :rating,
             status = :status,
             level = :level,
             style = :style,
@@ -73,7 +72,6 @@ interface PlayerDao {
         position: String,
         age: Int,
         number: Int,
-        rating: Int,
         status: String,
         level: String,
         style: String,

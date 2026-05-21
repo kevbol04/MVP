@@ -10,8 +10,8 @@ object PlayerValidator {
         validateAge(player.age)?.let { throw IllegalArgumentException(it) }
         validateNumber(player.number)?.let { throw IllegalArgumentException(it) }
 
-        require(player.rating in PLAYER_MIN_NUMBER..PLAYER_MAX_NUMBER) {
-            "La valoración debe estar entre $PLAYER_MIN_NUMBER y $PLAYER_MAX_NUMBER."
+        require(player.rating in PLAYER_MIN_RATING..PLAYER_MAX_RATING) {
+            "La valoración debe estar entre $PLAYER_MIN_RATING y $PLAYER_MAX_RATING."
         }
 
         require(player.style in stylesFor(player.position)) {

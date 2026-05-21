@@ -15,7 +15,6 @@ import com.example.mvp.domain.model.Competition
 import com.example.mvp.domain.model.PlayerPosition
 import com.example.mvp.domain.model.PlayerStatus
 import com.example.mvp.domain.model.PlayerLevel
-import com.example.mvp.domain.model.calculateRating
 import com.example.mvp.domain.model.defaultStyleFor
 import com.example.mvp.domain.model.TrainingType
 import java.time.LocalDate
@@ -114,15 +113,12 @@ object SamplePayLoad {
     ): PlayerEntity {
         val level = levelFromRating(targetRating)
         val style = defaultStyleFor(position)
-        val canonicalRating = calculateRating(position, level, style)
-
         return PlayerEntity(
             userId = userId,
             name = name,
             position = position.name,
             age = age,
             number = number,
-            rating = canonicalRating,
             status = status.name,
             level = level.name,
             style = style.name,

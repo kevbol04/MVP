@@ -4,6 +4,8 @@ const val PLAYER_MIN_AGE = 16
 const val PLAYER_MAX_AGE = 40
 const val PLAYER_MIN_NUMBER = 1
 const val PLAYER_MAX_NUMBER = 99
+const val PLAYER_MIN_RATING = 40
+const val PLAYER_MAX_RATING = 99
 const val PLAYER_MIN_NAME_LENGTH = 3
 const val PLAYER_MAX_NAME_LENGTH = 40
 

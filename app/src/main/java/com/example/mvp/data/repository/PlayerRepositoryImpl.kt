@@ -1,15 +1,17 @@
 package com.example.mvp.data.repository
 
 import android.database.sqlite.SQLiteConstraintException
+import androidx.room.withTransaction
 import com.example.mvp.data.local.dao.PlayerDao
 import com.example.mvp.data.local.entities.PlayerEntity
 import com.example.mvp.data.local.mapper.toEntity
 import com.example.mvp.data.local.mapper.toModel
-import com.example.mvp.domain.model.Player
+import com.example.mvp.di.AppDatabase
 import com.example.mvp.domain.model.PLAYER_MAX_AGE
 import com.example.mvp.domain.model.PLAYER_MAX_NUMBER
 import com.example.mvp.domain.model.PLAYER_MIN_AGE
 import com.example.mvp.domain.model.PLAYER_MIN_NUMBER
+import com.example.mvp.domain.model.Player
 import com.example.mvp.domain.model.PlayerValidator
 import com.example.mvp.domain.repository.PlayerRepository
 import kotlinx.coroutines.flow.Flow
@@ -17,7 +19,8 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class PlayerRepositoryImpl @Inject constructor(
-    private val dao: PlayerDao
+    private val dao: PlayerDao,
+    private val database: AppDatabase
 ) : PlayerRepository {
 
     override fun observePlayers(userId: Long): Flow<List<Player>> =
@@ -37,38 +40,17 @@ class PlayerRepositoryImpl @Inject constructor(
 
         val entity = normalizedPlayer.toEntity(userId)
         validateEntity(entity)
-        ensureNumberIsAvailable(entity)
 
         runCatching {
-            entity.lineupSlot
-                ?.takeIf { it.isNotBlank() }
-                ?.let { slot ->
-                    dao.clearLineupSlotForOtherPlayers(
-                        userId = userId,
-                        lineupSlot = slot,
-                        excludedPlayerId = entity.id
-                    )
+            database.withTransaction {
+                ensureNumberIsAvailable(entity)
+                clearLineupSlotIfNeeded(entity)
+
+                if (entity.id == 0) {
+                    insertPlayer(entity)
+                } else {
+                    updatePlayer(entity)
                 }
-
-            if (player.id == 0) {
-                val newId = dao.insert(entity.copy(id = 0))
-                check(newId > 0L) { "No se pudo guardar el jugador." }
-            } else {
-                val rows = dao.updateForUser(
-                    playerId = entity.id,
-                    userId = userId,
-                    name = entity.name,
-                    position = entity.position,
-                    age = entity.age,
-                    number = entity.number,
-                    rating = entity.rating,
-                    status = entity.status,
-                    level = entity.level,
-                    style = entity.style,
-                    lineupSlot = entity.lineupSlot
-                )
-
-                check(rows > 0) { "No se pudo actualizar el jugador. Puede que ya no exista." }
             }
         }.getOrElse { throwable ->
             if (throwable is SQLiteConstraintException) {
@@ -85,6 +67,38 @@ class PlayerRepositoryImpl @Inject constructor(
 
         val rows = dao.deleteByIdForUser(playerId = player.id, userId = userId)
         check(rows > 0) { "No se pudo eliminar el jugador. Puede que ya no exista." }
+    }
+
+    private suspend fun insertPlayer(entity: PlayerEntity) {
+        val newId = dao.insert(entity.copy(id = 0))
+        check(newId > 0L) { "No se pudo guardar el jugador." }
+    }
+
+    private suspend fun updatePlayer(entity: PlayerEntity) {
+        val rows = dao.updateForUser(
+            playerId = entity.id,
+            userId = entity.userId,
+            name = entity.name,
+            position = entity.position,
+            age = entity.age,
+            number = entity.number,
+            status = entity.status,
+            level = entity.level,
+            style = entity.style,
+            lineupSlot = entity.lineupSlot
+        )
+
+        check(rows > 0) { "No se pudo actualizar el jugador. Puede que ya no exista." }
+    }
+
+    private suspend fun clearLineupSlotIfNeeded(entity: PlayerEntity) {
+        val lineupSlot = entity.lineupSlot?.takeIf { it.isNotBlank() } ?: return
+
+        dao.clearLineupSlotForOtherPlayers(
+            userId = entity.userId,
+            lineupSlot = lineupSlot,
+            excludedPlayerId = entity.id
+        )
     }
 
     private suspend fun ensureNumberIsAvailable(entity: PlayerEntity) {
@@ -105,9 +119,6 @@ class PlayerRepositoryImpl @Inject constructor(
         }
         require(entity.number in PLAYER_MIN_NUMBER..PLAYER_MAX_NUMBER) {
             "El dorsal debe estar entre $PLAYER_MIN_NUMBER y $PLAYER_MAX_NUMBER."
-        }
-        require(entity.rating in PLAYER_MIN_NUMBER..PLAYER_MAX_NUMBER) {
-            "La valoración debe estar entre $PLAYER_MIN_NUMBER y $PLAYER_MAX_NUMBER."
         }
     }
 }
