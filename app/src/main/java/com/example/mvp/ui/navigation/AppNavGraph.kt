@@ -422,6 +422,12 @@ fun AppNavGraph(
                     vm.setUser(currentUserId)
                 }
 
+                LaunchedEffect(vm) {
+                    vm.messages.collect { message ->
+                        showSnackbar(message)
+                    }
+                }
+
                 val trainings by vm.trainings.collectAsState()
 
                 TrainingsScreen(
@@ -438,18 +444,20 @@ fun AppNavGraph(
                         )
                     },
                     onDeleteTraining = { training ->
-                        vm.delete(training)
-                        showSnackbar("Entrenamiento eliminado")
+                        vm.delete(training) {
+                            showSnackbar("Entrenamiento eliminado")
+                        }
                     },
                     onToggleDone = { training ->
-                        vm.toggleDone(training)
-                        showSnackbar(
-                            if (training.isDone) {
-                                "Entrenamiento marcado como pendiente"
-                            } else {
-                                "Entrenamiento marcado como hecho"
-                            }
-                        )
+                        vm.toggleDone(training) {
+                            showSnackbar(
+                                if (training.isDone) {
+                                    "Entrenamiento marcado como pendiente"
+                                } else {
+                                    "Entrenamiento marcado como hecho"
+                                }
+                            )
+                        }
                     },
 
                     onGoDashboard = {
@@ -474,6 +482,12 @@ fun AppNavGraph(
                     vm.setUser(currentUserId)
                 }
 
+                LaunchedEffect(vm) {
+                    vm.messages.collect { message ->
+                        showSnackbar(message)
+                    }
+                }
+
                 val trainings by vm.trainings.collectAsState()
 
                 TrainingFormScreen(
@@ -483,9 +497,10 @@ fun AppNavGraph(
                         navController.popBackStack()
                     },
                     onSave = { training ->
-                        vm.save(training.copy(id = 0))
-                        navController.popBackStack()
-                        showSnackbar("Entrenamiento creado correctamente")
+                        vm.save(training.copy(id = 0)) {
+                            navController.popBackStack()
+                            showSnackbar("Entrenamiento creado correctamente")
+                        }
                     }
                 )
             }
@@ -495,6 +510,12 @@ fun AppNavGraph(
 
                 LaunchedEffect(currentUserId) {
                     vm.setUser(currentUserId)
+                }
+
+                LaunchedEffect(vm) {
+                    vm.messages.collect { message ->
+                        showSnackbar(message)
+                    }
                 }
 
                 val trainings by vm.trainings.collectAsState()
@@ -529,9 +550,10 @@ fun AppNavGraph(
                         navController.popBackStack()
                     },
                     onSave = { edited ->
-                        vm.save(edited)
-                        navController.popBackStack()
-                        showSnackbar("Entrenamiento actualizado correctamente")
+                        vm.save(edited) {
+                            navController.popBackStack()
+                            showSnackbar("Entrenamiento actualizado correctamente")
+                        }
                     }
                 )
             }
