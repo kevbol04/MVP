@@ -7,7 +7,10 @@ import com.example.mvp.data.local.mapper.toEntity
 import com.example.mvp.data.local.mapper.toModel
 import com.example.mvp.domain.model.Player
 import com.example.mvp.domain.model.PLAYER_MAX_AGE
+import com.example.mvp.domain.model.PLAYER_MAX_NUMBER
 import com.example.mvp.domain.model.PLAYER_MIN_AGE
+import com.example.mvp.domain.model.PLAYER_MIN_NUMBER
+import com.example.mvp.domain.model.PlayerValidator
 import com.example.mvp.domain.repository.PlayerRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -29,8 +32,11 @@ class PlayerRepositoryImpl @Inject constructor(
     override suspend fun save(userId: Long, player: Player) {
         require(userId > 0L) { "La sesión no es válida." }
 
-        val entity = player.normalized().toEntity(userId)
-        validatePlayer(entity)
+        val normalizedPlayer = player.normalized()
+        PlayerValidator.validateForSave(normalizedPlayer)
+
+        val entity = normalizedPlayer.toEntity(userId)
+        validateEntity(entity)
         ensureNumberIsAvailable(entity)
 
         runCatching {
@@ -91,12 +97,17 @@ class PlayerRepositoryImpl @Inject constructor(
         require(!exists) { "El dorsal #${entity.number} ya está asignado a otro jugador." }
     }
 
-    private fun validatePlayer(entity: PlayerEntity) {
+    private fun validateEntity(entity: PlayerEntity) {
+        require(entity.userId > 0L) { "La sesión no es válida." }
         require(entity.name.isNotBlank()) { "El nombre del jugador no puede estar vacío." }
         require(entity.age in PLAYER_MIN_AGE..PLAYER_MAX_AGE) {
-            "La edad del jugador debe estar entre $PLAYER_MIN_AGE y $PLAYER_MAX_AGE años."
+            "La edad debe estar entre $PLAYER_MIN_AGE y $PLAYER_MAX_AGE."
         }
-        require(entity.number in 1..99) { "El dorsal debe estar entre 1 y 99." }
-        require(entity.rating in 1..99) { "La valoración debe estar entre 1 y 99." }
+        require(entity.number in PLAYER_MIN_NUMBER..PLAYER_MAX_NUMBER) {
+            "El dorsal debe estar entre $PLAYER_MIN_NUMBER y $PLAYER_MAX_NUMBER."
+        }
+        require(entity.rating in PLAYER_MIN_NUMBER..PLAYER_MAX_NUMBER) {
+            "La valoración debe estar entre $PLAYER_MIN_NUMBER y $PLAYER_MAX_NUMBER."
+        }
     }
 }

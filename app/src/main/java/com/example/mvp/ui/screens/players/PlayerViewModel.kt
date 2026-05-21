@@ -66,7 +66,7 @@ class PlayersViewModel @Inject constructor(
 
         viewModelScope.launch {
             runCatching {
-                repo.save(uid, player.normalized())
+                repo.save(uid, player)
             }.onSuccess {
                 onSuccess()
             }.onFailure { throwable ->

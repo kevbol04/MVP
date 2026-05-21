@@ -38,7 +38,7 @@ fun PlayerEntity.toModel(): Player {
         level = safeLevel,
         style = safeStyle,
         lineupSlot = lineupSlot
-    ).normalized()
+    ).repairedFromStorage()
 }
 
 fun Player.toEntity(userId: Long): PlayerEntity {

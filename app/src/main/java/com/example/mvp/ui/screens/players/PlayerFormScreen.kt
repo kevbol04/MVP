@@ -21,13 +21,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.mvp.domain.model.Player
-import com.example.mvp.domain.model.PLAYER_MAX_AGE
-import com.example.mvp.domain.model.PLAYER_MIN_AGE
+import com.example.mvp.domain.model.PLAYER_MAX_NUMBER
+import com.example.mvp.domain.model.PLAYER_MIN_NUMBER
 import com.example.mvp.domain.model.PlayerAttributes
 import com.example.mvp.domain.model.PlayerLevel
 import com.example.mvp.domain.model.PlayerPosition
 import com.example.mvp.domain.model.PlayerStatus
 import com.example.mvp.domain.model.PlayerStyle
+import com.example.mvp.domain.model.PlayerValidator
 import com.example.mvp.domain.model.calculateRating
 import com.example.mvp.domain.model.defaultStyleFor
 import com.example.mvp.domain.model.generateAttributes
@@ -82,15 +83,14 @@ fun PlayerFormScreen(
     val attributes = remember(position, level, style) { generateAttributes(position, level, style) }
     val title = if (initial == null) "Nuevo jugador" else "Editar jugador"
 
-    val nameError = remember(name) { validatePlayerName(name) }
+    val nameError = remember(name) { PlayerValidator.validateName(name) }
 
     val ageError = remember(ageText) {
         val v = ageText.toIntOrNull()
         when {
             ageText.isBlank() -> "La edad es obligatoria."
             v == null -> "Introduce una edad válida."
-            v !in PLAYER_MIN_AGE..PLAYER_MAX_AGE -> "La edad debe estar entre $PLAYER_MIN_AGE y $PLAYER_MAX_AGE."
-            else -> null
+            else -> PlayerValidator.validateAge(v)
         }
     }
 
@@ -251,7 +251,7 @@ fun PlayerFormScreen(
                         OutlinedTextField(
                             value = name,
                             onValueChange = {
-                                name = it.take(40)
+                                name = it
                                 touchedName = true
                             },
                             singleLine = true,
@@ -325,7 +325,7 @@ fun PlayerFormScreen(
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             IconButton(onClick = {
                                                 touchedNumber = true
-                                                number = (number - 1).coerceAtLeast(1)
+                                                number = (number - 1).coerceAtLeast(PLAYER_MIN_NUMBER)
                                             }) {
                                                 Icon(Icons.Default.Remove, null, tint = onBg)
                                             }
@@ -337,7 +337,7 @@ fun PlayerFormScreen(
                                             )
                                             IconButton(onClick = {
                                                 touchedNumber = true
-                                                number = (number + 1).coerceAtMost(99)
+                                                number = (number + 1).coerceAtMost(PLAYER_MAX_NUMBER)
                                             }) {
                                                 Icon(Icons.Default.Add, null, tint = onBg)
                                             }
@@ -415,8 +415,8 @@ fun PlayerFormScreen(
                                         id = initial?.id ?: 0,
                                         name = name.trim(),
                                         position = position,
-                                        age = age.coerceIn(PLAYER_MIN_AGE, PLAYER_MAX_AGE),
-                                        number = number.coerceIn(1, 99),
+                                        age = age,
+                                        number = number,
                                         status = status,
                                         level = level,
                                         style = style,
@@ -861,17 +861,4 @@ private fun AttributeRow(label: String, value: Int, accent: Color, onBg: Color) 
             modifier = Modifier.width(28.dp)
         )
     }
-}
-
-private fun validatePlayerName(raw: String): String? {
-    val name = raw.trim()
-
-    if (name.isBlank()) return "El nombre es obligatorio."
-    if (name.length < 3) return "El nombre debe tener al menos 3 caracteres."
-    if (name.length > 40) return "El nombre no puede superar 40 caracteres."
-    if (name.contains(Regex("""\s{2,}"""))) return "Evita espacios dobles."
-    if (!Regex("""^[\p{L}' -]+$""").matches(name)) {
-        return "Solo letras y espacios (se permite ' y -)."
-    }
-    return null
 }
